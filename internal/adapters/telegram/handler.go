@@ -66,6 +66,9 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 
 	switch data {
 
+	case "action_menu":
+		h.editPanel(chatID, messageID, userID, "")
+
 	case "action_cacar":
 		h.editPanel(chatID, messageID, userID, "")
 
@@ -90,8 +93,8 @@ func (h *Handler) sendInitialPanel(chatID, userID int64) {
 	photo.Caption = status
 	photo.ParseMode = "Markdown"
 	photo.ReplyMarkup = mainMenu()
-
 	h.bot.Send(photo)
+
 }
 func (h *Handler) editPanel(
 	chatID int64,
@@ -127,6 +130,9 @@ func (h *Handler) editPanel(
 
 func mainMenu() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏠 Menu", "action_menu"),
+		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⚔️ Caçar", "action_cacar"),
 			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),

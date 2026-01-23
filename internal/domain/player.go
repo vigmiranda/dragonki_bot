@@ -9,6 +9,7 @@ const (
 
 type Player struct {
 	UserID          int64
+	Name            string
 	Class           string
 	HP              int
 	ATK             int

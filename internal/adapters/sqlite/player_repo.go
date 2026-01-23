@@ -12,7 +12,31 @@ type PlayerSQLiteRepo struct {
 }
 
 func NewPlayerSQLiteRepo(db *sql.DB) *PlayerSQLiteRepo {
-	return &PlayerSQLiteRepo{db: db}
+	repo := &PlayerSQLiteRepo{db: db}
+	if err := repo.initSchema(); err != nil {
+		panic(err) // em prod pode trocar por log.Fatal
+	}
+	return repo
+}
+
+// 🔥 CRIA A TABELA SE NÃO EXISTIR
+func (r *PlayerSQLiteRepo) initSchema() error {
+	_, err := r.db.Exec(`
+	CREATE TABLE IF NOT EXISTS players (
+		user_id INTEGER PRIMARY KEY,
+		name TEXT,
+		class TEXT,
+		hp INTEGER,
+		atk INTEGER,
+		xp INTEGER,
+		level INTEGER,
+		energy INTEGER,
+		last_energy_at TEXT,
+		form TEXT,
+		form_battles INTEGER
+	);
+	`)
+	return err
 }
 
 func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
@@ -20,10 +44,12 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 	var last string
 
 	err := r.db.QueryRow(`
-	SELECT user_id, class, hp, atk, xp, level, energy, last_energy_at, form, form_battles
-	FROM players WHERE user_id = ?`, userID,
+	SELECT user_id, name, class, hp, atk, xp, level, energy, last_energy_at, form, form_battles
+	FROM players WHERE user_id = ?`,
+		userID,
 	).Scan(
 		&p.UserID,
+		&p.Name,
 		&p.Class,
 		&p.HP,
 		&p.ATK,
@@ -38,6 +64,7 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 	if err == sql.ErrNoRows {
 		p = domain.Player{
 			UserID:       userID,
+			Name:         "User_",
 			Class:        "Blade Monk",
 			HP:           100,
 			ATK:          10,
@@ -48,8 +75,12 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 		}
 
 		_, err = r.db.Exec(`
-		INSERT INTO players VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO players (
+			user_id, name, class, hp, atk, xp, level,
+			energy, last_energy_at, form, form_battles
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			p.UserID,
+			p.Name,
 			p.Class,
 			p.HP,
 			p.ATK,
@@ -75,8 +106,9 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 func (r *PlayerSQLiteRepo) Save(p *domain.Player) error {
 	_, err := r.db.Exec(`
 	UPDATE players
-	SET hp=?, atk=?, xp=?, level=?, energy=?, last_energy_at=?, form=?, form_battles=?
+	SET name=?, hp=?, atk=?, xp=?, level=?, energy=?, last_energy_at=?, form=?, form_battles=?
 	WHERE user_id=?`,
+		p.Name,
 		p.HP,
 		p.ATK,
 		p.XP,
