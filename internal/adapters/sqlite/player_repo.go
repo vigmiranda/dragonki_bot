@@ -21,7 +21,8 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 	var last string
 
 	err := r.db.QueryRow(`
-	SELECT user_id, name, gender, class, hp, atk, xp, level, energy, last_energy_at, form, form_battles
+	SELECT user_id, name, gender, class, hp, atk, xp, level, energy, 
+	       last_energy_at, form, form_battles, region_id
 	FROM players WHERE user_id = ?`,
 		userID,
 	).Scan(
@@ -37,6 +38,7 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 		&last,
 		&p.Form,
 		&p.FormBattlesLeft,
+		&p.RegionId,
 	)
 
 	if err == sql.ErrNoRows {
@@ -56,8 +58,8 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 		_, err = r.db.Exec(`
 		INSERT INTO players (
 			user_id, name, gender, class, hp, atk, xp, level,
-			energy, last_energy_at, form, form_battles
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			energy, last_energy_at, form, form_battles, region_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			p.UserID,
 			p.Name,
 			p.Gender,
@@ -70,6 +72,7 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 			p.LastEnergyAt.Format(time.RFC3339),
 			p.Form,
 			p.FormBattlesLeft,
+			p.RegionId,
 		)
 
 		return &p, err
@@ -86,7 +89,7 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 func (r *PlayerSQLiteRepo) Save(p *domain.Player) error {
 	_, err := r.db.Exec(`
 	UPDATE players
-	SET name=?, gender=?, hp=?, atk=?, xp=?, level=?, energy=?, last_energy_at=?, form=?, form_battles=?
+	SET name=?, gender=?, hp=?, atk=?, xp=?, level=?, energy=?, last_energy_at=?, form=?, form_battles=?, region_id=?
 	WHERE user_id=?`,
 		p.Name,
 		p.Gender,
@@ -98,6 +101,7 @@ func (r *PlayerSQLiteRepo) Save(p *domain.Player) error {
 		p.LastEnergyAt.Format(time.RFC3339),
 		p.Form,
 		p.FormBattlesLeft,
+		p.RegionId,
 		p.UserID,
 	)
 	return err

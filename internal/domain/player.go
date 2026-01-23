@@ -4,7 +4,7 @@ import "time"
 
 const (
 	MaxEnergy       = 10
-	EnergyRegenTime = 10 * time.Second
+	EnergyRegenTime = 10 * time.Minute
 )
 
 type Player struct {
@@ -20,6 +20,7 @@ type Player struct {
 	LastEnergyAt    time.Time
 	Form            string
 	FormBattlesLeft int
+	RegionId        int
 }
 
 func (p *Player) RegenEnergy() {

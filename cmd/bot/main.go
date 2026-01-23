@@ -31,9 +31,10 @@ func main() {
 	// 🔹 Repositórios
 	playerRepo := sqlite.NewPlayerSQLiteRepo(sqliteDB)
 	monsterRepo := sqlite.NewMonsterSQLiteRepo(sqliteDB)
+	regionRepo := sqlite.NewRegionSQLiteRepo(sqliteDB)
 
 	// 🔹 Services (casos de uso)
-	playerService := application.NewPlayerService(playerRepo)
+	playerService := application.NewPlayerService(playerRepo, regionRepo)
 	battleService := application.NewBattleService(playerRepo, monsterRepo)
 
 	// 🔹 Bot Telegram

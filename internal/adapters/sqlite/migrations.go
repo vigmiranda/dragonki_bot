@@ -58,4 +58,22 @@ var migrations = []migration{
 
 	`,
 	},
+	{
+		version: 3,
+		sql: `
+		CREATE TABLE IF NOT EXISTS regions (
+			region_id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			tag TEXT NOT NULL,
+			min_level INTEGER DEFAULT 1
+		);
+		ALTER TABLE players
+		ADD COLUMN region_id INTEGER DEFAULT 1;
+		INSERT INTO regions (region_id, name, tag, min_level)
+		SELECT 1, 'Planícies', 'PLAIN_LV1', 1
+		WHERE NOT EXISTS (
+			SELECT 1 FROM regions WHERE region_id = 1
+		);
+		`,
+	},
 }

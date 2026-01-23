@@ -32,13 +32,13 @@ func (h *Handler) editPanel(
 	msgResponse MsgResponse,
 ) {
 
-	caption := msgResponse.Message + "\n\n" //+ status
+	caption := msgResponse.Message + "\n\n"
 
 	media := tgbotapi.NewInputMediaPhoto(
 		tgbotapi.FilePath(msgResponse.Img),
 	)
 	media.Caption = caption
-	media.ParseMode = "Markdown"
+	//media.ParseMode = "Markdown"
 
 	edit := tgbotapi.EditMessageMediaConfig{
 		BaseEdit: tgbotapi.BaseEdit{

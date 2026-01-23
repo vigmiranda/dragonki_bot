@@ -13,21 +13,22 @@ type MsgResponse struct {
 }
 
 type PlayerService struct {
-	Repo ports.PlayerRepository
+	PlayerRepository ports.PlayerRepository
+	RegionRepository ports.RegionRepository
 }
 
-func NewPlayerService(repo ports.PlayerRepository) *PlayerService {
-	return &PlayerService{Repo: repo}
+func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionRepository) *PlayerService {
+	return &PlayerService{PlayerRepository: repo, RegionRepository: regionRepo}
 }
 
 func (s *PlayerService) SetGender(userID int64, gender string) (MsgResponse, error) {
-	player, _ := s.Repo.GetOrCreate(userID)
+	player, _ := s.PlayerRepository.GetOrCreate(userID)
 
 	var msgResponse MsgResponse
 
 	player.Gender = gender
 	player.RegenEnergy()
-	s.Repo.Save(player)
+	s.PlayerRepository.Save(player)
 	msgResponse.Message = fmt.Sprintf(
 		"🧙 Status\n❤️ HP: %d\n⚔️ ATK: %d\n✨ XP: %d\n🏆 Nível: %d\n⚡ Energia: %d",
 		player.HP, player.ATK, player.XP, player.Level, player.Energy,
@@ -37,17 +38,35 @@ func (s *PlayerService) SetGender(userID int64, gender string) (MsgResponse, err
 	return msgResponse, nil
 }
 func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
-	player, _ := s.Repo.GetOrCreate(userID)
+	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	region, err := s.RegionRepository.GetByID(int64(player.RegionId))
 	var msgResponse MsgResponse
 
+	if err != nil {
+		msgResponse.Message = fmt.Sprintf("Voce está perdido!")
+		msgResponse.Img = fmt.Sprintf("assets/error.png")
+		return msgResponse, err
+	}
+
 	player.RegenEnergy()
-	msgResponse.Message = ""
-	msgResponse.Img = "assets/maps/plain_lv1.png"
+	msgResponse.Message = fmt.Sprintf(
+		"%s você está em: %s (L%d)\n"+
+			"❤️ HP: %d\n"+
+			"⚡️ Energia: %d\n"+
+			"💪 Level: %d\n",
+		player.Name,
+		region.Name,
+		region.MinLevel,
+		player.HP,
+		player.Energy,
+		player.Level,
+	)
+	msgResponse.Img = fmt.Sprintf("assets/maps/%s.png", strings.ToLower(region.Tag))
 	return msgResponse, nil
 }
 
 func (s *PlayerService) HasCompletedOnboarding(userID int64) (bool, error) {
-	player, err := s.Repo.GetOrCreate(userID)
+	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		return false, err
 	}
@@ -56,12 +75,12 @@ func (s *PlayerService) HasCompletedOnboarding(userID int64) (bool, error) {
 }
 
 func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
-	player, _ := s.Repo.GetOrCreate(userID)
+	player, _ := s.PlayerRepository.GetOrCreate(userID)
 
 	var msgResponse MsgResponse
 
 	player.RegenEnergy()
-	s.Repo.Save(player)
+	s.PlayerRepository.Save(player)
 	msgResponse.Message = fmt.Sprintf(
 		"🧙 Status\n❤️ HP: %d\n⚔️ ATK: %d\n✨ XP: %d\n🏆 Nível: %d\n⚡ Energia: %d",
 		player.HP, player.ATK, player.XP, player.Level, player.Energy,
@@ -75,7 +94,7 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 }
 
 func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
-	player, _ := s.Repo.GetOrCreate(userID)
+	player, _ := s.PlayerRepository.GetOrCreate(userID)
 
 	var msgResponse MsgResponse
 
@@ -98,19 +117,29 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_ki_awakened.png"
 	}
 	player.RegenEnergy()
-	s.Repo.Save(player)
+	s.PlayerRepository.Save(player)
 	msgResponse.Message = logText
 	return msgResponse, nil
 }
 
 func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
-	player, _ := s.Repo.GetOrCreate(userID)
+	player, _ := s.PlayerRepository.GetOrCreate(userID)
 
 	var msgResponse MsgResponse
 
 	player.RegenEnergy()
-	s.Repo.Save(player)
-	msgResponse.Message = "Energy em desenvolvimento"
-	msgResponse.Img = "assets/maps/plain_lv1.png"
+	msgResponse.Message = fmt.Sprintf(
+		"%s você ainda tem energia para mais umas batalhas. \n "+
+			"⚡️ Energia: %d\n", player.Name, player.Energy)
+	msgResponse.Img = fmt.Sprintf("assets/skins/%s_%s.png", strings.ToLower(player.Gender), "skin_basic")
+
+	s.PlayerRepository.Save(player)
+
+	if player.Energy <= 2 {
+		msgResponse.Message = fmt.Sprintf(
+			"%s sua energia esta baixa 😫. \n "+
+				"⚡️ Energia: %d\n", player.Name, player.Energy)
+		msgResponse.Img = fmt.Sprintf("assets/skins/%s_%s.png", strings.ToLower(player.Gender), "tired")
+	}
 	return msgResponse, nil
 }
