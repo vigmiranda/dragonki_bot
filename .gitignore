@@ -27,6 +27,30 @@ go.work.sum
 # env file
 .env
 
+# Default ignored files
+/shelf/
+/workspace.xml
+# Ignored default folder with query files
+/queries/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+
+
 # Editor/IDE
 # .idea/
 # .vscode/
+/database.db
+/.idea/dataSources.xml
+/.idea/dragonki_bot.iml
+/.idea/go.imports.xml
+/go.sum
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
+/.idea/dataSources/b24712b4-63d2-4d5e-88e5-55a816bf14e4.xml
+/.idea/dataSources.local.xml
+/.idea/dataSources/b24712b4-63d2-4d5e-88e5-55a816bf14e4/storage_v2/_src_/schema/main.uQUzAA.meta
+/.idea/workspace.xml
