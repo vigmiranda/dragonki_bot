@@ -10,6 +10,7 @@ const (
 type Player struct {
 	UserID          int64
 	Name            string
+	Gender          string
 	Class           string
 	HP              int
 	ATK             int

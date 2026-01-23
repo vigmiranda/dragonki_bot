@@ -4,16 +4,14 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func (h *Handler) sendInitialPanel(chatID, userID int64) {
-	status, _ := h.service.Status(userID)
-
+func (h *Handler) sendInitialPanel(chatID int64) {
 	photo := tgbotapi.NewPhoto(
 		chatID,
-		tgbotapi.FilePath("assets/maps/plain_lv1.png"),
+		tgbotapi.FilePath("assets/maps/man_woman_select.png"),
 	)
-	photo.Caption = status
+	photo.Caption = "Selecione o genero do seu personagem"
 	photo.ParseMode = "Markdown"
-	photo.ReplyMarkup = mainMenu()
+	photo.ReplyMarkup = initialMenu()
 
 	h.bot.Send(photo)
 }
@@ -21,14 +19,13 @@ func (h *Handler) sendInitialPanel(chatID, userID int64) {
 func (h *Handler) editPanel(
 	chatID int64,
 	messageID int,
-	extra string,
+	msgResponse MsgResponse,
 ) {
-	//status, _ := h.service.Status(userID)
 
-	caption := extra + "\n\n" //+ status
+	caption := msgResponse.Message + "\n\n" //+ status
 
 	media := tgbotapi.NewInputMediaPhoto(
-		tgbotapi.FilePath("assets/maps/plain_lv1.png"),
+		tgbotapi.FilePath(msgResponse.Img),
 	)
 	media.Caption = caption
 	media.ParseMode = "Markdown"

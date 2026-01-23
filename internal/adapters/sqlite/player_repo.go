@@ -25,6 +25,7 @@ func (r *PlayerSQLiteRepo) initSchema() error {
 	CREATE TABLE IF NOT EXISTS players (
 		user_id INTEGER PRIMARY KEY,
 		name TEXT,
+		gender TEXT,
 		class TEXT,
 		hp INTEGER,
 		atk INTEGER,
@@ -44,12 +45,13 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 	var last string
 
 	err := r.db.QueryRow(`
-	SELECT user_id, name, class, hp, atk, xp, level, energy, last_energy_at, form, form_battles
+	SELECT user_id, name, gender, class, hp, atk, xp, level, energy, last_energy_at, form, form_battles
 	FROM players WHERE user_id = ?`,
 		userID,
 	).Scan(
 		&p.UserID,
 		&p.Name,
+		&p.Gender,
 		&p.Class,
 		&p.HP,
 		&p.ATK,
@@ -65,6 +67,7 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 		p = domain.Player{
 			UserID:       userID,
 			Name:         "User_",
+			Gender:       "MAN",
 			Class:        "Blade Monk",
 			HP:           100,
 			ATK:          10,
@@ -76,11 +79,12 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 
 		_, err = r.db.Exec(`
 		INSERT INTO players (
-			user_id, name, class, hp, atk, xp, level,
+			user_id, name, gender, class, hp, atk, xp, level,
 			energy, last_energy_at, form, form_battles
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			p.UserID,
 			p.Name,
+			p.Gender,
 			p.Class,
 			p.HP,
 			p.ATK,
@@ -106,9 +110,10 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 func (r *PlayerSQLiteRepo) Save(p *domain.Player) error {
 	_, err := r.db.Exec(`
 	UPDATE players
-	SET name=?, hp=?, atk=?, xp=?, level=?, energy=?, last_energy_at=?, form=?, form_battles=?
+	SET name=?, gender=?, hp=?, atk=?, xp=?, level=?, energy=?, last_energy_at=?, form=?, form_battles=?
 	WHERE user_id=?`,
 		p.Name,
+		p.Gender,
 		p.HP,
 		p.ATK,
 		p.XP,

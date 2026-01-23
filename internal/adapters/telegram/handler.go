@@ -31,10 +31,7 @@ func (h *Handler) Start() {
 			}
 
 			if update.Message.Text == "/start" {
-				h.sendInitialPanel(
-					update.Message.Chat.ID,
-					update.Message.From.ID,
-				)
+				h.sendInitialPanel(update.Message.Chat.ID)
 			}
 		}()
 	}
