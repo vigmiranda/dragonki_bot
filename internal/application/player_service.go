@@ -26,6 +26,22 @@ func (s *PlayerService) Status(userID int64) (string, error) {
 	return logText, nil
 }
 
+func (s *PlayerService) Transform(userID int64) (string, error) {
+	player, _ := s.Repo.GetOrCreate(userID)
+	player.RegenEnergy()
+	s.Repo.Save(player)
+	logText := "Transform em desenvolvimento"
+	return logText, nil
+}
+
+func (s *PlayerService) Energy(userID int64) (string, error) {
+	player, _ := s.Repo.GetOrCreate(userID)
+	player.RegenEnergy()
+	s.Repo.Save(player)
+	logText := "Energy em desenvolvimento"
+	return logText, nil
+}
+
 func (s *PlayerService) Battle(userID int64) (string, error) {
 	player, _ := s.Repo.GetOrCreate(userID)
 
