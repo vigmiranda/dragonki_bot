@@ -8,19 +8,41 @@ const (
 )
 
 type Player struct {
-	UserID          int64
-	Name            string
-	Gender          string
-	Class           string
-	HP              int
-	ATK             int
-	XP              int
-	Level           int
-	Energy          int
+	UserID int64
+
+	// Identidade
+	Name   string
+	Gender string
+	Class  string
+
+	// Progressão
+	Level int
+	XP    int
+
+	// Combate
+	HP    int
+	MaxHP int
+
+	ATK int
+	DEF int
+
+	// Energia
+	Energy    int
+	MaxEnergy int
+
+	// Economia
+	Gold       int
+	KiCrystals int
+
+	// Mundo
+	RegionID int64
+
+	// Estados
 	LastEnergyAt    time.Time
 	Form            string
 	FormBattlesLeft int
-	RegionId        int
+
+	OnboardingStep string
 }
 
 func (p *Player) RegenEnergy() {

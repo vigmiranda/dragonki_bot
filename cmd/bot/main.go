@@ -5,33 +5,38 @@ import (
 	"log"
 	"os"
 
-	"github.com/vigmiranda/dragonki/internal/adapters/sqlite"
+	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram"
 	"github.com/vigmiranda/dragonki/internal/application"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	_ "modernc.org/sqlite"
 )
 
 func main() {
 	// 🔹 Abre conexão com o banco
-	db, err := sql.Open("sqlite", "./database.db")
+	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// 🔹 Roda migrations ANTES de tudo
-	if err := sqlite.RunMigrations(db); err != nil {
+	if err := postgres.RunMigrations(db); err != nil {
 		log.Fatal(err)
 	}
 
 	// 🔹 Container de infraestrutura SQLite
-	sqliteDB := sqlite.NewSQLite(db)
+	sqliteDB := postgres.NewPostgres(db)
 
 	// 🔹 Repositórios
-	playerRepo := sqlite.NewPlayerSQLiteRepo(sqliteDB)
-	monsterRepo := sqlite.NewMonsterSQLiteRepo(sqliteDB)
-	regionRepo := sqlite.NewRegionSQLiteRepo(sqliteDB)
+	playerRepo := postgres.NewPlayerPostgresRepo(sqliteDB)
+	monsterRepo := postgres.NewMonsterPostgresRepo(sqliteDB)
+	regionRepo := postgres.NewRegionPostgresRepo(sqliteDB)
 
 	// 🔹 Services (casos de uso)
 	playerService := application.NewPlayerService(playerRepo, regionRepo)

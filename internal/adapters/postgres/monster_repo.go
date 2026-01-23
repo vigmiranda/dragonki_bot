@@ -1,4 +1,4 @@
-package sqlite
+package postgres
 
 import (
 	"database/sql"
@@ -6,22 +6,22 @@ import (
 	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
-type MonsterSQLiteRepo struct {
+type MonsterPostgresRepo struct {
 	db *sql.DB
 }
 
-func NewMonsterSQLiteRepo(sqlite *SQLite) *MonsterSQLiteRepo {
-	return &MonsterSQLiteRepo{
-		db: sqlite.DB,
+func NewMonsterPostgresRepo(postgres *Postgres) *MonsterPostgresRepo {
+	return &MonsterPostgresRepo{
+		db: postgres.DB,
 	}
 }
 
-func (r *MonsterSQLiteRepo) ListByLevel(level int64) ([]domain.Monster, error) {
+func (r *MonsterPostgresRepo) ListByLevel(level int64) ([]domain.Monster, error) {
 	rows, err := r.db.Query(`
 		SELECT monster_id, name, tag, level, hp, atk, def,
 		       max_xp, max_money, spawn_weight
 		FROM monsters
-		WHERE level <= ?
+		WHERE level <= $1
 		ORDER BY monster_id`,
 		level,
 	)

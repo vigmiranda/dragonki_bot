@@ -1,4 +1,4 @@
-package sqlite
+package postgres
 
 import (
 	"database/sql"
@@ -6,23 +6,23 @@ import (
 	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
-type RegionSQLiteRepo struct {
+type RegionPostgres struct {
 	db *sql.DB
 }
 
-func NewRegionSQLiteRepo(sqlite *SQLite) *RegionSQLiteRepo {
-	return &RegionSQLiteRepo{
-		db: sqlite.DB,
+func NewRegionPostgresRepo(postgres *Postgres) *RegionPostgres {
+	return &RegionPostgres{
+		db: postgres.DB,
 	}
 }
 
-func (r *RegionSQLiteRepo) GetByID(regionID int64) (*domain.Region, error) {
+func (r *RegionPostgres) GetByID(regionID int64) (*domain.Region, error) {
 	var region domain.Region
 
 	err := r.db.QueryRow(`
 		SELECT region_id, name, tag, min_level
 		FROM regions
-		WHERE region_id = ?
+		WHERE region_id = $1
 	`, regionID).Scan(
 		&region.RegionID,
 		&region.Name,
@@ -41,7 +41,7 @@ func (r *RegionSQLiteRepo) GetByID(regionID int64) (*domain.Region, error) {
 	return &region, nil
 }
 
-func (r *RegionSQLiteRepo) ListAll() ([]domain.Region, error) {
+func (r *RegionPostgres) ListAll() ([]domain.Region, error) {
 	rows, err := r.db.Query(`
 		SELECT region_id, name, tag, min_level
 		FROM regions

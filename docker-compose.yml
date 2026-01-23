@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: dragonki_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: dragonki
+      POSTGRES_PASSWORD: dragonki
+      POSTGRES_DB: dragonki
+    ports:
+      - "5432:5432"
+    volumes:
+      - dragonki_pgdata:/var/lib/postgresql/data
+
+volumes:
+  dragonki_pgdata:

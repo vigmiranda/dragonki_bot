@@ -1,4 +1,4 @@
-package sqlite
+package postgres
 
 import "database/sql"
 
@@ -12,10 +12,13 @@ func RunMigrations(db *sql.DB) error {
 	}
 
 	var current int
-	db.QueryRow(`
+	err = db.QueryRow(`
 		SELECT COALESCE(MAX(version), 0)
 		FROM schema_migrations;
 	`).Scan(&current)
+	if err != nil {
+		return err
+	}
 
 	for _, m := range migrations {
 		if m.version > current {
@@ -23,7 +26,7 @@ func RunMigrations(db *sql.DB) error {
 				return err
 			}
 			_, err := db.Exec(
-				`INSERT INTO schema_migrations(version) VALUES (?)`,
+				`INSERT INTO schema_migrations(version) VALUES ($1)`,
 				m.version,
 			)
 			if err != nil {

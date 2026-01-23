@@ -1,4 +1,4 @@
-package sqlite
+package postgres
 
 import (
 	"database/sql"
@@ -7,23 +7,23 @@ import (
 	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
-type PlayerSQLiteRepo struct {
+type PlayerPostgresRepo struct {
 	db *sql.DB
 }
 
-func NewPlayerSQLiteRepo(sqlite *SQLite) *PlayerSQLiteRepo {
-	return &PlayerSQLiteRepo{
-		db: sqlite.DB,
+func NewPlayerPostgresRepo(postgres *Postgres) *PlayerPostgresRepo {
+	return &PlayerPostgresRepo{
+		db: postgres.DB,
 	}
 }
-func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
+func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 	var p domain.Player
 	var last string
 
 	err := r.db.QueryRow(`
-	SELECT user_id, name, gender, class, hp, atk, xp, level, energy, 
-	       last_energy_at, form, form_battles, region_id
-	FROM players WHERE user_id = ?`,
+	SELECT user_id, name, gender, class, hp, max_hp, atk, def, xp, level, energy, max_energy,
+	       gold, ki_crystals,  region_id, last_energy_at, form, form_battles, onboarding_step
+	FROM players WHERE user_id = $1`,
 		userID,
 	).Scan(
 		&p.UserID,
@@ -31,14 +31,20 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 		&p.Gender,
 		&p.Class,
 		&p.HP,
+		&p.MaxHP,
 		&p.ATK,
+		&p.DEF,
 		&p.XP,
 		&p.Level,
 		&p.Energy,
-		&last,
+		&p.MaxEnergy,
+		&p.Gold,
+		&p.KiCrystals,
+		&p.RegionID,
+		&p.LastEnergyAt,
 		&p.Form,
 		&p.FormBattlesLeft,
-		&p.RegionId,
+		&p.OnboardingStep,
 	)
 
 	if err == sql.ErrNoRows {
@@ -59,7 +65,7 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 		INSERT INTO players (
 			user_id, name, gender, class, hp, atk, xp, level,
 			energy, last_energy_at, form, form_battles, region_id
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
 			p.UserID,
 			p.Name,
 			p.Gender,
@@ -72,7 +78,7 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 			p.LastEnergyAt.Format(time.RFC3339),
 			p.Form,
 			p.FormBattlesLeft,
-			p.RegionId,
+			p.RegionID,
 		)
 
 		return &p, err
@@ -86,22 +92,30 @@ func (r *PlayerSQLiteRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 	return &p, nil
 }
 
-func (r *PlayerSQLiteRepo) Save(p *domain.Player) error {
+func (r *PlayerPostgresRepo) Save(p *domain.Player) error {
 	_, err := r.db.Exec(`
 	UPDATE players
-	SET name=?, gender=?, hp=?, atk=?, xp=?, level=?, energy=?, last_energy_at=?, form=?, form_battles=?, region_id=?
-	WHERE user_id=?`,
+	SET name=$1, gender=$2, class=$3, hp=$4, max_hp=$5, atk=$6, def=$7, xp=$8, level=$9, energy=$10, max_energy=$11,
+	    gold=$12, ki_crystals=$13, region_id=$14, last_energy_at=$15, form=$16, form_battles=$17, onboarding_step=$18
+	WHERE user_id=$19`,
 		p.Name,
 		p.Gender,
+		p.Class,
 		p.HP,
+		p.MaxHP,
 		p.ATK,
+		p.DEF,
 		p.XP,
 		p.Level,
 		p.Energy,
+		p.MaxEnergy,
+		p.Gold,
+		p.KiCrystals,
+		p.RegionID,
 		p.LastEnergyAt.Format(time.RFC3339),
 		p.Form,
 		p.FormBattlesLeft,
-		p.RegionId,
+		p.OnboardingStep,
 		p.UserID,
 	)
 	return err

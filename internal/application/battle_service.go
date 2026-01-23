@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/vigmiranda/dragonki/internal/adapters/sqlite"
+	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
@@ -14,7 +14,7 @@ type BattleService struct {
 	monsterRepo ports.MonsterRepository
 }
 
-func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *sqlite.MonsterSQLiteRepo) *BattleService {
+func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *postgres.MonsterPostgresRepo) *BattleService {
 	return &BattleService{
 		playerRepo:  playerRepo,
 		monsterRepo: monsterRepo,
@@ -54,18 +54,23 @@ func (s *BattleService) Battle(userID int64) (MsgResponse, error) {
 
 	monsterHP := monster.HP
 
+	//logica de dano
 	for monsterHP > 0 && player.HP > 0 {
 		monsterHP -= player.ATK
 		player.HP -= rand.Intn(monster.ATK/2+1) + monster.ATK/2
 	}
 
 	if player.HP > 0 {
-		player.XP += monster.MaxXP
+		xpReceived := rand.Intn(monster.MaxXP)
+		moneyReceived := rand.Intn(monster.MaxMoney)
+
+		player.XP += xpReceived
+		player.Gold += moneyReceived
 
 		msg.Message += fmt.Sprintf(
 			"🏆 Vitória! +%d XP\n💰 +%d Gold\n",
-			monster.MaxXP,
-			monster.MaxMoney,
+			xpReceived,
+			moneyReceived,
 		)
 
 		if player.XP >= player.Level*50 {

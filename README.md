@@ -80,9 +80,9 @@ A recarga é calculada automaticamente com base no tempo, sem uso de cron jobs.
 
 - **Go 1.21+**
 - **Telegram Bot API**
-- **SQLite**
+- **PostgreSQL**
 - **Docker**
-- **Railway (Deploy)**
+- **Railway (Deploy) -> https://railway.app/** 
 
 ---
 
