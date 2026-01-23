@@ -131,7 +131,7 @@ func (h *Handler) editPanel(
 func mainMenu() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🏠 Menu", "action_menu"),
+			tgbotapi.NewInlineKeyboardButtonData("📖 Menu", "action_menu"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⚔️ Caçar", "action_cacar"),
