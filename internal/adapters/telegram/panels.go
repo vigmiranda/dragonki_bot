@@ -7,12 +7,22 @@ import (
 func (h *Handler) sendInitialPanel(chatID int64) {
 	photo := tgbotapi.NewPhoto(
 		chatID,
-		tgbotapi.FilePath("assets/maps/man_woman_select.png"),
+		tgbotapi.FilePath("assets/skins/man_woman_select.png"),
 	)
 	photo.Caption = "Selecione o genero do seu personagem"
 	photo.ParseMode = "Markdown"
 	photo.ReplyMarkup = initialMenu()
 
+	h.bot.Send(photo)
+}
+func (h *Handler) newPanel(chatID int64) {
+	photo := tgbotapi.NewPhoto(
+		chatID,
+		tgbotapi.FilePath("assets/maps/plain_lv1.png"),
+	)
+	photo.Caption = ""
+	photo.ParseMode = "Markdown"
+	photo.ReplyMarkup = mainMenu()
 	h.bot.Send(photo)
 }
 

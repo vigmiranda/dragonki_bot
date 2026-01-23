@@ -31,7 +31,21 @@ func (h *Handler) Start() {
 			}
 
 			if update.Message.Text == "/start" {
-				h.sendInitialPanel(update.Message.Chat.ID)
+				completed, err := h.playerService.HasCompletedOnboarding(update.Message.Chat.ID)
+				if err != nil {
+					h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "❌ Erro interno"))
+					return
+				}
+
+				if completed {
+					// 🔥 jogador já existe → volta pro menu principal
+					h.newPanel(update.Message.Chat.ID)
+				} else {
+					// 🧑 primeiro acesso → escolher gênero
+					h.sendInitialPanel(update.Message.Chat.ID)
+				}
+
+				return
 			}
 		}()
 	}

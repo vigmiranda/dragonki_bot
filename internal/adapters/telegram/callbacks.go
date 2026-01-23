@@ -23,14 +23,14 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	switch data {
 
 	case "select_man":
-		msg, err := h.service.SetGender(userID, "MAN")
+		msg, err := h.playerService.SetGender(userID, "MAN")
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
 		}
 		msgResponse = MsgResponse(msg)
 	case "select_woman":
-		msg, err := h.service.SetGender(userID, "WOMAN")
+		msg, err := h.playerService.SetGender(userID, "WOMAN")
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
@@ -38,7 +38,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		msgResponse = MsgResponse(msg)
 
 	case "action_menu":
-		msg, err := h.service.Menu(userID)
+		msg, err := h.playerService.Menu(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
@@ -46,7 +46,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		msgResponse = MsgResponse(msg)
 
 	case "action_cacar":
-		msg, err := h.service.Battle(userID)
+		msg, err := h.battleService.Battle(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao caçar"
 			break
@@ -54,7 +54,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		msgResponse = MsgResponse(msg)
 
 	case "action_status":
-		msg, err := h.service.Status(userID)
+		msg, err := h.playerService.Status(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar status"
 			break
@@ -62,7 +62,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		msgResponse = MsgResponse(msg)
 
 	case "action_transformar":
-		msg, err := h.service.Transform(userID)
+		msg, err := h.playerService.Transform(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Não foi possível transformar"
 			break
@@ -70,7 +70,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		msgResponse = MsgResponse(msg)
 
 	case "action_energia":
-		msg, err := h.service.Energy(userID)
+		msg, err := h.playerService.Energy(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
