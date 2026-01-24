@@ -92,6 +92,10 @@ func (h *Handler) editPanel(
 	edit.ReplyMarkup = menu
 	_, err := h.bot.Send(edit)
 	if err != nil {
-		log.Fatal(err)
+		if strings.Contains(err.Error(), "message is not modified") {
+			return // ignora
+		}
+		log.Println("❌ erro ao editar mensagem:", err)
 	}
+
 }

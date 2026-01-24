@@ -215,13 +215,15 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 	msgResponse.Message =
 		fmt.Sprintf("📜%d-<b>%s</b> \n"+
 			"Você ainda tem HP e energia para mais umas batalhas.\n"+
-			"❤️ <b>HP</b>: %d/%d\t\t\t\t\t\t⚡️ <b>Energia</b>: %d/%d\n",
+			"❤️ <b>HP</b>: %d/%d\t\t\t\t\t\t⚡️ <b>Energia</b>: %d/%d\n"+
+			"💰 <b>Gold</b>: %d\n",
 			player.Level,
 			player.Name,
 			player.HP,
 			player.MaxHP,
 			player.Energy,
 			player.MaxEnergy,
+			player.Gold,
 		)
 	msgResponse.Img = fmt.Sprintf("assets/skins/%s_%s.png", domain.ConvertLowCase(player.Gender), "skin_basic")
 
