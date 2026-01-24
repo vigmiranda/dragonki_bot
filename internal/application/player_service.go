@@ -67,10 +67,12 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 	}
 
 	msgResponse.Message = fmt.Sprintf(
-		"%s você está em: %s (L%d)\n"+
-			"❤️ HP: %d/%d\n"+
-			"⚡️ Energia: %d/%d\n"+
-			"💪 Level: %d\n",
+		"<b>%s</b> \n\n"+
+			"🏰 <b>Local</b>:  %s (L%d)\n"+
+			"❤️ <b>HP</b>: %d/%d\n"+
+			"⚡️ <b>Energia</b>: %d/%d\n"+
+			"💪 <b>Level</b>: %d\n"+
+			"💰 <b>Gold</b>: %d\n",
 		player.Name,
 		region.Name,
 		region.MinLevel,
@@ -79,6 +81,7 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 		player.Energy,
 		player.MaxEnergy,
 		player.Level,
+		player.Gold,
 	)
 	msgResponse.Img = fmt.Sprintf("assets/maps/%s.png", strings.ToLower(region.Tag))
 	return msgResponse, nil
