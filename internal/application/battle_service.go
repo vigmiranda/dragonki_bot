@@ -61,8 +61,8 @@ func (s *BattleService) Battle(userID int64) (MsgResponse, error) {
 	}
 
 	if player.HP > 0 {
-		xpReceived := rand.Intn(monster.MaxXP)
-		moneyReceived := rand.Intn(monster.MaxMoney)
+		xpReceived := rand.Intn(monster.MaxXP + 1)
+		moneyReceived := rand.Intn(monster.MaxMoney + 1)
 
 		player.XP += xpReceived
 		player.Gold += moneyReceived
@@ -85,7 +85,6 @@ func (s *BattleService) Battle(userID int64) (MsgResponse, error) {
 		}
 
 	} else {
-		player.HP = 100
 		msg.Message += "💀 Derrota! HP restaurado.\n"
 	}
 
