@@ -229,8 +229,8 @@ func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
 		player.HP = player.MaxHP
 		msgResponse = MsgResponse{
 			Message: fmt.Sprintf(
-				"HP recarregado!!! \n" +
-					"Bora voltar pra Luta!! \n",
+				"❤️ HP recarregado!!! \n" +
+					"Bora voltar pra Luta ⚔️!! \n",
 			),
 			Img:        fmt.Sprintf("assets/skins/%s_skin_basic.png", strings.ToLower(player.Gender)),
 			Conditions: true,
