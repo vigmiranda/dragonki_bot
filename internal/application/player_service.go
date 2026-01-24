@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
@@ -11,6 +12,7 @@ import (
 type MsgResponse struct {
 	Message string
 	Img     string
+	Menu    tgbotapi.InlineKeyboardMarkup
 }
 
 type PlayerService struct {
@@ -24,12 +26,12 @@ func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionReposi
 
 func (s *PlayerService) SetGender(userID int64, gender string) (MsgResponse, error) {
 	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	//player.RegenEnergy()
 
 	var msgResponse MsgResponse
-
 	player.Gender = gender
 	player.OnboardingStep = "CHOOSING_NAME"
-	player.RegenEnergy()
+
 	s.PlayerRepository.Save(player)
 	msgResponse.Message = fmt.Sprintf(
 		"🧙 Status\n❤️ HP: %d\n⚔️ ATK: %d\n✨ XP: %d\n🏆 Nível: %d\n⚡ Energia: %d",
@@ -54,6 +56,8 @@ func (s *PlayerService) SetName(userID int64, name string) error {
 func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 	player, _ := s.PlayerRepository.GetOrCreate(userID)
 	region, err := s.RegionRepository.GetByID(player.RegionID)
+	//player.RegenEnergy()
+
 	var msgResponse MsgResponse
 
 	if err != nil {
@@ -62,7 +66,6 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 		return msgResponse, err
 	}
 
-	player.RegenEnergy()
 	msgResponse.Message = fmt.Sprintf(
 		"%s você está em: %s (L%d)\n"+
 			"❤️ HP: %d/%d\n"+
@@ -92,24 +95,35 @@ func (s *PlayerService) HasCompletedOnboarding(userID int64) (bool, error) {
 
 func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	region, _ := s.RegionRepository.GetByID(player.RegionID)
 
+	//player.RegenEnergy()
+
+	genderIcon := "🧝‍♂️"
+	if player.Gender == "WOMAN" {
+		genderIcon = "🧝‍♀️️"
+	}
 	var msgResponse MsgResponse
-
-	player.RegenEnergy()
-	s.PlayerRepository.Save(player)
 	msgResponse.Message = fmt.Sprintf(
-		"%s\n"+
-			"💪 Level: %d\n"+
-			"❤️ HP: %d/%d\n"+
-			"⚡️ Energia: %d/%d\n"+
-			"💰 Gold: %d\n"+
-			"💎 KiCrystals: %d\n",
+		genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
+			"💪 <b>Level</b>: %d\t\t\t\t\t\t\t\t\t\t\t🧬 <b>XP</b>: %d\n"+
+			"❤️ <b>HP</b>: %d/%d\t\t\t\t\t\t⚡️ <b>Energia</b>: %d/%d\n"+
+			"⚔️ <b>ATK</b>: %d \t\t\t\t\t\t\t\t\t\t🛡️ <b>DEF</b>: %d \n"+
+			"🗺️ <b>Local</b>: %s(Lv%d)\n"+
+			"💰 <b>Gold</b>: %d\n"+
+			"💎 <b>KiCrystals</b>: %d\n",
 		player.Name,
+		player.Class,
 		player.Level,
+		player.XP,
 		player.HP,
 		player.MaxHP,
 		player.Energy,
 		player.MaxEnergy,
+		player.ATK,
+		player.DEF,
+		region.Name,
+		region.MinLevel,
 		player.Gold,
 		player.KiCrystals,
 	)
@@ -122,7 +136,9 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 }
 
 func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
+
 	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	//player.RegenEnergy()
 
 	var msgResponse MsgResponse
 
@@ -144,7 +160,7 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 		logText += fmt.Sprintf("🔥 Você despertou o *Ki Awakened*!")
 		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_ki_awakened.png"
 	}
-	player.RegenEnergy()
+
 	s.PlayerRepository.Save(player)
 	msgResponse.Message = logText
 	return msgResponse, nil
@@ -155,7 +171,7 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 
 	var msgResponse MsgResponse
 
-	player.RegenEnergy()
+	//	player.RegenEnergy()
 	msgResponse.Message = fmt.Sprintf("📜 %d - %s \n"+
 		"Você ainda tem energia para mais umas batalhas.\n"+
 		"⚡️ Energia: %d\n", player.Level, player.Name, player.Energy)

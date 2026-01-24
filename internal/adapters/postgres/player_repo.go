@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,7 +23,7 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 	var p domain.Player
 
 	err := r.db.QueryRow(`
-	SELECT name, gender, class, hp, max_hp, atk, def, xp, level, energy,
+	SELECT user_id,name, gender, class, hp, max_hp, atk, def, xp, level, energy,
 	    max_energy,gold, ki_crystals, region_id, last_energy_at, form, 
 	    form_battles, onboarding_step, last_update
 	FROM players WHERE user_id = $1`,
@@ -118,7 +119,7 @@ func (r *PlayerPostgresRepo) Save(p *domain.Player) error {
 	SET name=$1, gender=$2, class=$3, hp=$4, max_hp=$5, atk=$6, def=$7, xp=$8, level=$9, energy=$10,
 	    max_energy=$11,gold=$12, ki_crystals=$13, region_id=$14, last_energy_at=$15, form=$16, 
 	    form_battles=$17, onboarding_step=$18, last_update= now()
-	WHERE user_id=$20`,
+	WHERE user_id=$19`,
 		p.Name,
 		p.Gender,
 		p.Class,
@@ -139,5 +140,8 @@ func (r *PlayerPostgresRepo) Save(p *domain.Player) error {
 		p.OnboardingStep,
 		p.UserID,
 	)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return err
 }

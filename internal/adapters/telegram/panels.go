@@ -13,7 +13,7 @@ func (h *Handler) sendInitialPanel(chatID int64) {
 		tgbotapi.FilePath("assets/skins/man_woman_select.png"),
 	)
 	photo.Caption = "Selecione o genero do seu personagem"
-	photo.ParseMode = "Markdown"
+	photo.ParseMode = "HTML"
 	photo.ReplyMarkup = choosingGenderMenu()
 	h.bot.Send(photo)
 }
@@ -47,7 +47,7 @@ func (h *Handler) newPanel(chatID int64) {
 		tgbotapi.FilePath("assets/maps/plain_lv1.png"),
 	)
 	photo.Caption = ""
-	photo.ParseMode = "Markdown"
+	photo.ParseMode = "HTML"
 	photo.ReplyMarkup = mainMenu()
 	h.bot.Send(photo)
 }
@@ -57,15 +57,14 @@ func (h *Handler) editPanel(
 	messageID int,
 	msgResponse MsgResponse,
 ) {
-
+	menu := mainMenu()
 	caption := msgResponse.Message + "\n\n"
 
 	media := tgbotapi.NewInputMediaPhoto(
 		tgbotapi.FilePath(msgResponse.Img),
 	)
 	media.Caption = caption
-	//media.ParseMode = "Markdown"
-
+	media.ParseMode = "HTML"
 	edit := tgbotapi.EditMessageMediaConfig{
 		BaseEdit: tgbotapi.BaseEdit{
 			ChatID:    chatID,
@@ -74,8 +73,10 @@ func (h *Handler) editPanel(
 		Media: media,
 	}
 
-	menu := mainMenu()
-	edit.ReplyMarkup = &menu
+	if msgResponse.Menu != nil {
+		menu = msgResponse.Menu
+	}
 
+	edit.ReplyMarkup = menu
 	h.bot.Send(edit)
 }

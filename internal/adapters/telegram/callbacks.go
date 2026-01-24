@@ -28,14 +28,23 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
 		}
-		msgResponse = MsgResponse(msg)
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    mainMenu(),
+		}
+
 	case "select_woman":
 		msg, err := h.playerService.SetGender(userID, "WOMAN")
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
 		}
-		msgResponse = MsgResponse(msg)
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    mainMenu(),
+		}
 
 	case "action_menu":
 		msg, err := h.playerService.Menu(userID)
@@ -43,7 +52,11 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
 		}
-		msgResponse = MsgResponse(msg)
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    mainMenu(),
+		}
 
 	case "action_cacar":
 		msg, err := h.battleService.Battle(userID)
@@ -51,7 +64,11 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			msgResponse.Message = "❌ Erro ao caçar"
 			break
 		}
-		msgResponse = MsgResponse(msg)
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    mainMenu(),
+		}
 
 	case "action_status":
 		msg, err := h.playerService.Status(userID)
@@ -59,7 +76,11 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			msgResponse.Message = "❌ Erro ao buscar status"
 			break
 		}
-		msgResponse = MsgResponse(msg)
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    mainMenu(),
+		}
 
 	case "action_transformar":
 		msg, err := h.playerService.Transform(userID)
@@ -67,7 +88,11 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			msgResponse.Message = "❌ Não foi possível transformar"
 			break
 		}
-		msgResponse = MsgResponse(msg)
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    mainMenu(),
+		}
 
 	case "action_energia":
 		msg, err := h.playerService.Energy(userID)
@@ -75,7 +100,11 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
 		}
-		msgResponse = MsgResponse(msg)
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    energyMenu(),
+		}
 	}
 
 	// 🔥 atualiza a tela principal

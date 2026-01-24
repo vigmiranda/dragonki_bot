@@ -86,26 +86,21 @@ var migrations = []migration{
 		ALTER TABLE players ALTER COLUMN region_id SET DEFAULT 1;
 		ALTER TABLE players ADD COLUMN onboarding_step TEXT DEFAULT 'START';
 		ALTER TABLE players ADD COLUMN last_update TIMESTAMP DEFAULT now();
-
-		CREATE OR REPLACE FUNCTION set_last_update()
-		RETURNS TRIGGER AS $$
-		BEGIN
-		  NEW.last_update = now();
-		  RETURN NEW;
-		END;
-		$$ LANGUAGE plpgsql;
-		   
-		CREATE TRIGGER trigger_set_last_update
-		BEFORE UPDATE ON players
-		FOR EACH ROW
-		EXECUTE FUNCTION set_last_update();   
-
 		`,
 	},
 	{
 		version: 5,
 		sql: `
 		ALTER TABLE players ALTER COLUMN onboarding_step SET DEFAULT 'CHOOSING_NAME';
+
+		`,
+	},
+	{
+		version: 6,
+		sql: `
+		ALTER TABLE players ALTER COLUMN last_energy_at SET DEFAULT now();
+		ALTER TABLE players ALTER COLUMN last_energy_at SET NOT NULL;
+		ALTER TABLE players ALTER COLUMN last_update SET NOT NULL;
 
 		`,
 	},

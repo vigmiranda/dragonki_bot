@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -24,18 +25,20 @@ func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *postgres.M
 func (s *BattleService) Battle(userID int64) (MsgResponse, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	if err != nil {
-		return MsgResponse{}, err
+		return MsgResponse{
+			Message: "Sinto muito, erro ao iniciar Batalha!",
+			Img:     "assets/error.png",
+		}, err
 	}
 
-	player.RegenEnergy()
+	//if player.Energy < player.MaxEnergy {player.RegenEnergy()}
 
 	if player.Energy <= 0 {
 		return MsgResponse{
 			Message: "⚡ Energia esgotada",
+			Img:     fmt.Sprintf("assets/skin/%s_tired.png", player.Gender),
 		}, nil
 	}
-
-	player.Energy--
 
 	monsters, err := s.monsterRepo.ListByLevel(int64(player.Level))
 	if err != nil || len(monsters) == 0 {
@@ -51,8 +54,10 @@ func (s *BattleService) Battle(userID int64) (MsgResponse, error) {
 		Message: fmt.Sprintf("🐉 Um %s apareceu!\n", monster.Name),
 		Img:     fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag),
 	}
-
+	////////////////////separar daqui pra baixo
 	monsterHP := monster.HP
+	playerHp := player.HP
+	player.Energy--
 
 	//logica de dano
 	for monsterHP > 0 && player.HP > 0 {
@@ -61,39 +66,81 @@ func (s *BattleService) Battle(userID int64) (MsgResponse, error) {
 	}
 
 	if player.HP > 0 {
-		xpReceived := rand.Intn(monster.MaxXP + 1)
-		moneyReceived := rand.Intn(monster.MaxMoney + 1)
+		xpReceived := rand.Intn(monster.MaxXP) + 1
+		moneyReceived := rand.Intn(monster.MaxMoney) + 1
+		googNews := ""
 
 		player.XP += xpReceived
 		player.Gold += moneyReceived
 
-		msg.Message += fmt.Sprintf(
-			"🏆 Vitória! +%d XP\n💰 +%d Gold\n",
-			xpReceived,
-			moneyReceived,
-		)
-
 		if player.XP >= player.Level*50 {
 			player.Level++
-			player.ATK += 5
-			player.HP = 100
-			msg.Message += "⬆️ Subiu de nível!\n"
-		}
+			player.ATK += int(float64(player.ATK) * 0.2)
+			player.DEF += int(float64(player.DEF) * 0.2)
+			player.MaxHP += int(float64(player.ATK) * 0.1)
+			player.Energy = player.MaxEnergy
+			player.XP = 0
+			player.FormBattlesLeft = 0
+			player.Form = "Base"
+			player.HP = player.MaxHP
+			googNews = "⬆️ Subiu de nível!\n"
 
+		}
 		if player.FormBattlesLeft > 0 {
 			player.FormBattlesLeft--
 		}
 
+		msg.Message = fmt.Sprintf(
+			"🏆 Vitória! %s\n"+
+				"%s"+
+				"Voce recebeu de dano: %d\n"+
+				"⚔️ +%d XP\n"+
+				"💰 +%d Gold\n"+
+				"❤️ HP: %d/%d\n"+
+				"⚡️ Energia: %d/%d\n"+
+				"💪 Level: %d\n",
+			player.Name,
+			googNews,
+			playerHp-player.HP,
+			xpReceived,
+			moneyReceived,
+			player.HP,
+			player.MaxHP,
+			player.Energy,
+			player.MaxEnergy,
+			player.Level,
+		)
+		msg.Img = fmt.Sprintf("assets/skins/%s_battle_win.png", strings.ToLower(player.Gender))
+
 	} else {
-		msg.Message += "💀 Derrota! HP restaurado.\n"
-	}
+		if player.FormBattlesLeft == 0 {
+			player.Form = "Base"
+		}
 
-	if player.FormBattlesLeft == 0 {
+		player.XP -= int(float64(player.XP) * 0.9)
+		player.Gold -= int(float64(player.Gold) * 0.9)
+		player.HP = 1
 		player.Form = "Base"
+		msg.Message = fmt.Sprintf(
+			"💀 Derrota! %s\n"+
+				"⚔️ -10%% de XP = %d\n"+
+				"💰 -10%% de Gold = %d\n"+
+				"⚡️ Energia: %d/%d\n"+
+				"💪 Level: %d\n",
+			player.Name,
+			player.XP,
+			player.Gold,
+			player.Energy,
+			player.MaxEnergy,
+			player.Level,
+		)
+		msg.Img = fmt.Sprintf("assets/skins/%s_battle_loss.png", strings.ToLower(player.Gender))
 	}
-
 	if err := s.playerRepo.Save(player); err != nil {
-		return MsgResponse{}, err
+		return MsgResponse{
+			Message: "💀 Ocorreu um erro ao fim da batalha!!!",
+			Img:     "assets/error.png",
+		}, err
 	}
 
 	return msg, nil
