@@ -27,14 +27,20 @@ func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionReposi
 }
 
 func (s *PlayerService) SetGender(userID int64, gender string) (MsgResponse, error) {
-	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	//player.RegenEnergy()
 
 	var msgResponse MsgResponse
 	player.Gender = gender
 	player.OnboardingStep = "CHOOSING_NAME"
 
-	s.PlayerRepository.Save(player)
+	err = s.PlayerRepository.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
 	msgResponse.Message = fmt.Sprintf(
 		"🧙 Status\n❤️ HP: %d\n⚔️ ATK: %d\n✨ XP: %d\n🏆 Nível: %d\n⚡ Energia: %d",
 		player.HP, player.ATK, player.XP, player.Level, player.Energy,
@@ -46,9 +52,8 @@ func (s *PlayerService) SetGender(userID int64, gender string) (MsgResponse, err
 func (s *PlayerService) SetName(userID int64, name string) error {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
-
 	player.Name = name
 	player.OnboardingStep = "DONE"
 
@@ -56,17 +61,17 @@ func (s *PlayerService) SetName(userID int64, name string) error {
 }
 
 func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
-	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	region, err := s.RegionRepository.GetByID(player.RegionID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	//player.RegenEnergy()
 
 	var msgResponse MsgResponse
-
-	if err != nil {
-		msgResponse.Message = fmt.Sprintf("Voce está perdido!")
-		msgResponse.Img = fmt.Sprintf("assets/error.png")
-		return msgResponse, err
-	}
 
 	msgResponse.Message = fmt.Sprintf(
 		"<b>%s</b> \n\n"+
@@ -94,13 +99,18 @@ func (s *PlayerService) HasCompletedOnboarding(userID int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
 	return player.OnboardingStep == "DONE", nil
 }
 
 func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
-	player, _ := s.PlayerRepository.GetOrCreate(userID)
-	region, _ := s.RegionRepository.GetByID(player.RegionID)
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	region, err := s.RegionRepository.GetByID(player.RegionID)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	//player.RegenEnergy()
 
@@ -145,7 +155,10 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 
 func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 
-	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	//player.RegenEnergy()
 
 	var msgResponse MsgResponse
@@ -175,13 +188,19 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_ki_awakened.png"
 	}
 
-	s.PlayerRepository.Save(player)
+	err = s.PlayerRepository.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
 	msgResponse.Message = logText
 	return msgResponse, nil
 }
 
 func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
-	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var msgResponse MsgResponse
 
@@ -212,7 +231,10 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 	return msgResponse, nil
 }
 func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
-	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	var msgResponse MsgResponse
 	msgResponse = MsgResponse{
 		Message: fmt.Sprintf(

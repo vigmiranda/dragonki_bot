@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
@@ -27,6 +28,7 @@ func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *postgres.M
 func (s *BattleService) GetBattle(userID int64) (MsgResponse, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	if err != nil {
+		log.Fatal(err)
 		return MsgResponse{
 			Message: "Sinto muito, erro ao iniciar Batalha!",
 			Img:     "assets/error.png",
