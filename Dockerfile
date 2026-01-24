@@ -1,5 +1,11 @@
-FROM golang:1.21-alpine
+FROM golang:1.21
+
 WORKDIR /app
 COPY . .
-RUN go build -o dragonki
-CMD ["./dragonki"]
+
+WORKDIR /app/cmd/bot
+RUN go build -o /app/dragonki
+
+CMD ["/app/dragonki"]
+
+
