@@ -169,12 +169,20 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 		logText += fmt.Sprintf("❌ Transformação desbloqueia no nível 3")
 		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_skin_basic.png"
 	}
-	if player.Energy < 3 {
+	if player.Energy < 3 && player.FormBattlesLeft == 0 {
 		logText += fmt.Sprintf("⚡ Energia insuficiente")
 		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_tired.png"
 	}
+	if player.FormBattlesLeft > 0 {
+		logText += fmt.Sprintf(
+			"🔥 Você já ascendeu o <b>Ki Awakened</b>!\n"+
+				"Restam ainda %d lutas",
+			player.FormBattlesLeft,
+		)
+		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_ki_awakened.png"
+	}
 
-	if player.Level >= 3 && player.Level <= 15 && player.Energy >= 3 {
+	if player.Level >= 3 && player.Level <= 15 && player.Energy >= 3 && player.FormBattlesLeft == 0 {
 		player.Form = "Ki Awakened"
 		player.FormBattlesLeft = 3
 		player.Energy -= 3
