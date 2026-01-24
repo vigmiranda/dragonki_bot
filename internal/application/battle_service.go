@@ -37,36 +37,38 @@ func (s *BattleService) GetBattle(userID int64) (MsgResponse, error) {
 
 	//if player.Energy < player.MaxEnergy {player.RegenEnergy()}
 
-	if player.Energy <= 0 {
-		return MsgResponse{
-			Message: "⚡ Energia esgotada",
-			Img:     fmt.Sprintf("assets/skin/%s_tired.png", player.Gender),
-		}, nil
-	}
-
-	monsters, err := s.monsterRepo.ListByLevel(int64(player.Level))
-	if err != nil || len(monsters) == 0 {
-		return MsgResponse{}, fmt.Errorf("nenhum monstro encontrado")
-	}
-
-	monster := pickMonsterByWeight(monsters)
-	if monster == nil {
-		return MsgResponse{}, fmt.Errorf("falha ao sortear monstro")
-	}
-
 	msg := MsgResponse{
-		Message: fmt.Sprintf(
-			"🐉<b> Um %s apareceu! </b>\n\n"+
-				"💪 <b>Lv:</b> %d\n"+
-				"❤️ <b>HP:</b> %d\n"+
-				"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d\n",
-			monster.Name,
-			monster.Level,
-			monster.HP,
-			monster.ATK,
-			monster.DEF,
-		),
-		Img: fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag),
+		Message:    "⚡ Energia esgotada \n Vá ate a pousada para descansar!",
+		Img:        fmt.Sprintf("assets/skins/%s_tired.png", domain.ConvertLowCase(player.Gender)),
+		Conditions: true,
+	}
+
+	if player.Energy > 0 {
+		monsters, err := s.monsterRepo.ListByLevel(int64(player.Level))
+		if err != nil || len(monsters) == 0 {
+			return MsgResponse{}, fmt.Errorf("nenhum monstro encontrado")
+		}
+
+		monster := pickMonsterByWeight(monsters)
+		if monster == nil {
+			return MsgResponse{}, fmt.Errorf("falha ao sortear monstro")
+		}
+
+		msg = MsgResponse{
+			Message: fmt.Sprintf(
+				"🐉<b> Um %s apareceu! </b>\n\n"+
+					"💪 <b>Lv:</b> %d\n"+
+					"❤️ <b>HP:</b> %d\n"+
+					"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d\n",
+				monster.Name,
+				monster.Level,
+				monster.HP,
+				monster.ATK,
+				monster.DEF,
+			),
+			Img:        fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag),
+			Conditions: false,
+		}
 	}
 
 	return msg, nil
@@ -129,7 +131,7 @@ func (s *BattleService) Battle(userID int64) (MsgResponse, error) {
 	//		player.MaxEnergy,
 	//		player.Level,
 	//	)
-	//	msg.Img = fmt.Sprintf("assets/skins/%s_battle_win.png", strings.ToLower(player.Gender))
+	//	msg.Img = fmt.Sprintf("assets/skins/%s_battle_win.png", domain.ConvertLowCase(player.Gender))
 	//
 	//} else {
 	//	if player.FormBattlesLeft == 0 {
@@ -153,7 +155,7 @@ func (s *BattleService) Battle(userID int64) (MsgResponse, error) {
 	//		player.MaxEnergy,
 	//		player.Level,
 	//	)
-	//	msg.Img = fmt.Sprintf("assets/skins/%s_battle_loss.png", strings.ToLower(player.Gender))
+	//	msg.Img = fmt.Sprintf("assets/skins/%s_battle_loss.png", domain.ConvertLowCase(player.Gender))
 	//}
 	//if err := s.playerRepo.Save(player); err != nil {
 	//	return MsgResponse{

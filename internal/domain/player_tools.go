@@ -1,5 +1,7 @@
 package domain
 
+import "strings"
+
 func KiAwakened(player *Player) *Player {
 	atk := int(float64(player.ATK) * 0.1)
 	def := int(float64(player.DEF) * 0.1)
@@ -12,4 +14,8 @@ func KiAwakened(player *Player) *Player {
 	player.ATK += atk
 	player.DEF += def
 	return player
+}
+
+func ConvertLowCase(text string) string {
+	return strings.ToLower(text)
 }

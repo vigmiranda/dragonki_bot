@@ -90,5 +90,8 @@ func (h *Handler) editPanel(
 	}
 
 	edit.ReplyMarkup = menu
-	h.bot.Send(edit)
+	_, err := h.bot.Send(edit)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

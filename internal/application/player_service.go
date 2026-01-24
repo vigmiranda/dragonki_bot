@@ -3,7 +3,6 @@ package application
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -45,7 +44,7 @@ func (s *PlayerService) SetGender(userID int64, gender string) (MsgResponse, err
 		"🧙 Status\n❤️ HP: %d\n⚔️ ATK: %d\n✨ XP: %d\n🏆 Nível: %d\n⚡ Energia: %d",
 		player.HP, player.ATK, player.XP, player.Level, player.Energy,
 	)
-	msgResponse.Img = "assets/skins/" + strings.ToLower(gender) + "_skin_basic.png"
+	msgResponse.Img = "assets/skins/" + domain.ConvertLowCase(gender) + "_skin_basic.png"
 
 	return msgResponse, nil
 }
@@ -90,7 +89,7 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 		player.Level,
 		player.Gold,
 	)
-	msgResponse.Img = fmt.Sprintf("assets/maps/%s.png", strings.ToLower(region.Tag))
+	msgResponse.Img = fmt.Sprintf("assets/maps/%s.png", domain.ConvertLowCase(region.Tag))
 	return msgResponse, nil
 }
 
@@ -145,9 +144,9 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 		player.Gold,
 		player.KiCrystals,
 	)
-	msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_skin_basic.png"
+	msgResponse.Img = "assets/skins/" + domain.ConvertLowCase(player.Gender) + "_skin_basic.png"
 	if player.FormBattlesLeft > 0 {
-		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_ki_awakened.png"
+		msgResponse.Img = "assets/skins/" + domain.ConvertLowCase(player.Gender) + "_ki_awakened.png"
 	}
 
 	return msgResponse, nil
@@ -167,11 +166,11 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 
 	if player.Level < 3 {
 		logText += fmt.Sprintf("❌ Transformação desbloqueia no nível 3")
-		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_skin_basic.png"
+		msgResponse.Img = "assets/skins/" + domain.ConvertLowCase(player.Gender) + "_skin_basic.png"
 	}
 	if player.Energy < 3 && player.FormBattlesLeft == 0 {
 		logText += fmt.Sprintf("⚡ Energia insuficiente")
-		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_tired.png"
+		msgResponse.Img = "assets/skins/" + domain.ConvertLowCase(player.Gender) + "_tired.png"
 	}
 	if player.FormBattlesLeft > 0 {
 		logText += fmt.Sprintf(
@@ -179,7 +178,7 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 				"Restam ainda %d lutas",
 			player.FormBattlesLeft,
 		)
-		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_ki_awakened.png"
+		msgResponse.Img = "assets/skins/" + domain.ConvertLowCase(player.Gender) + "_ki_awakened.png"
 	}
 
 	if player.Level >= 3 && player.Level <= 15 && player.Energy >= 3 && player.FormBattlesLeft == 0 {
@@ -193,7 +192,7 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 				"Ahhh! Caso você morra ou suba de nível.\n" +
 				"Você irá retornar à forma base",
 		)
-		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_ki_awakened.png"
+		msgResponse.Img = "assets/skins/" + domain.ConvertLowCase(player.Gender) + "_ki_awakened.png"
 	}
 
 	err = s.PlayerRepository.Save(player)
@@ -224,7 +223,7 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 			player.Energy,
 			player.MaxEnergy,
 		)
-	msgResponse.Img = fmt.Sprintf("assets/skins/%s_%s.png", strings.ToLower(player.Gender), "skin_basic")
+	msgResponse.Img = fmt.Sprintf("assets/skins/%s_%s.png", domain.ConvertLowCase(player.Gender), "skin_basic")
 
 	if player.HP < 30 {
 		msgResponse.Message = fmt.Sprintf(
@@ -234,7 +233,7 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 			player.HP,
 			player.MaxHP,
 		)
-		msgResponse.Img = fmt.Sprintf("assets/skins/%s_%s.png", strings.ToLower(player.Gender), "tired")
+		msgResponse.Img = fmt.Sprintf("assets/skins/%s_%s.png", domain.ConvertLowCase(player.Gender), "tired")
 	}
 	return msgResponse, nil
 }
@@ -262,7 +261,7 @@ func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
 				"❤️ HP recarregado!!! \n" +
 					"Bora voltar pra Luta ⚔️!! \n",
 			),
-			Img:        fmt.Sprintf("assets/skins/%s_skin_basic.png", strings.ToLower(player.Gender)),
+			Img:        fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
 			Conditions: true,
 		}
 		err := s.PlayerRepository.Save(player)

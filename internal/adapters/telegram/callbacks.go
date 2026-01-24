@@ -59,15 +59,19 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		}
 
 	case "action_cacar":
+		menu := battleMenu()
 		msg, err := h.battleService.GetBattle(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao caçar"
 			break
 		}
+		if msg.Conditions {
+			menu = mainMenu()
+		}
 		msgResponse = MsgResponse{
 			Message: msg.Message,
 			Img:     msg.Img,
-			Menu:    battleMenu(),
+			Menu:    menu,
 		}
 
 	case "action_status":
