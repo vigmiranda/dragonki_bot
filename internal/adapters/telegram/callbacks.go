@@ -105,6 +105,21 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Img:     msg.Img,
 			Menu:    energyMenu(),
 		}
+	case "action_sleep":
+		menu := energyMenu()
+		msg, err := h.playerService.Recovery(userID)
+		if err != nil {
+			msgResponse.Message = "❌ Erro ao calcular energia"
+			break
+		}
+		if msg.Conditions {
+			menu = mainMenu()
+		}
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    menu,
+		}
 	}
 
 	// 🔥 atualiza a tela principal

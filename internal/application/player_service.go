@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -10,9 +11,10 @@ import (
 )
 
 type MsgResponse struct {
-	Message string
-	Img     string
-	Menu    tgbotapi.InlineKeyboardMarkup
+	Message    string
+	Img        string
+	Menu       tgbotapi.InlineKeyboardMarkup
+	Conditions bool
 }
 
 type PlayerService struct {
@@ -184,19 +186,61 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 	var msgResponse MsgResponse
 
 	//	player.RegenEnergy()
-	msgResponse.Message = fmt.Sprintf("📜 %d - %s \n"+
-		"Você ainda tem energia para mais umas batalhas.\n"+
-		"⚡️ Energia: %d\n", player.Level, player.Name, player.Energy)
+	msgResponse.Message =
+		fmt.Sprintf("📜%d-<b>%s</b> \n"+
+			"Você ainda tem HP e energia para mais umas batalhas.\n"+
+			"❤️ <b>HP</b>: %d/%d\t\t\t\t\t\t⚡️ <b>Energia</b>: %d/%d\n",
+			player.Level,
+			player.Name,
+			player.HP,
+			player.MaxHP,
+			player.Energy,
+			player.MaxEnergy,
+		)
 	msgResponse.Img = fmt.Sprintf("assets/skins/%s_%s.png", strings.ToLower(player.Gender), "skin_basic")
 
-	s.PlayerRepository.Save(player)
-
-	if player.Energy <= 2 {
+	if player.HP < 30 {
 		msgResponse.Message = fmt.Sprintf(
-			"%s sua energia esta baixa 😫. \n "+
-				"⚡️ Energia: %d\n", player.Name, player.Energy)
+			"<b>%s</b> seu HP esta baixo 😫. \n "+
+				"❤️ <b>HP</b>: %d/%d \n",
+			player.Name,
+			player.HP,
+			player.MaxHP,
+		)
 		msgResponse.Img = fmt.Sprintf("assets/skins/%s_%s.png", strings.ToLower(player.Gender), "tired")
 	}
+	return msgResponse, nil
+}
+func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
+	player, _ := s.PlayerRepository.GetOrCreate(userID)
+	var msgResponse MsgResponse
+	msgResponse = MsgResponse{
+		Message: fmt.Sprintf(
+			"🙎‍♂️ Ei eu sou Sir Soneca (Dono da pousada)  \n" +
+				"Infelizmente você nao podera ficar \n" +
+				"Junte mais gold e retorne!!\n",
+		),
+		Img:        "assets/npcs/sir_soneca.png",
+		Conditions: false,
+	}
+
+	if player.Gold >= 500 {
+		player.Gold = player.Gold - 500
+		player.HP = player.MaxHP
+		msgResponse = MsgResponse{
+			Message: fmt.Sprintf(
+				"HP recarregado!!! \n" +
+					"Bora voltar pra Luta!! \n",
+			),
+			Img:        fmt.Sprintf("assets/skins/%s_skin_basic.png", strings.ToLower(player.Gender)),
+			Conditions: true,
+		}
+		err := s.PlayerRepository.Save(player)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	return msgResponse, nil
 }
 func (s *PlayerService) Onboarding(userID int64) (*domain.Player, error) {

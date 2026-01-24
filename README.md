@@ -28,7 +28,9 @@ Aqueles capazes de dominá-la se tornam Portadores do Ki, guerreiros capazes de 
 Seu destino é ascender.
 
 ---
-
+## 🧩 NPC`s
+- 🙎‍♂️ Sir Soneca - Dono da pousada
+---
 ## 🧩 Comandos do Jogo
 
 | Comando        | Descrição |

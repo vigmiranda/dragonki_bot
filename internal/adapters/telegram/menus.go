@@ -31,7 +31,7 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 func energyMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("💤 Descansar (-500 💰 Gold)", "select_man"),
+			tgbotapi.NewInlineKeyboardButtonData("💤 Descansar (-500 💰 Gold)", "action_sleep"),
 			tgbotapi.NewInlineKeyboardButtonData("📖 Menu", "action_menu"),
 		),
 	)
