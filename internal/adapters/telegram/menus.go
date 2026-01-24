@@ -1,6 +1,10 @@
 package telegram
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	"fmt"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
 func choosingGenderMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
@@ -37,10 +41,10 @@ func energyMenu() *tgbotapi.InlineKeyboardMarkup {
 	)
 	return &menu
 }
-func battleMenu() *tgbotapi.InlineKeyboardMarkup {
+func battleMenu(monsterID int) *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar ", "action_fight"),
+			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar ", fmt.Sprintf("action_fight?monsterID=%d", monsterID)),
 			//tgbotapi.NewInlineKeyboardButtonData("🧪 Poções ", "use_potion"),
 			tgbotapi.NewInlineKeyboardButtonData("🏃🏻 Escapar ", "action_menu"),
 		),

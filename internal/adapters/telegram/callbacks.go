@@ -1,6 +1,10 @@
 package telegram
 
 import (
+	"log"
+	"net/url"
+	"strings"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -14,13 +18,16 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	chatID := cb.Message.Chat.ID
 	userID := cb.From.ID
 	messageID := cb.Message.MessageID
+	action, params := parseCallbackData(data)
+
+	log.Printf("Callback recebido | action=%s | params=%v", action, params)
 
 	msgResponse := MsgResponse{
 		Message: "",
-		Img:     "assets/maps/error.png",
+		Img:     "assets/error.png",
 	}
 
-	switch data {
+	switch action {
 
 	case "select_man":
 		msg, err := h.playerService.SetGender(userID, "MAN")
@@ -57,16 +64,27 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Img:     msg.Img,
 			Menu:    mainMenu(),
 		}
+	case "action_fight":
+		msg, err := h.battleService.Battle(userID, params)
+		if err != nil {
+			msgResponse.Message = "❌ Erro ao buscar menu"
+			break
+		}
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    mainMenu(),
+		}
 
 	case "action_cacar":
-		menu := battleMenu()
-		msg, err := h.battleService.GetBattle(userID)
+		menu := mainMenu()
+		msg, moster, err := h.battleService.GetBattle(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao caçar"
 			break
 		}
 		if msg.Conditions {
-			menu = mainMenu()
+			menu = battleMenu(moster)
 		}
 		msgResponse = MsgResponse{
 			Message: msg.Message,
@@ -133,4 +151,38 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	h.bot.Request(
 		tgbotapi.NewCallback(cb.ID, ""),
 	)
+}
+
+// ===============================
+// CALLBACK PARSER
+// ===============================
+
+// parseCallbackData transforma:
+// "action_fight?monsterID=12"
+// em:
+// action = "action_fight"
+// params = map[string]string{"monsterID":"12"}
+func parseCallbackData(data string) (string, map[string]string) {
+	result := make(map[string]string)
+
+	parts := strings.SplitN(data, "?", 2)
+	action := parts[0]
+
+	if len(parts) < 2 {
+		return action, result
+	}
+
+	values, err := url.ParseQuery(parts[1])
+	if err != nil {
+		log.Println("❌ Erro ao parsear callback:", err)
+		return action, result
+	}
+
+	for k, v := range values {
+		if len(v) > 0 {
+			result[k] = v[0]
+		}
+	}
+
+	return action, result
 }

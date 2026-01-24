@@ -15,7 +15,35 @@ func NewMonsterPostgresRepo(postgres *Postgres) *MonsterPostgresRepo {
 		db: postgres.DB,
 	}
 }
+func (r *MonsterPostgresRepo) GetByID(monsterId int64) (*domain.Monster, error) {
+	var monster domain.Monster
 
+	err := r.db.QueryRow(`
+		SELECT monster_id, name, tag, level, hp, atk, def, max_xp, max_money
+		FROM monsters
+		WHERE monster_id = $1
+	`, monsterId).Scan(
+		&monster.MonsterID,
+		&monster.Name,
+		&monster.Tag,
+		&monster.Level,
+		&monster.HP,
+		&monster.ATK,
+		&monster.DEF,
+		&monster.MaxXP,
+		&monster.MaxMoney,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &monster, nil
+}
 func (r *MonsterPostgresRepo) ListByLevel(level int64) ([]domain.Monster, error) {
 	rows, err := r.db.Query(`
 		SELECT monster_id, name, tag, level, hp, atk, def,
