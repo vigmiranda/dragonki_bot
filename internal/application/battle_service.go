@@ -12,12 +12,15 @@ import (
 type BattleService struct {
 	playerRepo  ports.PlayerRepository
 	monsterRepo ports.MonsterRepository
+	regionRepo  ports.RegionRepository
 }
 
-func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *postgres.MonsterPostgresRepo) *BattleService {
+func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *postgres.MonsterPostgresRepo,
+	regionRepo *postgres.RegionPostgres) *BattleService {
 	return &BattleService{
 		playerRepo:  playerRepo,
 		monsterRepo: monsterRepo,
+		regionRepo:  regionRepo,
 	}
 }
 

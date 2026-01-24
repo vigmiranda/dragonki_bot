@@ -40,7 +40,7 @@ func main() {
 
 	// 🔹 Services (casos de uso)
 	playerService := application.NewPlayerService(playerRepo, regionRepo)
-	battleService := application.NewBattleService(playerRepo, monsterRepo)
+	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo)
 
 	// 🔹 Bot Telegram
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
