@@ -3,7 +3,6 @@ package domain
 import "time"
 
 const (
-	MaxEnergy       = 10
 	EnergyRegenTime = 10 * time.Minute
 )
 
@@ -43,18 +42,18 @@ type Player struct {
 	FormBattlesLeft int
 
 	OnboardingStep string
+
+	LastUpdate time.Time
 }
 
 func (p *Player) RegenEnergy() {
-	now := time.Now()
-	regenPoints := int(now.Sub(p.LastEnergyAt) / EnergyRegenTime)
-	if regenPoints > 0 {
-		p.Energy += regenPoints
-		if p.Energy > MaxEnergy {
-			p.Energy = MaxEnergy
-		}
-		p.LastEnergyAt = p.LastEnergyAt.Add(time.Duration(regenPoints) * EnergyRegenTime)
+	elapsed := time.Now().Sub(p.LastEnergyAt)
+	energy := int(elapsed / EnergyRegenTime)
+	p.Energy += energy
+	if p.Energy > p.MaxEnergy {
+		p.Energy = p.MaxEnergy
 	}
+	p.LastEnergyAt = time.Now()
 }
 
 func (p *Player) CanTransform() bool {
