@@ -59,7 +59,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		}
 
 	case "action_cacar":
-		msg, err := h.battleService.Battle(userID)
+		msg, err := h.battleService.GetBattle(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao caçar"
 			break
@@ -67,7 +67,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		msgResponse = MsgResponse{
 			Message: msg.Message,
 			Img:     msg.Img,
-			Menu:    mainMenu(),
+			Menu:    battleMenu(),
 		}
 
 	case "action_status":

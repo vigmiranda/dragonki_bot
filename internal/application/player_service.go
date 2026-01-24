@@ -106,6 +106,9 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 	if player.Gender == "WOMAN" {
 		genderIcon = "🧝‍♀️️"
 	}
+	if player.Form == "Ki Awakened" {
+		player = domain.KiAwakened(player)
+	}
 	var msgResponse MsgResponse
 	msgResponse.Message = fmt.Sprintf(
 		genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
@@ -153,14 +156,20 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 	}
 	if player.Energy < 3 {
 		logText += fmt.Sprintf("⚡ Energia insuficiente")
-		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_skin_basic.png"
+		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_tired.png"
 	}
 
 	if player.Level >= 3 && player.Level <= 15 && player.Energy >= 3 {
 		player.Form = "Ki Awakened"
 		player.FormBattlesLeft = 3
 		player.Energy -= 3
-		logText += fmt.Sprintf("🔥 Você despertou o *Ki Awakened*!")
+		logText += fmt.Sprintf(
+			"🔥 Você ascendeu o <b>Ki Awakened</b>! \n\n" +
+				"Essa transformação te dá 10%% em ATK, DEF \n" +
+				"Gasta 3 de energia e dura 3 batalhas \n" +
+				"Ahhh! Caso você morra ou suba de nível.\n" +
+				"Você irá retornar à forma base",
+		)
 		msgResponse.Img = "assets/skins/" + strings.ToLower(player.Gender) + "_ki_awakened.png"
 	}
 

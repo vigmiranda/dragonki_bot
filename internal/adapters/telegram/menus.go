@@ -37,3 +37,13 @@ func energyMenu() *tgbotapi.InlineKeyboardMarkup {
 	)
 	return &menu
 }
+func battleMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar ", "action_fight"),
+			tgbotapi.NewInlineKeyboardButtonData("🧪 Poções ", "use_potion"),
+			tgbotapi.NewInlineKeyboardButtonData("🏃🏻 Escapar ", "action_menu"),
+		),
+	)
+	return &menu
+}

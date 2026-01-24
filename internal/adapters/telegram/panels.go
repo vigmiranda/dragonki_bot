@@ -1,6 +1,8 @@
 package telegram
 
 import (
+	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
@@ -46,12 +48,22 @@ func (h *Handler) newPanel(chatID int64) {
 		chatID,
 		tgbotapi.FilePath("assets/maps/plain_lv1.png"),
 	)
-	photo.Caption = ""
+	photo.Caption = fmt.Sprintf(
+		"🐉 Você voltou, guerreiro.\n\n" +
+			"Seu Ki se renovou.\n" +
+			"O mundo segue em movimento e \n" +
+			"novos inimigos aguardam nas sombras.\n\n" +
+			"Cada batalha o aproxima de um poder maior.\n" +
+			"⚔️ Avance. Lute. Evolua.\n\n" +
+			"O destino não espera.",
+	)
 	photo.ParseMode = "HTML"
 	photo.ReplyMarkup = mainMenu()
-	h.bot.Send(photo)
+	_, err := h.bot.Send(photo)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
-
 func (h *Handler) editPanel(
 	chatID int64,
 	messageID int,
