@@ -15,8 +15,14 @@ import (
 )
 
 func main() {
+
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("❌ DATABASE_URL não definida")
+	}
+
 	// 🔹 Abre conexão com o banco
-	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
+	db, err := sql.Open("pgx", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
