@@ -54,9 +54,16 @@ func (p *Player) RegenEnergy() {
 		log.Fatal(err)
 	}
 	energy := int(elapsed / timeRecovery)
+	currentEnergy := p.Energy
 	p.Energy += energy
 	if p.Energy > p.MaxEnergy {
 		p.Energy = p.MaxEnergy
+	}
+	if currentEnergy == p.MaxEnergy && p.HP < p.MaxHP {
+		p.HP += energy
+		if p.HP > p.MaxHP {
+			p.HP = p.MaxHP
+		}
 	}
 	p.LastEnergyAt = time.Now().UTC()
 }
