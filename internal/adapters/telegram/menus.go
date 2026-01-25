@@ -46,7 +46,7 @@ func battleMenu(monsterID int) *tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar ", fmt.Sprintf("action_fight?monsterID=%d", monsterID)),
 			//tgbotapi.NewInlineKeyboardButtonData("🧪 Poções ", "use_potion"),
-			tgbotapi.NewInlineKeyboardButtonData("🏃🏻 Escapar ", "action_menu"),
+			tgbotapi.NewInlineKeyboardButtonData("🏃🏻 Escapar ", fmt.Sprintf("action_escape?monsterID=%d", monsterID)),
 		),
 	)
 	return &menu

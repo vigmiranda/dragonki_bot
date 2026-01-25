@@ -286,7 +286,7 @@ func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
 	msgResponse = MsgResponse{
 		Message: fmt.Sprintf(
 			"🙎‍♂️ Ei eu sou Sir Soneca (Dono da pousada)  \n" +
-				"Infelizmente você nao podera ficar \n" +
+				"Infelizmente você não podera ficar \n" +
 				"Junte mais gold e retorne!!\n",
 		),
 		Img:        "assets/npcs/sir_soneca.png",

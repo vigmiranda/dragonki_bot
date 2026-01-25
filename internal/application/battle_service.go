@@ -138,7 +138,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 		msgResponse.Message = fmt.Sprintf(
 			"🏆 Vitória! %s\n"+
 				"%s"+
-				"Voce recebeu de dano: %d\n"+
+				"Você recebeu de dano: %d\n"+
 				"⚔️ +%d XP\n"+
 				"💰 +%d Gold\n"+
 				"❤️ HP: %d/%d\n"+
@@ -189,6 +189,47 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 		}, err
 	}
 	return msgResponse, nil
+}
+func (s *BattleService) Escape(userID int64, params map[string]string) (MsgResponse, *domain.Monster, error) {
+	player, err := s.playerRepo.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	player.Energy--
+	monsterIDStr, _ := params["monsterID"]
+	monsterId, err := strconv.ParseInt(monsterIDStr, 10, 64)
+	monster, err := s.monsterRepo.GetByID(monsterId)
+	if err != nil {
+		log.Fatal(err)
+	}
+	msgResponse := MsgResponse{
+		Message:    "💀 Você consegui fugir!!!",
+		Img:        fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
+		Conditions: false,
+	}
+	escapePlayer := rand.Intn(10)
+	escapeMonster := rand.Intn(10)
+	if escapePlayer < escapeMonster {
+		player.HP -= rand.Intn(monster.ATK/2+1) + monster.ATK/2
+		msgResponse = MsgResponse{
+			Message: fmt.Sprintf(
+				"💀 Você não consegui fugir!!! \n"+
+					"❤️ Seu HP agora é %d/%d \n"+
+					"⚡️ E sua Energia é %d/%d \n",
+				player.HP,
+				player.MaxHP,
+				player.Energy,
+				player.MaxEnergy,
+			),
+			Img:        fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag),
+			Conditions: true,
+		}
+	}
+	err = s.playerRepo.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return msgResponse, monster, nil
 }
 
 func pickMonsterByWeight(monsters []domain.Monster) *domain.Monster {

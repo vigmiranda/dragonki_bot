@@ -75,16 +75,33 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Img:     msg.Img,
 			Menu:    mainMenu(),
 		}
+	case "action_escape":
+		menu := mainMenu()
+		msg, monster, err := h.battleService.Escape(userID, params)
+		if err != nil {
+			msgResponse.Message = "❌ Erro ao buscar menu"
+			msg.Img = "assts/error.png"
+			break
+		}
+		if msg.Conditions {
+			menu = battleMenu(monster.MonsterID)
+		}
+
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    menu,
+		}
 
 	case "action_cacar":
 		menu := mainMenu()
-		msg, moster, err := h.battleService.GetBattle(userID)
+		msg, monster, err := h.battleService.GetBattle(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao caçar"
 			break
 		}
 		if msg.Conditions {
-			menu = battleMenu(moster)
+			menu = battleMenu(monster)
 		}
 		msgResponse = MsgResponse{
 			Message: msg.Message,
