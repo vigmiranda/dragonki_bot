@@ -26,7 +26,7 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar (Lv 3)", "action_transformar"),
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar (Lv +3)", "action_transformar"),
 			tgbotapi.NewInlineKeyboardButtonData("⚡ Energia", "action_energia"),
 		),
 	)

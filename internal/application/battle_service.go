@@ -28,6 +28,11 @@ func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *postgres.M
 
 func (s *BattleService) GetBattle(userID int64) (MsgResponse, int, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
+	player.SetTransformBase()
+	err = s.playerRepo.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
 	monsterID := 0
 	if err != nil {
 		log.Fatal(err)
@@ -120,6 +125,10 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 			player.Form = "Base"
 			player.HP = player.MaxHP
 			googNews = "⬆️ Subiu de nível!\n"
+			if player.FormBattlesLeft > 0 {
+				player.FormBattlesLeft = 0
+				player.Form = "Base"
+			}
 
 		}
 		if player.FormBattlesLeft > 0 {
@@ -150,7 +159,8 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 
 	} else {
 		if player.FormBattlesLeft > 0 {
-			player.FormBattlesLeft--
+			player.FormBattlesLeft = 0
+			player.Form = "Base"
 		}
 
 		player.XP -= int(float64(player.XP) * 0.9)

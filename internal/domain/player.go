@@ -67,6 +67,12 @@ func (p *Player) RegenEnergy() {
 	}
 	p.LastEnergyAt = time.Now().UTC()
 }
+func (p *Player) SetTransformBase() *Player {
+	if p.FormBattlesLeft == 0 {
+		p.Form = "Base"
+	}
+	return p
+}
 
 func (p *Player) CanTransform() bool {
 	return p.Level >= 3 && p.Energy >= 3 && p.Form == "Base"

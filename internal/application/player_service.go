@@ -73,6 +73,7 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
 		player.RegenEnergy()
 	}
+	player.SetTransformBase()
 	err = s.PlayerRepository.Save(player)
 	if err != nil {
 		log.Fatal(err)
@@ -124,6 +125,7 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
 		player.RegenEnergy()
 	}
+	player.SetTransformBase()
 	err = s.PlayerRepository.Save(player)
 	if err != nil {
 		log.Fatal(err)
@@ -225,13 +227,14 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 }
 
 func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
-	player, err := s.PlayerRepository.GetOrCreate(userID)
+	var player, err = s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
 		player.RegenEnergy()
 	}
+	player.SetTransformBase()
 	err = s.PlayerRepository.Save(player)
 	if err != nil {
 		log.Fatal(err)
@@ -273,6 +276,7 @@ func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
 	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
 		player.RegenEnergy()
 	}
+	player.SetTransformBase()
 	err = s.PlayerRepository.Save(player)
 	if err != nil {
 		log.Fatal(err)
