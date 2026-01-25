@@ -145,3 +145,14 @@ func (r *PlayerPostgresRepo) Save(p *domain.Player) error {
 	}
 	return err
 }
+func (r *PlayerPostgresRepo) CountOnlineLast15Min() (int, error) {
+	var count int
+
+	err := r.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM players
+		WHERE last_update >= NOW() - INTERVAL '15 minutes'
+	`).Scan(&count)
+
+	return count, err
+}
