@@ -46,7 +46,6 @@ go.work.sum
 /.idea/dataSources.xml
 /.idea/dragonki_bot.iml
 /.idea/go.imports.xml
-/go.sum
 /.idea/misc.xml
 /.idea/modules.xml
 /.idea/vcs.xml
