@@ -68,11 +68,11 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 			Gold:            0,
 			KiCrystals:      0,
 			RegionID:        1,
-			LastEnergyAt:    time.Now(),
+			LastEnergyAt:    time.Now().UTC(),
 			Form:            "Base",
 			FormBattlesLeft: 0,
 			OnboardingStep:  "DONE",
-			LastUpdate:      time.Now(),
+			LastUpdate:      time.Now().UTC(),
 		}
 
 		_, err = r.db.Exec(`

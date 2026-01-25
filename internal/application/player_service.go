@@ -30,7 +30,6 @@ func (s *PlayerService) SetGender(userID int64, gender string) (MsgResponse, err
 	if err != nil {
 		log.Fatal(err)
 	}
-	//player.RegenEnergy()
 
 	var msgResponse MsgResponse
 	player.Gender = gender
@@ -68,7 +67,13 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//player.RegenEnergy()
+	if player.Energy < player.MaxEnergy {
+		player.RegenEnergy()
+	}
+	err = s.PlayerRepository.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var msgResponse MsgResponse
 
@@ -110,8 +115,13 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	//player.RegenEnergy()
+	if player.Energy < player.MaxEnergy {
+		player.RegenEnergy()
+	}
+	err = s.PlayerRepository.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	genderIcon := "🧝‍♂️"
 	if player.Gender == "WOMAN" {
@@ -153,12 +163,17 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 }
 
 func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
-
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//player.RegenEnergy()
+	if player.Energy < player.MaxEnergy {
+		player.RegenEnergy()
+	}
+	err = s.PlayerRepository.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var msgResponse MsgResponse
 
@@ -208,10 +223,15 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if player.Energy < player.MaxEnergy {
+		player.RegenEnergy()
+	}
+	err = s.PlayerRepository.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var msgResponse MsgResponse
-
-	//	player.RegenEnergy()
 	msgResponse.Message =
 		fmt.Sprintf("📜%d-<b>%s</b> \n"+
 			"Você ainda tem HP e energia para mais umas batalhas.\n"+
@@ -244,6 +264,14 @@ func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if player.Energy < player.MaxEnergy {
+		player.RegenEnergy()
+	}
+	err = s.PlayerRepository.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	var msgResponse MsgResponse
 	msgResponse = MsgResponse{
 		Message: fmt.Sprintf(

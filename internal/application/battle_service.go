@@ -37,8 +37,6 @@ func (s *BattleService) GetBattle(userID int64) (MsgResponse, int, error) {
 		}, monsterID, err
 	}
 
-	//if player.Energy < player.MaxEnergy {player.RegenEnergy()}
-
 	msg := MsgResponse{
 		Message:    "⚡ Energia esgotada \n Vá ate a pousada para descansar!",
 		Img:        fmt.Sprintf("assets/skins/%s_tired.png", domain.ConvertLowCase(player.Gender)),

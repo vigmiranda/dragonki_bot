@@ -1,9 +1,9 @@
 package domain
 
-import "time"
-
-const (
-	EnergyRegenTime = 10 * time.Minute
+import (
+	"log"
+	"os"
+	"time"
 )
 
 type Player struct {
@@ -47,13 +47,18 @@ type Player struct {
 }
 
 func (p *Player) RegenEnergy() {
-	elapsed := time.Now().Sub(p.LastEnergyAt)
-	energy := int(elapsed / EnergyRegenTime)
+	now := time.Unix(time.Now().Unix(), 0)
+	elapsed := now.Sub(p.LastEnergyAt.UTC())
+	timeRecovery, err := time.ParseDuration(os.Getenv("ENERGY_REGEN_TIME"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	energy := int(elapsed / timeRecovery)
 	p.Energy += energy
 	if p.Energy > p.MaxEnergy {
 		p.Energy = p.MaxEnergy
 	}
-	p.LastEnergyAt = time.Now()
+	p.LastEnergyAt = time.Now().UTC()
 }
 
 func (p *Player) CanTransform() bool {
