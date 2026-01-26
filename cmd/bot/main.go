@@ -13,9 +13,6 @@ import (
 	"github.com/vigmiranda/dragonki/internal/application"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-
-	"github.com/vigmiranda/dragonki/internal/adapters/webhook"
-	"net/http"
 )
 
 func main() {
@@ -60,12 +57,12 @@ func main() {
 	)
 
 	/// 🔹 Mercado Pago (WebHook)
-	mpWebhook := webhook.NewMercadoPagoWebhook(paymentService)
-	go func() {
-		log.Println("🌐 Webhook Mercado Pago escutando na porta 8080")
-		http.HandleFunc("/webhook/mercadopago", mpWebhook.Handle)
-		log.Fatal(http.ListenAndServe(":8080", nil))
-	}()
+	//mpWebhook := webhook.NewMercadoPagoWebhook(paymentService)
+	//go func() {
+	//	log.Println("🌐 Webhook Mercado Pago escutando na porta 8080")
+	//	http.HandleFunc("/webhook/mercadopago", mpWebhook.Handle)
+	//	log.Fatal(http.ListenAndServe(":8080", nil))
+	//}()
 
 	// 🔹 Bot Telegram
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
