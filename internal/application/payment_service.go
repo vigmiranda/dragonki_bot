@@ -62,6 +62,6 @@ func (s *PaymentService) ConfirmPayment(paymentID string) error {
 		return err
 	}
 
-	player.KiCrystals += int(payment.Amount * 10)
+	player.KiCrystals += int(payment.Amount)
 	return s.players.Save(player)
 }
