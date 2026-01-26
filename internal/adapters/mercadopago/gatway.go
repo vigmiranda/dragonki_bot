@@ -50,7 +50,7 @@ func (g *Gateway) CreatePix(
 	qrBase64 := resp.PointOfInteraction.TransactionData.QRCodeBase64
 	if qrBase64 == "" {
 		return nil, "", fmt.Errorf(
-			"PIX não gerado. status=%s method=%s",
+			"qrBase64- PIX não gerado. status=%s method=%s",
 			resp.Status,
 			resp.PaymentMethodID,
 		)
@@ -59,12 +59,19 @@ func (g *Gateway) CreatePix(
 	qrCode := resp.PointOfInteraction.TransactionData.QRCode
 	if qrCode == "" {
 		return nil, "", fmt.Errorf(
-			"PIX não gerado. status=%s method=%s",
+			"qrCode - PIX não gerado. status=%s method=%s",
 			resp.Status,
 			resp.PaymentMethodID,
 		)
 	}
-
+	transactionID := resp.PointOfInteraction.TransactionData.TransactionID
+	if transactionID == "" {
+		return nil, "", fmt.Errorf(
+			"transactionID - PIX não gerado. status=%s method=%s",
+			resp.Status,
+			resp.PaymentMethodID,
+		)
+	}
 	paymentDomain := &domain.Payment{
 		ID:           externalID,
 		PlayerID:     playerID,
@@ -72,6 +79,7 @@ func (g *Gateway) CreatePix(
 		Status:       domain.PaymentPending,
 		QRCode:       qrCode,
 		QRCodeBase64: qrBase64,
+		PartnerId:    transactionID,
 		CreatedAt:    time.Now().UTC(),
 	}
 

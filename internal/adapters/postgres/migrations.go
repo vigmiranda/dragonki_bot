@@ -123,4 +123,10 @@ var migrations = []migration{
 		ALTER TABLE payments ADD COLUMN qr_code_base64 TEXT;
 		`,
 	},
+	{
+		version: 9,
+		sql: `
+		ALTER TABLE payments ADD COLUMN partner_id TEXT;
+		`,
+	},
 }

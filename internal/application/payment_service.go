@@ -41,7 +41,7 @@ func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Paym
 }
 
 func (s *PaymentService) ConfirmPayment(paymentID string) error {
-	payment, err := s.repo.FindByID(paymentID)
+	payment, err := s.repo.FindByPartnerID(paymentID)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (s *PaymentService) ConfirmPayment(paymentID string) error {
 		return nil
 	}
 
-	status, err := s.gateway.GetStatus(paymentID)
+	status, err := s.gateway.GetStatus(payment.ID)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (s *PaymentService) ConfirmPayment(paymentID string) error {
 		return errors.New("payment not approved")
 	}
 
-	if err := s.repo.UpdateStatus(paymentID, status); err != nil {
+	if err := s.repo.UpdateStatus(payment.ID, status); err != nil {
 		return err
 	}
 

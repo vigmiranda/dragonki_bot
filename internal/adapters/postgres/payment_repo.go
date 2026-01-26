@@ -23,11 +23,11 @@ func (r *PaymentRepo) Save(p *domain.Payment) error {
 	return err
 }
 
-func (r *PaymentRepo) FindByID(id string) (*domain.Payment, error) {
+func (r *PaymentRepo) FindByPartnerID(id string) (*domain.Payment, error) {
 	var p domain.Payment
 	err := r.db.QueryRow(`
 		SELECT id, player_id, amount, status,  qr_code, qr_code_base64, created_at
-		FROM payments WHERE id=$1
+		FROM payments WHERE partner_id=$1
 	`, id).Scan(&p.ID, &p.PlayerID, &p.Amount, &p.Status, &p.QRCode, &p.QRCodeBase64, &p.CreatedAt)
 	return &p, err
 }
