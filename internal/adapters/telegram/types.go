@@ -7,19 +7,22 @@ import (
 )
 
 type Handler struct {
-	bot           *tgbotapi.BotAPI
-	playerService *application.PlayerService
-	battleService *application.BattleService
+	bot            *tgbotapi.BotAPI
+	playerService  *application.PlayerService
+	battleService  *application.BattleService
+	paymentService *application.PaymentService
 }
 
 func NewHandler(
 	bot *tgbotapi.BotAPI,
 	playerService *application.PlayerService,
 	battleService *application.BattleService,
+	paymentService *application.PaymentService,
 ) *Handler {
 	return &Handler{
-		bot:           bot,
-		playerService: playerService,
-		battleService: battleService,
+		bot:            bot,
+		playerService:  playerService,
+		battleService:  battleService,
+		paymentService: paymentService,
 	}
 }

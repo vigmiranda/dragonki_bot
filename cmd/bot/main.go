@@ -7,11 +7,15 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/vigmiranda/dragonki/internal/adapters/mercadopago"
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram"
 	"github.com/vigmiranda/dragonki/internal/application"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
+	"github.com/vigmiranda/dragonki/internal/adapters/webhook"
+	"net/http"
 )
 
 func main() {
@@ -27,26 +31,41 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// 🔹 Roda migrations ANTES de tudo
+	// 🔹 Roda migrations
 	if err := postgres.RunMigrations(db); err != nil {
 		log.Fatal(err)
 	}
 
-	// 🔹 Container de infraestrutura SQLite
-	sqliteDB := postgres.NewPostgres(db)
+	// 🔹 Infra DB (wrapper)
+	postgresDB := postgres.NewPostgres(db)
 
 	// 🔹 Repositórios
-	playerRepo := postgres.NewPlayerPostgresRepo(sqliteDB)
-	monsterRepo := postgres.NewMonsterPostgresRepo(sqliteDB)
-	regionRepo := postgres.NewRegionPostgresRepo(sqliteDB)
+	playerRepo := postgres.NewPlayerPostgresRepo(postgresDB)
+	monsterRepo := postgres.NewMonsterPostgresRepo(postgresDB)
+	regionRepo := postgres.NewRegionPostgresRepo(postgresDB)
+	paymentRepo := postgres.NewPaymentRepo(postgresDB)
 
-	// 🔹 Services (casos de uso)
+	// 🔹 Services (Application)
 	playerService := application.NewPlayerService(playerRepo, regionRepo)
 	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo)
+
+	// 🔹 Mercado Pago (Gateway)
+	mpClient := mercadopago.NewClient()
+	mpGateway := mercadopago.NewGateway(mpClient)
+
+	paymentService := application.NewPaymentService(
+		mpGateway,
+		paymentRepo,
+		playerRepo,
+	)
+
+	/// 🔹 Mercado Pago (WebHook)
+	mpWebhook := webhook.NewMercadoPagoWebhook(paymentService)
+	go func() {
+		log.Println("🌐 Webhook Mercado Pago escutando na porta 8080")
+		http.HandleFunc("/webhook/mercadopago", mpWebhook.Handle)
+		log.Fatal(http.ListenAndServe(":8080", nil))
+	}()
 
 	// 🔹 Bot Telegram
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
@@ -56,8 +75,13 @@ func main() {
 
 	log.Println("🐉 DragonKi online:", bot.Self.UserName)
 
-	// 🔹 Handler (adapter Telegram)
-	handler := telegram.NewHandler(bot, playerService, battleService)
+	// 🔹 Handler Telegram
+	handler := telegram.NewHandler(
+		bot,
+		playerService,
+		battleService,
+		paymentService, // 🔥 NOVO
+	)
 
 	// 🔹 Loop principal
 	handler.Start()

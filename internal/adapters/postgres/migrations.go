@@ -104,4 +104,16 @@ var migrations = []migration{
 
 		`,
 	},
+	{
+		version: 7,
+		sql: `
+		CREATE TABLE payments (
+			id TEXT PRIMARY KEY,
+			player_id BIGINT NOT NULL,
+			amount NUMERIC NOT NULL,
+			status TEXT NOT NULL,
+			created_at TIMESTAMP NOT NULL
+		);
+		`,
+	},
 }
