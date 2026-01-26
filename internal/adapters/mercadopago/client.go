@@ -1,34 +1,32 @@
 package mercadopago
 
 import (
-	"bytes"
-	"encoding/json"
-	"net/http"
+	"context"
+	"log"
 	"os"
+
+	"github.com/mercadopago/sdk-go/pkg/config"
+	"github.com/mercadopago/sdk-go/pkg/payment"
 )
 
 type Client struct {
-	accessToken string
+	Payment payment.Client
+	Ctx     context.Context
 }
 
 func NewClient() *Client {
-	return &Client{
-		accessToken: os.Getenv("MP_ACCESS_TOKEN"),
+	accessToken := os.Getenv("MP_ACCESS_TOKEN")
+	if accessToken == "" {
+		log.Fatal("❌ MP_ACCESS_TOKEN não definido")
 	}
-}
 
-func (c *Client) post(url string, payload any, result any) error {
-	body, _ := json.Marshal(payload)
-
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
-	req.Header.Set("Authorization", "Bearer "+c.accessToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
+	cfg, err := config.New(accessToken)
 	if err != nil {
-		return err
+		log.Fatal("❌ erro ao criar config Mercado Pago:", err)
 	}
-	defer resp.Body.Close()
 
-	return json.NewDecoder(resp.Body).Decode(result)
+	return &Client{
+		Payment: payment.NewClient(cfg), // ✅ valor, não ponteiro
+		Ctx:     context.Background(),
+	}
 }
