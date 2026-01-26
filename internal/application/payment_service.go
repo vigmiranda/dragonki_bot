@@ -97,7 +97,7 @@ func (s *PaymentService) HandleBuyKi(chatID int64, userID int64, messageID int) 
 
 	payment, qrCode, err := s.CreatePix(userID, float64(amount))
 	if err != nil {
-		log.Fatal(chatID, "❌ Erro ao gerar pagamento")
+		log.Fatal(chatID, "❌ Erro ao gerar pagamento", err)
 	}
 	log.Println(fmt.Sprintf("Codigo do pagamento: %d", payment))
 	msgResponse.Message = fmt.Sprintf(
