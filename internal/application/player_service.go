@@ -82,7 +82,7 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 	multiPlayersOnlineDB := os.Getenv("MULT_PLAYERS")
 	multiPlayersOnline, _ := strconv.Atoi(multiPlayersOnlineDB)
 	msgResponse.Message = fmt.Sprintf(
-		"<b>%s</b> \n\n"+
+		"<b> %s </b> \n\n"+
 			"👥 <b>Online (últimos 15 min)</b>: %d\n"+
 			"🏰 <b>Local</b>:  %s (L%d)\n"+
 			"❤️ <b>HP</b>: %d/%d\n"+
