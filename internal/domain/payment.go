@@ -15,7 +15,7 @@ type Payment struct {
 	PlayerID     int64
 	Amount       float64
 	Status       PaymentStatus
-	QRCode       string
-	QRCodeBase64 string
+	QRCode       string `json:"qr_code"`
+	QRCodeBase64 string `json:"qr_code_base64"`
 	CreatedAt    time.Time
 }

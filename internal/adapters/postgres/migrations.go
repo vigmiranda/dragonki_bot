@@ -116,4 +116,11 @@ var migrations = []migration{
 		);
 		`,
 	},
+	{
+		version: 8,
+		sql: `
+		ALTER TABLE payments ADD COLUMN qr_code TEXT;
+		ALTER TABLE payments ADD COLUMN qr_code_base64 TEXT;
+		`,
+	},
 }

@@ -17,18 +17,18 @@ func NewPaymentRepo(postgres *Postgres) *PaymentRepo {
 
 func (r *PaymentRepo) Save(p *domain.Payment) error {
 	_, err := r.db.Exec(`
-		INSERT INTO payments (id, player_id, amount, status, created_at)
-		VALUES ($1, $2, $3, $4, $5)
-	`, p.ID, p.PlayerID, p.Amount, p.Status, time.Now())
+		INSERT INTO payments (id, player_id, amount, status, qr_code, qr_code_base64, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, p.ID, p.PlayerID, p.Amount, p.Status, p.QRCode, p.QRCodeBase64, time.Now())
 	return err
 }
 
 func (r *PaymentRepo) FindByID(id string) (*domain.Payment, error) {
 	var p domain.Payment
 	err := r.db.QueryRow(`
-		SELECT id, player_id, amount, status, created_at
+		SELECT id, player_id, amount, status,  qr_code, qr_code_base64, created_at
 		FROM payments WHERE id=$1
-	`, id).Scan(&p.ID, &p.PlayerID, &p.Amount, &p.Status, &p.CreatedAt)
+	`, id).Scan(&p.ID, &p.PlayerID, &p.Amount, &p.Status, &p.QRCode, &p.QRCodeBase64, &p.CreatedAt)
 	return &p, err
 }
 

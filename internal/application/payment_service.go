@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
@@ -72,7 +74,15 @@ func (s *PaymentService) ConfirmPayment(paymentID string) error {
 
 func (s *PaymentService) HandleBuyKi(chatID int64, userID int64, messageID int) (MsgResponse, error) {
 
-	const amount = 10 // valor do pacote
+	amount := 1
+
+	amountEnv, err := strconv.ParseInt(os.Getenv("KI_DRAGONS_VALUE"), 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		amount = int(amountEnv)
+	}
+	log.Println(fmt.Sprintf("Valor do KiDragons: %d Atual: %d", amountEnv, amount))
 
 	var msgResponse MsgResponse
 
@@ -85,7 +95,7 @@ func (s *PaymentService) HandleBuyKi(chatID int64, userID int64, messageID int) 
 		Conditions: false,
 	}
 
-	payment, qrCode, err := s.CreatePix(userID, amount)
+	payment, qrCode, err := s.CreatePix(userID, float64(amount))
 	if err != nil {
 		log.Fatal(chatID, "❌ Erro ao gerar pagamento")
 	}
