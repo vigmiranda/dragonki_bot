@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
 )
 
 func (h *Handler) sendInitialPanel(chatID int64) {
@@ -71,10 +72,11 @@ func (h *Handler) editPanel(
 ) {
 	menu := mainMenu()
 	caption := msgResponse.Message + "\n\n"
-
-	media := tgbotapi.NewInputMediaPhoto(
-		tgbotapi.FilePath(msgResponse.Img),
+	media := utils.NewPhotoMedia(
+		msgResponse.Img,
+		msgResponse.Message,
 	)
+
 	media.Caption = caption
 	media.ParseMode = "HTML"
 	edit := tgbotapi.EditMessageMediaConfig{
@@ -82,7 +84,7 @@ func (h *Handler) editPanel(
 			ChatID:    chatID,
 			MessageID: messageID,
 		},
-		Media: media,
+		Media: *media,
 	}
 
 	if msgResponse.Menu != nil {

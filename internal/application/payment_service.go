@@ -2,7 +2,11 @@ package application
 
 import (
 	"errors"
+	"fmt"
+	"log"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
@@ -64,4 +68,37 @@ func (s *PaymentService) ConfirmPayment(paymentID string) error {
 
 	player.KiCrystals += int(payment.Amount)
 	return s.players.Save(player)
+}
+
+func (s *PaymentService) HandleBuyKi(chatID int64, userID int64, messageID int) (MsgResponse, error) {
+
+	const amount = 10 // valor do pacote
+
+	var msgResponse MsgResponse
+
+	media := tgbotapi.FilePath("assets/error.png")
+	msgResponse = MsgResponse{
+		Message: fmt.Sprintf(
+			"",
+		),
+		Img:        media,
+		Conditions: false,
+	}
+
+	payment, qrCode, err := s.CreatePix(userID, amount)
+	if err != nil {
+		log.Fatal(chatID, "❌ Erro ao gerar pagamento")
+	}
+	log.Println(fmt.Sprintf("Codigo do pagamento: %d", payment))
+	msgResponse.Message = "💎 *Comprar Ki Divino*\n\n" +
+		"Escaneie o QR Code ou copie o código PIX.\n\n" +
+		"_Após o pagamento, o Ki será creditado automaticamente._"
+
+	// Envia QR Code como imagem
+	msgResponse.Img = tgbotapi.FileBytes{
+		Name:  "pix.png",
+		Bytes: utils.DecodeBase64(qrCode),
+	}
+
+	return msgResponse, nil
 }

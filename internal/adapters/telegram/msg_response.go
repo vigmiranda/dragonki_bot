@@ -4,6 +4,6 @@ import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 type MsgResponse struct {
 	Message string
-	Img     string
+	Img     tgbotapi.RequestFileData
 	Menu    *tgbotapi.InlineKeyboardMarkup
 }

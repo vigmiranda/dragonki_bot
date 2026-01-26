@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"fmt"
 	"log"
 	"net/url"
 	"strings"
@@ -24,7 +25,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 
 	msgResponse := MsgResponse{
 		Message: "",
-		Img:     "assets/error.png",
+		Img:     tgbotapi.FilePath(fmt.Sprintf("assts/error.png")),
 	}
 
 	switch action {
@@ -80,7 +81,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		msg, monster, err := h.battleService.Escape(userID, params)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar menu"
-			msg.Img = "assts/error.png"
+			msg.Img = tgbotapi.FilePath(fmt.Sprintf("assts/error.png"))
 			break
 		}
 		if msg.Conditions {
@@ -147,6 +148,21 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	case "action_sleep":
 		menu := energyMenu()
 		msg, err := h.playerService.Recovery(userID)
+		if err != nil {
+			msgResponse.Message = "❌ Erro ao calcular energia"
+			break
+		}
+		if msg.Conditions {
+			menu = mainMenu()
+		}
+		msgResponse = MsgResponse{
+			Message: msg.Message,
+			Img:     msg.Img,
+			Menu:    menu,
+		}
+	case "action_buy_ki":
+		menu := mainMenu()
+		msg, err := h.paymentService.HandleBuyKi(chatID, userID, messageID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
