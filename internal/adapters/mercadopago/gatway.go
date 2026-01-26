@@ -56,12 +56,23 @@ func (g *Gateway) CreatePix(
 		)
 	}
 
+	qrCode := resp.PointOfInteraction.TransactionData.QRCode
+	if qrCode == "" {
+		return nil, "", fmt.Errorf(
+			"PIX não gerado. status=%s method=%s",
+			resp.Status,
+			resp.PaymentMethodID,
+		)
+	}
+
 	paymentDomain := &domain.Payment{
-		ID:        externalID,
-		PlayerID:  playerID,
-		Amount:    amount,
-		Status:    domain.PaymentPending,
-		CreatedAt: time.Now().UTC(),
+		ID:           externalID,
+		PlayerID:     playerID,
+		Amount:       amount,
+		Status:       domain.PaymentPending,
+		QRCode:       qrCode,
+		QRCodeBase64: qrBase64,
+		CreatedAt:    time.Now().UTC(),
 	}
 
 	return paymentDomain, qrBase64, nil

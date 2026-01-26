@@ -11,9 +11,11 @@ const (
 )
 
 type Payment struct {
-	ID        string
-	PlayerID  int64
-	Amount    float64
-	Status    PaymentStatus
-	CreatedAt time.Time
+	ID           string
+	PlayerID     int64
+	Amount       float64
+	Status       PaymentStatus
+	QRCode       string
+	QRCodeBase64 string
+	CreatedAt    time.Time
 }

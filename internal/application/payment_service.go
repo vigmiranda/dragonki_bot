@@ -90,9 +90,12 @@ func (s *PaymentService) HandleBuyKi(chatID int64, userID int64, messageID int) 
 		log.Fatal(chatID, "❌ Erro ao gerar pagamento")
 	}
 	log.Println(fmt.Sprintf("Codigo do pagamento: %d", payment))
-	msgResponse.Message = "💎 *Comprar Ki Divino*\n\n" +
-		"Escaneie o QR Code ou copie o código PIX.\n\n" +
-		"_Após o pagamento, o Ki será creditado automaticamente._"
+	msgResponse.Message = fmt.Sprintf(
+		"💎 *Comprar Ki Divino*\n\n"+
+			"Escaneie o QR Code ou copie o código PIX abaixo.\n\n"+
+			"%s\n\n"+
+			"<i>Após o pagamento, o Ki será creditado automaticamente.</i>",
+		payment.QRCode)
 
 	// Envia QR Code como imagem
 	msgResponse.Img = tgbotapi.FileBytes{
