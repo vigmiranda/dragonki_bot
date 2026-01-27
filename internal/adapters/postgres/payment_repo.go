@@ -27,7 +27,7 @@ func (r *PaymentRepo) FindByPartnerID(id int64) (*domain.Payment, error) {
 	var p domain.Payment
 	err := r.db.QueryRow(`
 		SELECT id, player_id, amount, status,  qr_code, qr_code_base64, created_at
-		FROM payments WHERE partner_id=$1
+		FROM payments WHERE partner_id=$1 AND status = 'pending'
 	`, id).Scan(&p.ID, &p.PlayerID, &p.Amount, &p.Status, &p.QRCode, &p.QRCodeBase64, &p.CreatedAt)
 	return &p, err
 }
