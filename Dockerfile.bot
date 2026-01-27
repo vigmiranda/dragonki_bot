@@ -1,10 +1,12 @@
 FROM golang:1.21 AS builder
 
 WORKDIR /app
+COPY go.mod go.sum go.work
 COPY . .
-RUN go build -o dragonki ./cmd/bot
 
-FROM debian:bookworm-slim
+RUN go build -o dragonki_game ./cmd/bot
+
+FROM alpine:latest
 
 RUN apt-get update \
     && apt-get install -y ca-certificates \
@@ -14,9 +16,11 @@ RUN apt-get update \
 WORKDIR /app
 
 # 🔥 COPIA O BINÁRIO
-COPY --from=builder /app/dragonki .
+COPY --from=builder /app/dragonki_game .
 
 # 🔥 COPIA OS ASSETS
 COPY --from=builder /app/assets ./assets
 
-CMD ["./dragonki"]
+EXPOSE 8080
+
+CMD ["./dragonki_game"]

@@ -134,7 +134,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Menu:    mainMenu(),
 		}
 
-	case "action_energia":
+	case "to_sleep":
 		msg, err := h.playerService.Energy(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"

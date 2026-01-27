@@ -1,0 +1,23 @@
+FROM golang:1.21 AS builder
+
+WORKDIR /app
+COPY go.mod go.sum go.work
+COPY . .
+
+RUN go build -o dragonki_webhook ./cmd/webhook
+
+FROM alpine:latest
+
+RUN apt-get update \
+    && apt-get install -y ca-certificates \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# 🔥 COPIA O BINÁRIO
+COPY --from=builder /app/dragonki_webhook .
+
+EXPOSE 8080
+
+CMD ["./dragonki_webhook"]
