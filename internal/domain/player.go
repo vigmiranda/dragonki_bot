@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"log"
-	"os"
 	"time"
 )
 
@@ -46,27 +44,6 @@ type Player struct {
 	LastUpdate time.Time
 }
 
-func (p *Player) RegenEnergy() {
-	now := time.Unix(time.Now().Unix(), 0)
-	elapsed := now.Sub(p.LastEnergyAt.UTC())
-	timeRecovery, err := time.ParseDuration(os.Getenv("ENERGY_REGEN_TIME"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	energy := int(elapsed / timeRecovery)
-	currentEnergy := p.Energy
-	p.Energy += energy
-	if p.Energy > p.MaxEnergy {
-		p.Energy = p.MaxEnergy
-	}
-	if currentEnergy == p.MaxEnergy && p.HP < p.MaxHP {
-		p.HP += energy
-		if p.HP > p.MaxHP {
-			p.HP = p.MaxHP
-		}
-	}
-	p.LastEnergyAt = time.Now().UTC()
-}
 func (p *Player) SetTransformBase() *Player {
 	if p.FormBattlesLeft == 0 {
 		p.Form = "Base"
