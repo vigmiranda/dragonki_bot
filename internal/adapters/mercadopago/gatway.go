@@ -64,7 +64,7 @@ func (g *Gateway) CreatePix(
 		)
 	}
 	ID := resp.ID
-	if ID > 0 {
+	if ID == 0 {
 		return nil, "", fmt.Errorf(
 			"ID - PIX não gerado. ID=%d",
 			resp.ID,
