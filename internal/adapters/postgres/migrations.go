@@ -129,4 +129,11 @@ var migrations = []migration{
 		ALTER TABLE payments ADD COLUMN partner_id TEXT;
 		`,
 	},
+	{
+		version: 10,
+		sql: `
+		ALTER TABLE payments
+		ALTER COLUMN partner_id TYPE INTEGER USING (partner_id::INTEGER);
+		`,
+	},
 }
