@@ -3,6 +3,7 @@ package mercadopago
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/mercadopago/sdk-go/pkg/payment"
@@ -51,20 +52,26 @@ func (g *Gateway) CreatePix(
 	qrBase64 := resp.PointOfInteraction.TransactionData.QRCodeBase64
 	if qrBase64 == "" {
 		return nil, "", fmt.Errorf(
-			"qrBase64- PIX não gerado. status=%s method=%s",
-			resp.Status,
-			resp.PaymentMethodID,
+			"qrBase64- PIX não gerado. qrBase64=%s",
+			resp.PointOfInteraction.TransactionData.QRCodeBase64,
 		)
 	}
 
 	qrCode := resp.PointOfInteraction.TransactionData.QRCode
 	if qrCode == "" {
 		return nil, "", fmt.Errorf(
-			"qrCode - PIX não gerado. status=%s method=%s",
-			resp.Status,
-			resp.PaymentMethodID,
+			"qrCode - PIX não gerado. QRCode=%s",
+			resp.PointOfInteraction.TransactionData.QRCode,
 		)
 	}
+	ID := resp.ID
+	if ID > 0 {
+		return nil, "", fmt.Errorf(
+			"ID - PIX não gerado. ID=%s",
+			resp.ID,
+		)
+	}
+
 	paymentDomain := &domain.Payment{
 		ID:           externalID,
 		PlayerID:     playerID,
@@ -72,7 +79,7 @@ func (g *Gateway) CreatePix(
 		Status:       domain.PaymentPending,
 		QRCode:       qrCode,
 		QRCodeBase64: qrBase64,
-		PartnerId:    externalID,
+		PartnerId:    strconv.Itoa(ID),
 		CreatedAt:    time.Now().UTC(),
 	}
 
