@@ -22,7 +22,7 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		Type string `json:"type"`
 		Data struct {
-			ID string `json:"id"`
+			ID int64 `json:"id"`
 		} `json:"data"`
 	}
 

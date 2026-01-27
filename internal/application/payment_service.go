@@ -20,10 +20,10 @@ type PaymentService struct {
 
 func NewPaymentService(
 	gateway ports.PaymentGateway,
-	repo ports.PaymentRepository,
-	players ports.PlayerRepository,
+	paymentRepository ports.PaymentRepository,
+	playerRepository ports.PlayerRepository,
 ) *PaymentService {
-	return &PaymentService{gateway, repo, players}
+	return &PaymentService{gateway, paymentRepository, playerRepository}
 }
 
 func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Payment, string, error) {
@@ -39,7 +39,7 @@ func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Paym
 	return payment, qrCode, nil
 }
 
-func (s *PaymentService) ConfirmPayment(paymentID string) error {
+func (s *PaymentService) ConfirmPayment(paymentID int64) error {
 	payment, err := s.paymentRepository.FindByPartnerID(paymentID)
 	if err != nil {
 		return err

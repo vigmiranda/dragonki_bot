@@ -23,7 +23,7 @@ func (r *PaymentRepo) Save(p *domain.Payment) error {
 	return err
 }
 
-func (r *PaymentRepo) FindByPartnerID(id string) (*domain.Payment, error) {
+func (r *PaymentRepo) FindByPartnerID(id int64) (*domain.Payment, error) {
 	var p domain.Payment
 	err := r.db.QueryRow(`
 		SELECT id, player_id, amount, status,  qr_code, qr_code_base64, created_at
