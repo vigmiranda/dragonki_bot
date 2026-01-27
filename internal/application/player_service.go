@@ -163,7 +163,7 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 	)
 	msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)))
 	if player.FormBattlesLeft > 0 {
-		msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_ki_awakened.png.png", domain.ConvertLowCase(player.Gender)))
+		msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_ki_awakened.png", domain.ConvertLowCase(player.Gender)))
 	}
 
 	return msgResponse, nil
