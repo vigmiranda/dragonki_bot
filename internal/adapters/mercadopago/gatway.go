@@ -2,6 +2,7 @@ package mercadopago
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/mercadopago/sdk-go/pkg/payment"
@@ -42,6 +43,7 @@ func (g *Gateway) CreatePix(
 		g.client.Ctx, // ✅ context obrigatório
 		req,
 	)
+	log.Println(resp)
 	if err != nil {
 		return nil, "", err
 	}
