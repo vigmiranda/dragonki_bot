@@ -8,8 +8,8 @@ import (
 
 	"github.com/vigmiranda/dragonki/internal/adapters/mercadopago"
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
-	"github.com/vigmiranda/dragonki/internal/adapters/webhook"
 	"github.com/vigmiranda/dragonki/internal/application"
+	"github.com/vigmiranda/dragonki/internal/webhook"
 )
 
 func main() {

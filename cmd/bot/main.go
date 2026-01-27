@@ -2,10 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
+	"net/http"
 	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/vigmiranda/dragonki/internal/adapters/mercadopago"
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram"
@@ -55,22 +58,36 @@ func main() {
 		playerRepo,
 	)
 
-	// 🔹 Bot Telegram
+	// 🔹 Telegram Bot
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println("🐉 DragonKi online:", bot.Self.UserName)
+	log.Println("🐉 DragonKi bot iniciado:", bot.Self.UserName)
 
 	// 🔹 Handler Telegram
 	handler := telegram.NewHandler(
 		bot,
 		playerService,
 		battleService,
-		paymentService, // 🔥 NOVO
+		paymentService,
 	)
 
-	// 🔹 Loop principal
-	handler.Start()
+	// 🔹 Telegram Webhook HTTP
+	http.HandleFunc("/webhook/telegram", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		var update tgbotapi.Update
+		if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		handler.HandleUpdate(update)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	log.Println("🌐 Telegram Webhook escutando na porta 8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
