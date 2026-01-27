@@ -188,7 +188,7 @@ func (s *PlayerService) Transform(userID int64) (MsgResponse, error) {
 
 	if player.Level < 3 {
 		logText += fmt.Sprintf("❌ Transformação desbloqueia no nível 3")
-		msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic", domain.ConvertLowCase(player.Gender)))
+		msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)))
 	}
 	if player.Energy < 3 && player.FormBattlesLeft == 0 {
 		logText += fmt.Sprintf("⚡ Energia insuficiente")
