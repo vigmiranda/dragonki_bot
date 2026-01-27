@@ -78,7 +78,7 @@ func (g *Gateway) CreatePix(
 		Status:       domain.PaymentPending,
 		QRCode:       qrCode,
 		QRCodeBase64: qrBase64,
-		PartnerId:    ID,
+		PartnerId:    int64(ID),
 		CreatedAt:    time.Now().UTC(),
 	}
 

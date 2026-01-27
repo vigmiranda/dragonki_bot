@@ -133,7 +133,7 @@ var migrations = []migration{
 		version: 10,
 		sql: `
 		ALTER TABLE payments
-		ALTER COLUMN partner_id TYPE INTEGER USING (partner_id::INTEGER);
+		ALTER COLUMN partner_id TYPE BIGINT USING (partner_id::BIGINT);
 		`,
 	},
 }
