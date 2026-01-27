@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/vigmiranda/dragonki/internal/application"
 )
@@ -22,7 +23,7 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		Type string `json:"type"`
 		Data struct {
-			ID int64 `json:"id"`
+			ID string `json:"id"`
 		} `json:"data"`
 	}
 
@@ -39,8 +40,13 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("🔔 Webhook MP recebido:", payload.Data.ID)
+	partnerId, err := strconv.ParseInt(payload.Data.ID, 10, 64)
+	if err != nil {
+		log.Println("❌ ID inválido no webhook:", payload.Data.ID)
+		return
+	}
 
-	if err := w.paymentService.ConfirmPayment(payload.Data.ID); err != nil {
+	if err := w.paymentService.ConfirmPayment(partnerId); err != nil {
 		log.Println("❌ Erro ao confirmar pagamento:", err)
 		wr.WriteHeader(http.StatusInternalServerError)
 		return
