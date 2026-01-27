@@ -6,7 +6,6 @@ import (
 	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-
 	"github.com/vigmiranda/dragonki/internal/adapters/mercadopago"
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram"
@@ -55,14 +54,6 @@ func main() {
 		paymentRepo,
 		playerRepo,
 	)
-
-	/// 🔹 Mercado Pago (WebHook)
-	//mpWebhook := webhook.NewMercadoPagoWebhook(paymentService)
-	//go func() {
-	//	log.Println("🌐 Webhook Mercado Pago escutando na porta 8080")
-	//	http.HandleFunc("/webhook/mercadopago", mpWebhook.Handle)
-	//	log.Fatal(http.ListenAndServe(":8080", nil))
-	//}()
 
 	// 🔹 Bot Telegram
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
