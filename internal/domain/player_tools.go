@@ -1,6 +1,10 @@
 package domain
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 func KiAwakened(player *Player) *Player {
 	atk := int(float64(player.ATK) * 0.1)
@@ -18,4 +22,9 @@ func KiAwakened(player *Player) *Player {
 
 func ConvertLowCase(text string) string {
 	return strings.ToLower(text)
+}
+
+func BuildNumericPaymentID(userID int64) string {
+	timestamp := time.Now().UnixMilli()
+	return fmt.Sprintf("%d%d", userID, timestamp)
 }

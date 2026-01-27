@@ -1,7 +1,6 @@
 package application
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -14,9 +13,9 @@ import (
 )
 
 type PaymentService struct {
-	gateway ports.PaymentGateway
-	repo    ports.PaymentRepository
-	players ports.PlayerRepository
+	gateway           ports.PaymentGateway
+	paymentRepository ports.PaymentRepository
+	playersRepository ports.PlayerRepository
 }
 
 func NewPaymentService(
@@ -33,7 +32,7 @@ func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Paym
 		return nil, "", err
 	}
 
-	if err := s.repo.Save(payment); err != nil {
+	if err := s.paymentRepository.Save(payment); err != nil {
 		return nil, "", err
 	}
 
@@ -41,7 +40,7 @@ func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Paym
 }
 
 func (s *PaymentService) ConfirmPayment(paymentID string) error {
-	payment, err := s.repo.FindByPartnerID(paymentID)
+	payment, err := s.paymentRepository.FindByPartnerID(paymentID)
 	if err != nil {
 		return err
 	}
@@ -50,26 +49,17 @@ func (s *PaymentService) ConfirmPayment(paymentID string) error {
 		return nil
 	}
 
-	status, err := s.gateway.GetStatus(payment.ID)
-	if err != nil {
+	if err := s.paymentRepository.UpdateStatus(payment.ID, payment.Status); err != nil {
 		return err
 	}
 
-	if status != domain.PaymentApproved {
-		return errors.New("payment not approved")
-	}
-
-	if err := s.repo.UpdateStatus(payment.ID, status); err != nil {
-		return err
-	}
-
-	player, err := s.players.GetOrCreate(payment.PlayerID)
+	player, err := s.playersRepository.GetOrCreate(payment.PlayerID)
 	if err != nil {
 		return err
 	}
 
 	player.KiCrystals += int(payment.Amount)
-	return s.players.Save(player)
+	return s.playersRepository.Save(player)
 }
 
 func (s *PaymentService) HandleBuyKi(chatID int64, userID int64, messageID int) (MsgResponse, error) {
