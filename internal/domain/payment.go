@@ -17,6 +17,6 @@ type Payment struct {
 	Status       PaymentStatus
 	QRCode       string `json:"qr_code"`
 	QRCodeBase64 string `json:"qr_code_base64"`
-	PartnerId    string
+	PartnerId    int
 	CreatedAt    time.Time
 }
