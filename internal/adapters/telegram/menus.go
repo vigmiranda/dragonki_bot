@@ -29,9 +29,9 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar (Lv +3)", "action_transformar"),
 			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
 		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("💎 Comprar 10 KiCrystals", "action_buy_ki"),
-		),
+		//tgbotapi.NewInlineKeyboardRow(
+		//	tgbotapi.NewInlineKeyboardButtonData("💎 Comprar 10 KiCrystals", "action_buy_ki"),
+		//),
 	)
 	return &menu
 }
