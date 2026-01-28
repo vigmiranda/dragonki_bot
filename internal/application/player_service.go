@@ -143,14 +143,15 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 	var msgResponse MsgResponse
 	msgResponse.Message = fmt.Sprintf(
 		genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
+			"🗺️ <b>Local</b>: %s(Lv%d)\n"+
 			"💪 <b>Level</b>: %d\t\t\t\t\t\t\t\t\t\t\t🧬 <b>XP</b>: %d\n"+
 			"❤️ <b>HP</b>: %d/%d\t\t\t\t\t\t⚡️ <b>Energia</b>: %d/%d\n"+
 			"⚔️ <b>ATK</b>: %d \t\t\t\t\t\t\t\t\t\t🛡️ <b>DEF</b>: %d \n"+
-			"🗺️ <b>Local</b>: %s(Lv%d)\n"+
 			"💰 <b>Gold</b>: %d\n"+
 			"💎 <b>KiCrystals</b>: %d\n",
 		player.Name,
 		player.Class,
+		region.Name,
 		player.Level,
 		player.XP,
 		player.HP,
@@ -159,7 +160,6 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 		player.MaxEnergy,
 		player.ATK,
 		player.DEF,
-		region.Name,
 		region.MinLevel,
 		player.Gold,
 		player.KiCrystals,
@@ -245,33 +245,18 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 	var msgResponse MsgResponse
 	msgResponse.Message =
 		fmt.Sprintf(
-			"🙎‍♂️ Ei eu sou Sir Soneca (Dono da pousada)  \n"+
-				"📜%d-<b>%s</b> \n"+
-				"Você ainda tem HP e energia para mais umas batalhas.\n"+
-				"❤️ <b>HP</b>: %d/%d\t\t\t\t\t\t⚡️ <b>Energia</b>: %d/%d\n"+
-				"💰 <b>Gold</b>: %d\n",
-			player.Level,
-			player.Name,
-			player.HP,
-			player.MaxHP,
-			player.Energy,
-			player.MaxEnergy,
-			player.Gold,
-		)
+			"🛏️ Sir Soneca, Guardião do Descanso 🛏️ \n\n"+
+				"“Ooooh… hã? Um aventureiro?” 😴 \n"+
+				"Bem-vindo %s à minha humilde pousada… \n\n"+
+				"Sou Sir Soneca, cavaleiro aposentado e mestre supremo da arte de dormir bem. \n\n"+
+				"Aqui você pode descansar, recuperar suas forças e deixar que o cansaço da batalha desapareça. \n"+
+				"Uma boa noite de sono cura feridas, restaura o HP e prepara seu espírito para a próxima luta. \n\n"+
+				"🕯️ Camas macias, silêncio garantido… e roncos inclusos no pacote. \n\n"+
+				"Então, jovem guerreiro(a) … vai apenas descansar um pouco… \n"+
+				"ou dormir como um verdadeiro herói? 😴💤 \n\n",
+			player.Name)
 	msgResponse.Img =
 		tgbotapi.FilePath(fmt.Sprintf("assets/npcs/sir_soneca.png"))
-
-	if player.HP < 30 {
-		msgResponse.Message = fmt.Sprintf(
-			"<b>%s</b> seu HP esta baixo 😫. \n "+
-				"❤️ <b>HP</b>: %d/%d \n",
-			player.Name,
-			player.HP,
-			player.MaxHP,
-		)
-		msgResponse.Img =
-			tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_%s.png", domain.ConvertLowCase(player.Gender), "tired"))
-	}
 	return msgResponse, nil
 }
 func (s *PlayerService) Rest(userID int64) (MsgResponse, error) {
@@ -366,4 +351,31 @@ func (s *PlayerService) Sleep(userID int64) (MsgResponse, error) {
 	}
 
 	return msgResponse, nil
+}
+
+func (s *PlayerService) OpenShop(userID int64) (MsgResponse, error) {
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var msgResponse MsgResponse
+	msgResponse = MsgResponse{
+		Message: fmt.Sprintf(
+			"🪙 Kiara, a Mercadora 🪙 \n\n"+
+				"Seja bem-vindo %s à minha lojinha! \n\n"+
+				"Eu sou Kiara, mercadora viajante e guardiã de artefatos raros. \n\n"+
+				"Aqui você encontrará poções, equipamentos e itens especiais que vão fortalecer seu corpo, "+
+				"renovar seu Ki e te ajudar a sobreviver aos desafios que te esperam lá fora. \n\n"+
+				"💎 Cada item aqui foi escolhido para quem busca evoluir, não apenas lutar. \n"+
+				"Prepare-se bem… a jornada de um verdadeiro guerreiro (a) começa com as escolhas certas. \n\n"+
+				"O que posso fazer por você hoje? 😄 \n\n",
+			player.Name,
+		),
+		Img:        tgbotapi.FilePath(fmt.Sprintf("assets/npcs/kiara_mercadora.png")),
+		Conditions: false,
+	}
+
+	return msgResponse, nil
+
 }

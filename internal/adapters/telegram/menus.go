@@ -29,6 +29,9 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar (Lv +3)", "action_transformar"),
 			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
+		),
 		//tgbotapi.NewInlineKeyboardRow(
 		//	tgbotapi.NewInlineKeyboardButtonData("💎 Comprar 10 KiCrystals", "action_buy_ki"),
 		//),
@@ -55,6 +58,14 @@ func battleMenu(monsterID int) *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar ", fmt.Sprintf("action_fight?monsterID=%d", monsterID)),
 			//tgbotapi.NewInlineKeyboardButtonData("🧪 Poções ", "use_potion"),
 			tgbotapi.NewInlineKeyboardButtonData("🏃🏻 Escapar ", fmt.Sprintf("action_escape?monsterID=%d", monsterID)),
+		),
+	)
+	return &menu
+}
+func shopMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📖 Menu", "action_menu"),
 		),
 	)
 	return &menu

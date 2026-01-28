@@ -185,6 +185,19 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Menu:     menu,
 			CameFrom: "action_rest",
 		}
+	case "to_shop":
+		menu := shopMenu()
+		msg, err := h.playerService.OpenShop(userID)
+		if err != nil {
+			msgResponse.Message = "❌ Erro ao abrir lojinha"
+			break
+		}
+		msgResponse = MsgResponse{
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     menu,
+			CameFrom: "to_shop",
+		}
 	case "action_buy_ki":
 		menu := mainMenu()
 		msg, err := h.paymentService.HandleBuyKi(chatID, userID, messageID)
