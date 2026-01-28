@@ -22,19 +22,33 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 		return
 	}
 
+	status, _ := h.playerService.HasCompletedOnboarding(update.Message.Chat.ID)
+
 	if update.Message.Text == "/start" {
-		completed, err := h.playerService.HasCompletedOnboarding(update.Message.Chat.ID)
+		status, err := h.playerService.HasCompletedOnboarding(update.Message.Chat.ID)
 		if err != nil {
 			h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "❌ Erro interno"))
 			return
 		}
 
-		if completed {
-			h.newPanel(update.Message.Chat.ID)
-		} else {
+		switch status {
+
+		case "DONE":
+			h.newPanel(update.Message.Chat.ID, "OLD_PLAYER")
+		default: // NONE ou CHOOSING_GENDER
 			h.sendInitialPanel(update.Message.Chat.ID)
 		}
+
 		return
 	}
+	if status == "CHOOSING_NAME" {
+		_, err := h.handleNameInput(update.Message.Chat.ID, update.Message.Chat.ID, update.Message.Text)
+		if err != nil {
+			h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "❌ Erro interno"))
+			return
+		}
+		h.newPanel(update.Message.Chat.ID, "NEW_PLAYER")
+	}
+
 	h.handleCallback(update)
 }

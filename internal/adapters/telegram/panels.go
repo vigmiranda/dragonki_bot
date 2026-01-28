@@ -20,44 +20,52 @@ func (h *Handler) sendInitialPanel(chatID int64) {
 	photo.ReplyMarkup = choosingGenderMenu()
 	h.bot.Send(photo)
 }
-func (h *Handler) handleNameInput(chatID int64, userID int64, name string) {
+func (h *Handler) handleNameInput(chatID int64, userID int64, name string) (MsgResponse, error) {
 	name = strings.TrimSpace(name)
 
+	response := MsgResponse{
+		Message: "🔥 Nome definido com sucesso! Bem-vindo ao DragonKi!",
+		Img:     tgbotapi.FilePath(fmt.Sprintf("assets/skins/man_skin_basic.png")),
+	}
+
 	if len(name) < 3 || len(name) > 16 {
-		h.bot.Send(tgbotapi.NewMessage(chatID,
-			"❌ O nome deve ter entre 3 e 16 caracteres.",
-		))
-		return
+		response.Message = "O Nome precisa ter entre 3 e 16 caracteres!!"
+		response.Img = tgbotapi.FilePath(fmt.Sprintf("error.png"))
 	}
 
 	if !regexp.MustCompile(`^[a-zA-Z0-9_]+$`).MatchString(name) {
-		h.bot.Send(tgbotapi.NewMessage(chatID,
-			"❌ Use apenas letras, números ou _",
-		))
-		return
+		response.Message = "O Nome aceita somente de A-Z de 0-9!!"
+		response.Img = tgbotapi.FilePath(fmt.Sprintf("error.png"))
 	}
 
 	h.playerService.SetName(userID, name)
 
-	h.bot.Send(tgbotapi.NewMessage(chatID,
-		"🔥 Nome definido com sucesso! Bem-vindo ao DragonKi!",
-	))
+	return response, nil
 }
 
-func (h *Handler) newPanel(chatID int64) {
+func (h *Handler) newPanel(chatID int64, origin string) {
 	photo := tgbotapi.NewPhoto(
 		chatID,
 		tgbotapi.FilePath("assets/maps/plain_lv1.png"),
 	)
-	photo.Caption = fmt.Sprintf(
-		"🐉 Você voltou, guerreiro.\n\n" +
-			"Seu Ki se renovou.\n" +
-			"O mundo segue em movimento e \n" +
-			"novos inimigos aguardam nas sombras.\n\n" +
-			"Cada batalha o aproxima de um poder maior.\n" +
-			"⚔️ Avance. Lute. Evolua.\n\n" +
-			"O destino não espera.",
-	)
+	if origin != "NEW_PLAYER" {
+		photo.Caption = fmt.Sprintf(
+			"🐉 Você voltou, guerreiro.\n\n" +
+				"Seu Ki se renovou.\n",
+		)
+	} else {
+		photo.Caption = fmt.Sprintf(
+			"🐉 Bem Vindo, guerreiro.\n\n" +
+				"Se você derrotar um guerreiro mais poderoso, outro aparecerá em seguida!!\n" +
+				"Siga em frente porque quanto mais você apanha, mais forte você fica!!!\n",
+		)
+	}
+
+	photo.Caption += "O mundo segue em movimento e \n" +
+		"os inimigos aguardam nas sombras.\n\n" +
+		"Cada batalha o aproxima de um poder maior.\n" +
+		"⚔️ Avance. Lute. Evolua.\n\n" +
+		"O destino não espera."
 	photo.ParseMode = "HTML"
 	photo.ReplyMarkup = mainMenu()
 	_, err := h.bot.Send(photo)
@@ -89,6 +97,9 @@ func (h *Handler) editPanel(
 
 	if msgResponse.Menu != nil {
 		menu = msgResponse.Menu
+	}
+	if msgResponse.CameFrom == "select_man" || msgResponse.CameFrom == "select_woman" {
+		menu = nil
 	}
 
 	edit.ReplyMarkup = menu

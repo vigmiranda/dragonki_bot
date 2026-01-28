@@ -25,35 +25,36 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 
 	msgResponse := MsgResponse{
 		Message: "",
-		Img:     tgbotapi.FilePath(fmt.Sprintf("assts/error.png")),
+		Img:     tgbotapi.FilePath(fmt.Sprintf("assets/error.png")),
 	}
-
 	switch action {
 
 	case "select_man":
-		msg, err := h.playerService.SetGender(userID, "MAN")
+		_, err := h.playerService.SetGender(userID, "MAN")
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao buscar menu"
+			msgResponse.Message = "❌ Erro ao definir gênero"
 			break
 		}
-		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    mainMenu(),
-		}
 
+		msgResponse = MsgResponse{
+			Message:  "✍️ Ótima escolha!\n\nAgora digite o nome do seu personagem:",
+			Img:      tgbotapi.FilePath(fmt.Sprintf("assets/skins/man_skin_basic.png")),
+			Menu:     nil, // ❗ sem menu enquanto digita nome
+			CameFrom: "select_man",
+		}
 	case "select_woman":
-		msg, err := h.playerService.SetGender(userID, "WOMAN")
+		_, err := h.playerService.SetGender(userID, "MAN")
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao buscar menu"
+			msgResponse.Message = "❌ Erro ao definir gênero"
 			break
 		}
-		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    mainMenu(),
-		}
 
+		msgResponse = MsgResponse{
+			Message:  "✍️ Ótima escolha!\n\nAgora digite o nome do seu personagem:",
+			Img:      tgbotapi.FilePath(fmt.Sprintf("assets/skins/woman_skin_basic.png")),
+			Menu:     nil, // ❗ sem menu enquanto digita nome
+			CameFrom: "select_man",
+		}
 	case "action_menu":
 		msg, err := h.playerService.Menu(userID)
 		if err != nil {
@@ -61,9 +62,10 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			break
 		}
 		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    mainMenu(),
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     mainMenu(),
+			CameFrom: "action_menu",
 		}
 	case "action_fight":
 		msg, err := h.battleService.Battle(userID, params)
@@ -72,16 +74,17 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			break
 		}
 		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    mainMenu(),
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     mainMenu(),
+			CameFrom: "action_fight",
 		}
 	case "action_escape":
 		menu := mainMenu()
 		msg, monster, err := h.battleService.Escape(userID, params)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar menu"
-			msg.Img = tgbotapi.FilePath(fmt.Sprintf("assts/error.png"))
+			msg.Img = tgbotapi.FilePath(fmt.Sprintf("assets/error.png"))
 			break
 		}
 		if msg.Conditions {
@@ -89,9 +92,10 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		}
 
 		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    menu,
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     menu,
+			CameFrom: "action_escape",
 		}
 
 	case "action_cacar":
@@ -105,9 +109,10 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			menu = battleMenu(monster)
 		}
 		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    menu,
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     menu,
+			CameFrom: "action_cacar",
 		}
 
 	case "action_status":
@@ -117,9 +122,10 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			break
 		}
 		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    mainMenu(),
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     mainMenu(),
+			CameFrom: "action_status",
 		}
 
 	case "action_transformar":
@@ -129,9 +135,10 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			break
 		}
 		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    mainMenu(),
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     mainMenu(),
+			CameFrom: "action_transformar",
 		}
 
 	case "to_sleep":
@@ -141,9 +148,10 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			break
 		}
 		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    energyMenu(),
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     energyMenu(),
+			CameFrom: "to_sleep",
 		}
 	case "action_sleep":
 		menu := energyMenu()
@@ -156,9 +164,10 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			menu = mainMenu()
 		}
 		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    menu,
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     menu,
+			CameFrom: "action_sleep",
 		}
 	case "action_buy_ki":
 		menu := mainMenu()
@@ -171,9 +180,10 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			menu = mainMenu()
 		}
 		msgResponse = MsgResponse{
-			Message: msg.Message,
-			Img:     msg.Img,
-			Menu:    menu,
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     menu,
+			CameFrom: "action_sleep",
 		}
 	}
 

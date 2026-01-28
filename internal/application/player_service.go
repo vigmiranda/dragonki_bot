@@ -104,12 +104,12 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 	return msgResponse, nil
 }
 
-func (s *PlayerService) HasCompletedOnboarding(userID int64) (bool, error) {
+func (s *PlayerService) HasCompletedOnboarding(userID int64) (string, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
-		return false, err
+		return "", err
 	}
-	return player.OnboardingStep == "DONE", nil
+	return player.OnboardingStep, nil
 }
 
 func (s *PlayerService) Status(userID int64) (MsgResponse, error) {

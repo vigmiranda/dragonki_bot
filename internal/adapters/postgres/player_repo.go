@@ -71,7 +71,7 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 			LastEnergyAt:    time.Now().UTC(),
 			Form:            "Base",
 			FormBattlesLeft: 0,
-			OnboardingStep:  "DONE",
+			OnboardingStep:  "ONBOARDING",
 			LastUpdate:      time.Now().UTC(),
 		}
 
