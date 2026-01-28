@@ -43,7 +43,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			CameFrom: "select_man",
 		}
 	case "select_woman":
-		_, err := h.playerService.SetGender(userID, "MAN")
+		_, err := h.playerService.SetGender(userID, "WOMAN")
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao definir gênero"
 			break
