@@ -26,6 +26,16 @@ type PlayerService struct {
 func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionRepository) *PlayerService {
 	return &PlayerService{PlayerRepository: repo, RegionRepository: regionRepo}
 }
+func (s *PlayerService) Onboarding(userID int64) (*domain.Player, error) {
+	return s.PlayerRepository.GetOrCreate(userID)
+}
+func (s *PlayerService) HasCompletedOnboarding(userID int64) (string, error) {
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		return "", err
+	}
+	return player.OnboardingStep, nil
+}
 
 func (s *PlayerService) SetGender(userID int64, gender string) (MsgResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
@@ -48,6 +58,7 @@ func (s *PlayerService) SetGender(userID int64, gender string) (MsgResponse, err
 	msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(gender)))
 	return msgResponse, nil
 }
+
 func (s *PlayerService) SetName(userID int64, name string) error {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
@@ -102,14 +113,6 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 	)
 	msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/maps/%s.png", domain.ConvertLowCase(region.Tag)))
 	return msgResponse, nil
-}
-
-func (s *PlayerService) HasCompletedOnboarding(userID int64) (string, error) {
-	player, err := s.PlayerRepository.GetOrCreate(userID)
-	if err != nil {
-		return "", err
-	}
-	return player.OnboardingStep, nil
 }
 
 func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
@@ -241,10 +244,12 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 
 	var msgResponse MsgResponse
 	msgResponse.Message =
-		fmt.Sprintf("📜%d-<b>%s</b> \n"+
-			"Você ainda tem HP e energia para mais umas batalhas.\n"+
-			"❤️ <b>HP</b>: %d/%d\t\t\t\t\t\t⚡️ <b>Energia</b>: %d/%d\n"+
-			"💰 <b>Gold</b>: %d\n",
+		fmt.Sprintf(
+			"🙎‍♂️ Ei eu sou Sir Soneca (Dono da pousada)  \n"+
+				"📜%d-<b>%s</b> \n"+
+				"Você ainda tem HP e energia para mais umas batalhas.\n"+
+				"❤️ <b>HP</b>: %d/%d\t\t\t\t\t\t⚡️ <b>Energia</b>: %d/%d\n"+
+				"💰 <b>Gold</b>: %d\n",
 			player.Level,
 			player.Name,
 			player.HP,
@@ -254,7 +259,7 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 			player.Gold,
 		)
 	msgResponse.Img =
-		tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_%s.png", domain.ConvertLowCase(player.Gender), "skin_basic"))
+		tgbotapi.FilePath(fmt.Sprintf("assets/npcs/sir_soneca.png"))
 
 	if player.HP < 30 {
 		msgResponse.Message = fmt.Sprintf(
@@ -269,7 +274,57 @@ func (s *PlayerService) Energy(userID int64) (MsgResponse, error) {
 	}
 	return msgResponse, nil
 }
-func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
+func (s *PlayerService) Rest(userID int64) (MsgResponse, error) {
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
+		player.RegenEnergy()
+	}
+	player.SetTransformBase()
+	err = s.PlayerRepository.Save(player)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var msgResponse MsgResponse
+	msgResponse = MsgResponse{
+		Message: fmt.Sprintf(
+			"Você nao tem energia\n"+
+				"Aguarde %s!! e volter aqui para descansar!!\n",
+			os.Getenv("ENERGY_REGEN_TIME"),
+		),
+		Img:        tgbotapi.FilePath(fmt.Sprintf("assets/npcs/sir_soneca.png")),
+		Conditions: false,
+	}
+
+	if player.Energy >= 1 {
+		player.Energy -= 1
+
+		player.HP += int(float64(player.MaxHP) * 0.3)
+		if player.HP > player.MaxHP {
+			player.HP = player.MaxHP
+		}
+
+		msgResponse = MsgResponse{
+			Message: fmt.Sprintf(
+				"❤️ HP recarregado!!! %d/%d\n"+
+					"Bora voltar pra Luta ⚔️!! \n",
+				player.HP,
+				player.MaxHP,
+			),
+			Img:        tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender))),
+			Conditions: true,
+		}
+		err := s.PlayerRepository.Save(player)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return msgResponse, nil
+
+}
+func (s *PlayerService) Sleep(userID int64) (MsgResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
@@ -286,8 +341,7 @@ func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
 	var msgResponse MsgResponse
 	msgResponse = MsgResponse{
 		Message: fmt.Sprintf(
-			"🙎‍♂️ Ei eu sou Sir Soneca (Dono da pousada)  \n" +
-				"Infelizmente você não podera ficar \n" +
+			"Infelizmente você não podera ficar \n" +
 				"Junte mais gold e retorne!!\n",
 		),
 		Img:        tgbotapi.FilePath(fmt.Sprintf("assets/npcs/sir_soneca.png")),
@@ -312,7 +366,4 @@ func (s *PlayerService) Recovery(userID int64) (MsgResponse, error) {
 	}
 
 	return msgResponse, nil
-}
-func (s *PlayerService) Onboarding(userID int64) (*domain.Player, error) {
-	return s.PlayerRepository.GetOrCreate(userID)
 }

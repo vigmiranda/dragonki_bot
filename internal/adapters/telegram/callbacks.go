@@ -155,7 +155,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		}
 	case "action_sleep":
 		menu := energyMenu()
-		msg, err := h.playerService.Recovery(userID)
+		msg, err := h.playerService.Sleep(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
@@ -168,6 +168,22 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Img:      msg.Img,
 			Menu:     menu,
 			CameFrom: "action_sleep",
+		}
+	case "action_rest":
+		menu := energyMenu()
+		msg, err := h.playerService.Rest(userID)
+		if err != nil {
+			msgResponse.Message = "❌ Erro ao calcular energia"
+			break
+		}
+		if msg.Conditions {
+			menu = mainMenu()
+		}
+		msgResponse = MsgResponse{
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     menu,
+			CameFrom: "action_rest",
 		}
 	case "action_buy_ki":
 		menu := mainMenu()

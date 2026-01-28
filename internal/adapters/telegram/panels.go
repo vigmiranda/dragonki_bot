@@ -55,7 +55,7 @@ func (h *Handler) newPanel(chatID int64, origin string) {
 		)
 	} else {
 		photo.Caption = fmt.Sprintf(
-			"🐉 Bem Vindo, guerreiro.\n\n" +
+			"🐉 Bem Vindo, guerreiro (a).\n\n" +
 				"Se você derrotar um guerreiro mais poderoso, outro aparecerá em seguida!!\n" +
 				"Siga em frente porque quanto mais você apanha, mais forte você fica!!!\n",
 		)
