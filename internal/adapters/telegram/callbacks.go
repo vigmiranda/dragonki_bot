@@ -53,7 +53,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Message:  "✍️ Ótima escolha!\n\nAgora digite o nome do seu personagem:",
 			Img:      tgbotapi.FilePath(fmt.Sprintf("assets/skins/woman_skin_basic.png")),
 			Menu:     nil, // ❗ sem menu enquanto digita nome
-			CameFrom: "select_man",
+			CameFrom: "select_woman",
 		}
 	case "action_menu":
 		msg, err := h.playerService.Menu(userID)
