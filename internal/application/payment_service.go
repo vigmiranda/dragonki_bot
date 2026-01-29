@@ -39,30 +39,7 @@ func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Paym
 	return payment, qrCode, nil
 }
 
-func (s *PaymentService) ConfirmPayment(paymentID int64) error {
-	payment, err := s.paymentRepository.FindByPartnerID(paymentID)
-	if err != nil {
-		return err
-	}
-
-	if payment.Status == domain.PaymentApproved {
-		return nil
-	}
-
-	if err := s.paymentRepository.UpdateStatus(payment.ID, payment.Status); err != nil {
-		return err
-	}
-
-	player, err := s.playersRepository.GetOrCreate(payment.PlayerID)
-	if err != nil {
-		return err
-	}
-
-	player.KiCrystals += int(payment.Amount)
-	return s.playersRepository.Save(player)
-}
-
-func (s *PaymentService) HandleBuyKi(chatID int64, userID int64, messageID int) (MsgResponse, error) {
+func (s *PaymentService) HandleBuyKi(chatID int64, userID int64) (MsgResponse, error) {
 
 	amount := 1
 
@@ -104,4 +81,29 @@ func (s *PaymentService) HandleBuyKi(chatID int64, userID int64, messageID int) 
 	}
 
 	return msgResponse, nil
+}
+
+func (s *PaymentService) ConfirmPayment(paymentID int64) error {
+	payment, err := s.paymentRepository.FindByPartnerID(paymentID)
+	if err != nil {
+		return err
+	}
+
+	if payment.Status == domain.PaymentApproved {
+		return nil
+	}
+
+	payment.Status = domain.PaymentApproved
+
+	if err := s.paymentRepository.UpdateStatus(payment.ID, payment.Status); err != nil {
+		return err
+	}
+
+	player, err := s.playersRepository.GetOrCreate(payment.PlayerID)
+	if err != nil {
+		return err
+	}
+
+	player.KiCrystals += int(payment.Amount * 10)
+	return s.playersRepository.Save(player)
 }

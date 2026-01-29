@@ -221,4 +221,11 @@ var migrations = []migration{
 		VALUES ('Ascended Sage', 'Ki Channeler', 'MASTER', 50, 25);
 		`,
 	},
+	{
+		version: 14,
+		sql: `	
+		ALTER TABLE payments
+		ADD COLUMN last_update TIMESTAMP DEFAULT now()
+		`,
+	},
 }
