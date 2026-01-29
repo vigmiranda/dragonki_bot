@@ -8,6 +8,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
+	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
@@ -39,7 +40,7 @@ func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Paym
 	return payment, qrCode, nil
 }
 
-func (s *PaymentService) HandleBuyKi(chatID int64, userID int64) (MsgResponse, error) {
+func (s *PaymentService) HandleBuyKi(chatID int64, userID int64) (view.MsgResponse, error) {
 
 	amount := 1
 
@@ -51,10 +52,10 @@ func (s *PaymentService) HandleBuyKi(chatID int64, userID int64) (MsgResponse, e
 	}
 	log.Println(fmt.Sprintf("Valor do KiDragons: %d Atual: %d", amountEnv, amount))
 
-	var msgResponse MsgResponse
+	var msgResponse view.MsgResponse
 
 	media := tgbotapi.FilePath("assets/error.png")
-	msgResponse = MsgResponse{
+	msgResponse = view.MsgResponse{
 		Message: fmt.Sprintf(
 			"",
 		),

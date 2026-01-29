@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/mercadopago/sdk-go/pkg/payment"
-
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 )

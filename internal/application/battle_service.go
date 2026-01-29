@@ -9,6 +9,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
+	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
@@ -28,7 +29,7 @@ func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *postgres.M
 	}
 }
 
-func (s *BattleService) GetBattle(userID int64) (MsgResponse, int, error) {
+func (s *BattleService) GetBattle(userID int64) (view.MsgResponse, int, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	player.SetTransformBase()
 	err = s.playerRepo.Save(player)
@@ -38,13 +39,13 @@ func (s *BattleService) GetBattle(userID int64) (MsgResponse, int, error) {
 	monsterID := 0
 	if err != nil {
 		log.Fatal(err)
-		return MsgResponse{
+		return view.MsgResponse{
 			Message: "Sinto muito, erro ao iniciar Batalha!",
 			Img:     tgbotapi.FilePath(fmt.Sprintf("assets/error.png")),
 		}, monsterID, err
 	}
 
-	msg := MsgResponse{
+	msg := view.MsgResponse{
 		Message:    "⚡ Energia esgotada \n Vá ate a pousada para descansar!",
 		Img:        tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_tired.png", domain.ConvertLowCase(player.Gender))),
 		Conditions: false,
@@ -53,15 +54,15 @@ func (s *BattleService) GetBattle(userID int64) (MsgResponse, int, error) {
 	if player.Energy > 0 {
 		monsters, err := s.monsterRepo.ListByLevel(int64(player.Level))
 		if err != nil || len(monsters) == 0 {
-			return MsgResponse{}, monsterID, fmt.Errorf("nenhum monstro encontrado")
+			return view.MsgResponse{}, monsterID, fmt.Errorf("nenhum monstro encontrado")
 		}
 
 		monster := pickMonsterByWeight(monsters)
 		if monster == nil {
-			return MsgResponse{}, monsterID, fmt.Errorf("falha ao sortear monstro")
+			return view.MsgResponse{}, monsterID, fmt.Errorf("falha ao sortear monstro")
 		}
 		monsterID = monster.MonsterID
-		msg = MsgResponse{
+		msg = view.MsgResponse{
 			Message: fmt.Sprintf(
 				"🐉<b> Um %s apareceu! </b>\n\n"+
 					"💪 <b>Lv:</b> %d\n"+
@@ -80,7 +81,7 @@ func (s *BattleService) GetBattle(userID int64) (MsgResponse, int, error) {
 
 	return msg, monsterID, nil
 }
-func (s *BattleService) Battle(userID int64, params map[string]string) (MsgResponse, error) {
+func (s *BattleService) Battle(userID int64, params map[string]string) (view.MsgResponse, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	levelMult, _ := strconv.ParseInt(os.Getenv("LEVEL_MULT"), 10, 64)
 	if err != nil {
@@ -94,7 +95,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 		log.Fatal(err)
 	}
 
-	msgResponse := MsgResponse{
+	msgResponse := view.MsgResponse{
 		Message: "💀 Ocorreu um erro ao fim da batalha!!!",
 		Img:     tgbotapi.FilePath(fmt.Sprintf("assets/error.png")),
 	}
@@ -127,7 +128,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 			player.FormBattlesLeft = 0
 			player.Form = "Base"
 			player.HP = player.MaxHP
-			googNews = "⬆️ Subiu de nível!\n"
+			googNews = "⬆️ <b>Subiu de nível!</b> \n"
 			if player.FormBattlesLeft > 0 {
 				player.FormBattlesLeft = 0
 				player.Form = "Base"
@@ -139,7 +140,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 		}
 
 		msgResponse.Message = fmt.Sprintf(
-			"🏆 Vitória! %s\n"+
+			"🏆 Vitória! %s \n"+
 				"%s"+
 				"Você recebeu de dano: %d\n"+
 				"⚔️ +%d XP\n"+
@@ -188,14 +189,14 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 			tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_battle_loss.png", domain.ConvertLowCase(player.Gender)))
 	}
 	if err := s.playerRepo.Save(player); err != nil {
-		return MsgResponse{
+		return view.MsgResponse{
 			Message: "💀 Ocorreu um erro ao fim da batalha!!!",
 			Img:     tgbotapi.FilePath(fmt.Sprintf("assets/error.png")),
 		}, err
 	}
 	return msgResponse, nil
 }
-func (s *BattleService) Escape(userID int64, params map[string]string) (MsgResponse, *domain.Monster, error) {
+func (s *BattleService) Escape(userID int64, params map[string]string) (view.MsgResponse, *domain.Monster, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
@@ -207,7 +208,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (MsgRespo
 	if err != nil {
 		log.Fatal(err)
 	}
-	msgResponse := MsgResponse{
+	msgResponse := view.MsgResponse{
 		Message:    "💀 Você consegui fugir!!!",
 		Img:        tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender))),
 		Conditions: false,
@@ -216,7 +217,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (MsgRespo
 	escapeMonster := rand.Intn(10)
 	if escapePlayer < escapeMonster {
 		player.HP -= rand.Intn(monster.ATK/2+1) + monster.ATK/2
-		msgResponse = MsgResponse{
+		msgResponse = view.MsgResponse{
 			Message: fmt.Sprintf(
 				"💀 Você não consegui fugir!!! \n"+
 					"❤️ Seu HP agora é %d/%d \n"+

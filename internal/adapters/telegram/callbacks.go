@@ -30,20 +30,19 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	switch action {
 
 	case "select_man":
-		_, err := h.playerService.SetGender(userID, "MAN")
+		_, err := h.onboardingService.SetGender(userID, "MAN")
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao definir gênero"
 			break
 		}
-
 		msgResponse = MsgResponse{
 			Message:  "✍️ Ótima escolha!\n\nAgora digite o nome do seu personagem:",
 			Img:      tgbotapi.FilePath(fmt.Sprintf("assets/skins/man_skin_basic.png")),
-			Menu:     nil, // ❗ sem menu enquanto digita nome
+			Menu:     nil,
 			CameFrom: "select_man",
 		}
 	case "select_woman":
-		_, err := h.playerService.SetGender(userID, "WOMAN")
+		_, err := h.onboardingService.SetGender(userID, "WOMAN")
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao definir gênero"
 			break
@@ -56,7 +55,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			CameFrom: "select_woman",
 		}
 	case "action_menu":
-		msg, err := h.playerService.Menu(userID)
+		msg, err := h.menuService.Menu(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
@@ -66,6 +65,18 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Img:      msg.Img,
 			Menu:     mainMenu(),
 			CameFrom: "action_menu",
+		}
+	case "action_status":
+		msg, err := h.playerService.Status(userID)
+		if err != nil {
+			msgResponse.Message = "❌ Erro ao buscar status"
+			break
+		}
+		msgResponse = MsgResponse{
+			Message:  msg.Message,
+			Img:      msg.Img,
+			Menu:     mainMenu(),
+			CameFrom: "action_status",
 		}
 	case "action_fight":
 		msg, err := h.battleService.Battle(userID, params)
@@ -97,7 +108,6 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Menu:     menu,
 			CameFrom: "action_escape",
 		}
-
 	case "action_cacar":
 		menu := mainMenu()
 		msg, monster, err := h.battleService.GetBattle(userID)
@@ -114,22 +124,8 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Menu:     menu,
 			CameFrom: "action_cacar",
 		}
-
-	case "action_status":
-		msg, err := h.playerService.Status(userID)
-		if err != nil {
-			msgResponse.Message = "❌ Erro ao buscar status"
-			break
-		}
-		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
-			Menu:     mainMenu(),
-			CameFrom: "action_status",
-		}
-
 	case "action_transformar":
-		msg, err := h.playerService.Transform(userID)
+		msg, err := h.transformService.Transform(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Não foi possível transformar"
 			break
@@ -140,9 +136,8 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			Menu:     mainMenu(),
 			CameFrom: "action_transformar",
 		}
-
 	case "to_sleep":
-		msg, err := h.playerService.Energy(userID)
+		msg, err := h.energyService.Energy(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
@@ -155,7 +150,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		}
 	case "action_sleep":
 		menu := energyMenu()
-		msg, err := h.playerService.Sleep(userID)
+		msg, err := h.energyService.Sleep(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
@@ -171,7 +166,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		}
 	case "action_rest":
 		menu := energyMenu()
-		msg, err := h.playerService.Rest(userID)
+		msg, err := h.energyService.Rest(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
@@ -187,7 +182,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		}
 	case "to_shop":
 		menu := shopMenu()
-		msg, err := h.playerService.OpenShop(userID)
+		msg, err := h.shopService.OpenShop(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao abrir lojinha"
 			break

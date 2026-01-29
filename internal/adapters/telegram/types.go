@@ -7,10 +7,15 @@ import (
 )
 
 type Handler struct {
-	bot            *tgbotapi.BotAPI
-	playerService  *application.PlayerService
-	battleService  *application.BattleService
-	paymentService *application.PaymentService
+	bot               *tgbotapi.BotAPI
+	playerService     *application.PlayerService
+	battleService     *application.BattleService
+	paymentService    *application.PaymentService
+	onboardingService *application.OnboardingService
+	transformService  *application.TransformService
+	menuService       *application.MenuService
+	energyService     *application.EnergyService
+	shopService       *application.ShopService
 }
 
 func NewHandler(
@@ -18,11 +23,21 @@ func NewHandler(
 	playerService *application.PlayerService,
 	battleService *application.BattleService,
 	paymentService *application.PaymentService,
+	onboardingService *application.OnboardingService,
+	transformService *application.TransformService,
+	menuService *application.MenuService,
+	energyService *application.EnergyService,
+	shopService *application.ShopService,
 ) *Handler {
 	return &Handler{
-		bot:            bot,
-		playerService:  playerService,
-		battleService:  battleService,
-		paymentService: paymentService,
+		bot:               bot,
+		playerService:     playerService,
+		battleService:     battleService,
+		paymentService:    paymentService,
+		onboardingService: onboardingService,
+		transformService:  transformService,
+		menuService:       menuService,
+		energyService:     energyService,
+		shopService:       shopService,
 	}
 }

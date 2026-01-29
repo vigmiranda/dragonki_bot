@@ -38,7 +38,7 @@ func (h *Handler) handleNameInput(chatID int64, userID int64, name string) (MsgR
 		response.Img = tgbotapi.FilePath(fmt.Sprintf("error.png"))
 	}
 
-	h.playerService.SetName(userID, name)
+	h.onboardingService.SetName(userID, name)
 
 	return response, nil
 }
