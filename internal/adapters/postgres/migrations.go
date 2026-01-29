@@ -136,4 +136,29 @@ var migrations = []migration{
 		ALTER COLUMN partner_id TYPE BIGINT USING (partner_id::BIGINT);
 		`,
 	},
+	{
+		version: 11,
+		sql: `		
+		INSERT INTO regions (region_id, name, tag, min_level)
+		SELECT 2, 'Forest of Spirits', 'FLOREST_LV15', 15
+		WHERE NOT EXISTS (
+			SELECT 2 FROM regions WHERE region_id = 2
+		);
+		INSERT INTO regions (region_id, name, tag, min_level)
+		SELECT 3, 'Volcano Lands', 'VULCAO_LV35', 35
+		WHERE NOT EXISTS (
+			SELECT 3 FROM regions WHERE region_id = 3
+		);
+		INSERT INTO regions (region_id, name, tag, min_level)
+		SELECT 4, 'Frozen Peaks', 'FROZEN_LV50', 50
+		WHERE NOT EXISTS (
+			SELECT 4 FROM regions WHERE region_id = 4
+		);
+		INSERT INTO regions (region_id, name, tag, min_level)
+		SELECT 5, 'Swamp of Shadows', 'SWAMP_LV70', 70
+		WHERE NOT EXISTS (
+			SELECT 5 FROM regions WHERE region_id = 5
+		);
+		`,
+	},
 }

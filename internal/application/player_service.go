@@ -95,7 +95,7 @@ func (s *PlayerService) Menu(userID int64) (MsgResponse, error) {
 	msgResponse.Message = fmt.Sprintf(
 		"<b> %s </b> \n\n"+
 			"👥 <b>Online (últimos 15 min)</b>: %d\n"+
-			"🏰 <b>Local</b>:  %s (L%d)\n"+
+			"🏰 <b>Local</b>:  %s - (Lv%d+)\n"+
 			"❤️ <b>HP</b>: %d/%d\n"+
 			"⚡️ <b>Energia</b>: %d/%d\n"+
 			"💪 <b>Level</b>: %d\n"+
@@ -143,15 +143,16 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 	var msgResponse MsgResponse
 	msgResponse.Message = fmt.Sprintf(
 		genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
-			"🗺️ <b>Local</b>: %s(Lv%d)\n"+
-			"💪 <b>Level</b>: %d\t\t\t\t\t\t\t\t\t\t\t🧬 <b>XP</b>: %d\n"+
-			"❤️ <b>HP</b>: %d/%d\t\t\t\t\t\t⚡️ <b>Energia</b>: %d/%d\n"+
-			"⚔️ <b>ATK</b>: %d \t\t\t\t\t\t\t\t\t\t🛡️ <b>DEF</b>: %d \n"+
+			"🗺️ <b>Local</b>: %s - (Lv%d+)\n"+
+			"💪 <b>Level</b>: %d   🧬 <b>XP</b>: %d\n"+
+			"❤️ <b>HP</b>: %d/%d   ⚡️ <b>Energia</b>: %d/%d\n"+
+			"⚔️ <b>ATK</b>: %d     🛡️ <b>DEF</b>: %d \n"+
 			"💰 <b>Gold</b>: %d\n"+
 			"💎 <b>KiCrystals</b>: %d\n",
 		player.Name,
 		player.Class,
 		region.Name,
+		region.MinLevel,
 		player.Level,
 		player.XP,
 		player.HP,
@@ -160,7 +161,6 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 		player.MaxEnergy,
 		player.ATK,
 		player.DEF,
-		region.MinLevel,
 		player.Gold,
 		player.KiCrystals,
 	)
