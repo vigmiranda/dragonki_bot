@@ -1,0 +1,211 @@
+## 🎮 Estratégia de Progressão de Classes – DragonKi
+
+### 🔰 Fase Inicial (Lv 1–14)
+
+Todos os jogadores começam como:
+
+* **Blade Monk**
+
+  * Classe base
+  * Equilibrada (ATK, HP e energia)
+  * Serve como fundação para especializações
+
+---
+
+## 🧭 Primeira Escolha de Classe – Lv 15
+
+Ao chegar no **nível 15**, o jogador escolhe **1 entre 3 caminhos**:
+
+### 1️⃣ **Sword Disciple**
+
+Foco em dano físico e precisão
+Estilo: ofensivo
+
+### 2️⃣ **Spirit Guard**
+
+Foco em defesa, HP e resistência
+Estilo: tank / sobrevivência
+
+### 3️⃣ **Ki Adept**
+
+Foco em energia, buffs e técnicas especiais
+Estilo: híbrido / técnico
+
+> ⚠️ A escolha **bloqueia as outras** (decisão permanente).
+
+---
+
+## 🔺 Evoluções Avançadas (a cada +20 níveis)
+
+Cada classe evolui **a cada 20 níveis**, mantendo coerência temática.
+
+---
+
+### 🗡️ Caminho: Sword Disciple
+
+| Nível | Classe            |
+| ----- | ----------------- |
+| 15    | Sword Disciple    |
+| 35    | **Blade Master**  |
+| 55    | **Dragon Slayer** |
+
+---
+
+### 🛡️ Caminho: Spirit Guard
+
+| Nível | Classe               |
+| ----- | -------------------- |
+| 15    | Spirit Guard         |
+| 35    | **Soul Protector**   |
+| 55    | **Eternal Sentinel** |
+
+---
+
+### 🔮 Caminho: Ki Adept
+
+| Nível | Classe            |
+| ----- | ----------------- |
+| 15    | Ki Adept          |
+| 35    | **Ki Channeler**  |
+| 55    | **Ascended Sage** |
+
+---
+
+## 🧠 Regras Importantes
+
+* A classe **não muda automaticamente**
+* Ao atingir o nível necessário, o jogador:
+
+  * Recebe uma **missão de ascensão**
+  * Ou confirma a evolução via menu
+* Cada evolução:
+
+  * Aumenta stats base
+  * Libera novas skills (futuro)
+  * Pode alterar aparência (skins)
+
+---
+
+# 🧩 Modelo de Domínio (Go)
+
+### `internal/domain/class.go`
+
+```go
+package domain
+
+type ClassTier string
+
+const (
+	TierBase     ClassTier = "BASE"
+	TierAdvanced ClassTier = "ADVANCED"
+	TierElite    ClassTier = "ELITE"
+)
+
+type Class struct {
+	ID           int64
+	Name         string
+	BaseClass    string // Blade Monk, Sword Disciple etc
+	Tier         ClassTier
+	MinLevel     int
+	AtkBonus     int
+	HpBonus      int
+	EnergyBonus  int
+}
+```
+
+---
+
+### Atualização do `Player`
+
+```go
+type Player struct {
+	UserID        int64
+	Name          string
+	ClassID       int64
+	ClassName     string
+
+	Level         int
+	HP            int
+	MaxHP         int
+	ATK           int
+	Energy        int
+	MaxEnergy     int
+
+	// progresso
+	CanEvolve     bool
+}
+```
+
+---
+
+## 🗄️ Script de Banco – PostgreSQL
+
+### 📌 Tabela de Classes
+
+```sql
+CREATE TABLE IF NOT EXISTS classes (
+	id SERIAL PRIMARY KEY,
+	name VARCHAR(50) NOT NULL,
+	base_class VARCHAR(50) NOT NULL,
+	tier VARCHAR(20) NOT NULL,
+	min_level INTEGER NOT NULL,
+
+	atk_bonus INTEGER DEFAULT 0,
+	hp_bonus INTEGER DEFAULT 0,
+	energy_bonus INTEGER DEFAULT 0
+);
+```
+
+---
+
+### 📌 Ajuste na tabela de players
+
+```sql
+ALTER TABLE players
+ADD COLUMN class_id INTEGER REFERENCES classes(id),
+ADD COLUMN can_evolve BOOLEAN DEFAULT false;
+```
+
+---
+
+## 🌱 Inserts iniciais de classes
+
+```sql
+-- Classe base
+INSERT INTO classes (name, base_class, tier, min_level)
+VALUES ('Blade Monk', 'Blade Monk', 'BASE', 1);
+
+-- Primeira escolha
+INSERT INTO classes (name, base_class, tier, min_level, atk_bonus)
+VALUES ('Sword Disciple', 'Blade Monk', 'ADVANCED', 15, 5);
+
+INSERT INTO classes (name, base_class, tier, min_level, hp_bonus)
+VALUES ('Spirit Guard', 'Blade Monk', 'ADVANCED', 15, 10);
+
+INSERT INTO classes (name, base_class, tier, min_level, energy_bonus)
+VALUES ('Ki Adept', 'Blade Monk', 'ADVANCED', 15, 5);
+
+-- Evoluções
+INSERT INTO classes (name, base_class, tier, min_level, atk_bonus)
+VALUES ('Blade Master', 'Sword Disciple', 'ELITE', 35, 10);
+
+INSERT INTO classes (name, base_class, tier, min_level, hp_bonus)
+VALUES ('Soul Protector', 'Spirit Guard', 'ELITE', 35, 20);
+
+INSERT INTO classes (name, base_class, tier, min_level, energy_bonus)
+VALUES ('Ki Channeler', 'Ki Adept', 'ELITE', 35, 15);
+```
+
+---
+
+## 🔜 Próximos passos (se quiser seguir)
+
+Posso te ajudar a:
+
+* ✅ Criar o **fluxo de escolha de classe no Telegram**
+* ✅ Implementar `CanEvolve` automaticamente ao upar
+* ✅ Criar **missões de ascensão**
+* ✅ Ligar evolução a **skins diferentes**
+* ✅ Balancear XP por tier
+
+Se quiser, no próximo passo já montamos **o menu de evolução + service de upgrade de classe** 👊🐉

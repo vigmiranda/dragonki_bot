@@ -150,7 +150,7 @@ func (s *PlayerService) Status(userID int64) (MsgResponse, error) {
 			"💰 <b>Gold</b>: %d\n"+
 			"💎 <b>KiCrystals</b>: %d\n",
 		player.Name,
-		player.Class,
+		player.ClassName,
 		region.Name,
 		region.MinLevel,
 		player.Level,

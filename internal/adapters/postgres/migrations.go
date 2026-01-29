@@ -161,4 +161,64 @@ var migrations = []migration{
 		);
 		`,
 	},
+	{
+		version: 12,
+		sql: `	
+		CREATE TABLE IF NOT EXISTS classes (
+			id SERIAL PRIMARY KEY,
+			name VARCHAR(50) NOT NULL,
+			base_class VARCHAR(50) NOT NULL,
+			tier VARCHAR(20) NOT NULL,
+			min_level INTEGER NOT NULL,
+		
+			atk_bonus INTEGER DEFAULT 0,
+			hp_bonus INTEGER DEFAULT 0,
+			energy_bonus INTEGER DEFAULT 0
+		);
+
+		ALTER TABLE players RENAME COLUMN class TO ClassName ;
+
+		ALTER TABLE players
+		ADD COLUMN class_id INTEGER REFERENCES classes(id) DEFAULT 1,
+		ADD COLUMN can_evolve BOOLEAN DEFAULT false;
+		    
+		
+		-- Primeira escolha
+		INSERT INTO classes (name, base_class, tier, min_level)
+		VALUES ('Blade Monk', 'Blade Monk', 'BASE', 1);
+		
+		-- Primeira escolha
+		INSERT INTO classes (name, base_class, tier, min_level, atk_bonus)
+		VALUES ('Sword Disciple', 'Blade Monk', 'ADVANCED', 15, 5);
+		
+		INSERT INTO classes (name, base_class, tier, min_level, hp_bonus)
+		VALUES ('Spirit Guard', 'Blade Monk', 'ADVANCED', 15, 10);
+		
+		INSERT INTO classes (name, base_class, tier, min_level, energy_bonus)
+		VALUES ('Ki Adept', 'Blade Monk', 'ADVANCED', 15, 5);
+		
+		-- Evoluções
+		INSERT INTO classes (name, base_class, tier, min_level, atk_bonus)
+		VALUES ('Blade Master', 'Sword Disciple', 'ELITE', 35, 10);
+		
+		INSERT INTO classes (name, base_class, tier, min_level, hp_bonus)
+		VALUES ('Soul Protector', 'Spirit Guard', 'ELITE', 35, 20);
+		
+		INSERT INTO classes (name, base_class, tier, min_level, energy_bonus)
+		VALUES ('Ki Channeler', 'Ki Adept', 'ELITE', 35, 15);
+		`,
+	},
+	{
+		version: 13,
+		sql: `	
+		INSERT INTO classes (name, base_class, tier, min_level, atk_bonus)
+		VALUES ('Dragon Slayer', 'Blade Master', 'MASTER', 50, 20);
+		
+		INSERT INTO classes (name, base_class, tier, min_level, hp_bonus)
+		VALUES ('Eternal Sentinel', 'Soul Protector', 'MASTER', 50, 35);
+		
+		INSERT INTO classes (name, base_class, tier, min_level, energy_bonus)
+		VALUES ('Ascended Sage', 'Ki Channeler', 'MASTER', 50, 25);
+		`,
+	},
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -81,6 +82,7 @@ func (s *BattleService) GetBattle(userID int64) (MsgResponse, int, error) {
 }
 func (s *BattleService) Battle(userID int64, params map[string]string) (MsgResponse, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
+	levelMult, _ := strconv.ParseInt(os.Getenv("LEVEL_MULT"), 10, 64)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -115,7 +117,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 		player.XP += xpReceived
 		player.Gold += moneyReceived
 
-		if player.XP >= player.Level*50 {
+		if player.XP >= player.Level*int(levelMult) {
 			player.Level++
 			player.ATK += int(float64(player.ATK) * 0.2)
 			player.DEF += int(float64(player.DEF) * 0.2)

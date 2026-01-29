@@ -8,9 +8,10 @@ type Player struct {
 	UserID int64
 
 	// Identidade
-	Name   string
-	Gender string
-	Class  string
+	Name      string
+	Gender    string
+	ClassID   int64
+	ClassName string
 
 	// Progressão
 	Level int
