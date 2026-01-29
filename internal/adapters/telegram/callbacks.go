@@ -200,7 +200,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		}
 	case "action_buy_ki":
 		menu := mainMenu()
-		msg, err := h.paymentService.HandleBuyKi(chatID, userID, messageID)
+		msg, err := h.paymentService.HandleBuyKi(chatID, userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break

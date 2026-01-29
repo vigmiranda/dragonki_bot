@@ -34,7 +34,7 @@ func (r *PaymentRepo) FindByPartnerID(id int64) (*domain.Payment, error) {
 
 func (r *PaymentRepo) UpdateStatus(id string, status domain.PaymentStatus) error {
 	_, err := r.db.Exec(`
-		UPDATE payments SET status=$1 WHERE id=$2
+		UPDATE payments SET status=$1, last_update= now() WHERE id=$2
 	`, status, id)
 	return err
 }
