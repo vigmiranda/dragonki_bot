@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
@@ -18,7 +17,7 @@ type PlayerService struct {
 func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionRepository) *PlayerService {
 	return &PlayerService{PlayerRepository: repo, RegionRepository: regionRepo}
 }
-func (s *PlayerService) Status(userID int64) (view.MsgResponse, error) {
+func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
@@ -43,8 +42,8 @@ func (s *PlayerService) Status(userID int64) (view.MsgResponse, error) {
 	if player.Form == "Ki Awakened" {
 		player = domain.KiAwakened(player)
 	}
-	var msgResponse view.MsgResponse
-	msgResponse.Message = fmt.Sprintf(
+
+	msg := fmt.Sprintf(
 		genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
 			"🗺️ <b>Local</b>: %s - (Lv %d+)\n"+
 			"💪 <b>Level</b>: %d   🧬 <b>XP</b>: %d\n"+
@@ -67,10 +66,17 @@ func (s *PlayerService) Status(userID int64) (view.MsgResponse, error) {
 		player.Gold,
 		player.KiCrystals,
 	)
-	msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)))
-	if player.FormBattlesLeft > 0 {
-		msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_ki_awakened.png", domain.ConvertLowCase(player.Gender)))
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
+	}
+	menu := "MAIN_MENU"
+
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
 	}
 
-	return msgResponse, nil
+	return viewResponse, nil
 }

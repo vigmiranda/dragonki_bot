@@ -55,27 +55,29 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			CameFrom: "select_woman",
 		}
 	case "action_menu":
-		msg, err := h.menuService.Menu(userID)
+		gameResp, err := h.menuService.Menu(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
 		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
-			Menu:     mainMenu(),
+			Message:  text,
+			Img:      photo,
+			Menu:     menu,
 			CameFrom: "action_menu",
 		}
 	case "action_status":
-		msg, err := h.playerService.Status(userID)
+		gameResp, err := h.menuService.Menu(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao buscar status"
+			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
 		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
-			Menu:     mainMenu(),
+			Message:  text,
+			Img:      photo,
+			Menu:     menu,
 			CameFrom: "action_status",
 		}
 	case "action_fight":

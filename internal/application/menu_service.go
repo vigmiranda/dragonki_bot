@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
@@ -21,7 +20,7 @@ func NewMenuService(repo ports.PlayerRepository, regionRepo ports.RegionReposito
 	return &MenuService{PlayerRepository: repo, RegionRepository: regionRepo}
 }
 
-func (s *MenuService) Menu(userID int64) (view.MsgResponse, error) {
+func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 	var player, err = s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
@@ -39,11 +38,10 @@ func (s *MenuService) Menu(userID int64) (view.MsgResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	var msgResponse view.MsgResponse
 	multiPlayersOnlineDB := os.Getenv("MULT_PLAYERS")
 	multiPlayersOnline, _ := strconv.Atoi(multiPlayersOnlineDB)
-	msgResponse.Message = fmt.Sprintf(
+
+	msg := fmt.Sprintf(
 		"<b> %s </b> \n\n"+
 			"👥 <b>Online (últimos 15 min)</b>: %d\n"+
 			"🏰 <b>Local</b>:  %s - (Lv %d+)\n"+
@@ -62,6 +60,17 @@ func (s *MenuService) Menu(userID int64) (view.MsgResponse, error) {
 		player.Level,
 		player.Gold,
 	)
-	msgResponse.Img = tgbotapi.FilePath(fmt.Sprintf("assets/maps/%s.png", domain.ConvertLowCase(region.Tag)))
-	return msgResponse, nil
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/maps/%s.png", domain.ConvertLowCase(region.Tag)),
+	}
+	menu := "MAIN_MENU"
+
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}
+
+	return viewResponse, nil
 }
