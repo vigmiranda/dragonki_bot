@@ -6,8 +6,8 @@ import (
 )
 
 func ToTelegramResponse(
-	resp view.GameResponse,
-) (string, tgbotapi.RequestFileData, *tgbotapi.InlineKeyboardMarkup) {
+	resp view.GameResponse, showMenu bool, cameFrom string,
+) InputTelegram {
 
 	var photo tgbotapi.RequestFileData
 
@@ -28,5 +28,11 @@ func ToTelegramResponse(
 	var menu *tgbotapi.InlineKeyboardMarkup
 	menu = mapMenu(resp.MenuKey, resp.MenuParams)
 
-	return resp.Text, photo, menu
+	return InputTelegram{
+		Message:  resp.Text,
+		Img:      photo,
+		Menu:     menu,
+		ShowMenu: showMenu,
+		CameFrom: cameFrom,
+	}
 }

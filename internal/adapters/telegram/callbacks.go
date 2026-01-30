@@ -20,189 +20,118 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	userID := cb.From.ID
 	messageID := cb.Message.MessageID
 	action, params := parseCallbackData(data)
-
+	inputTelegram := InputTelegram{}
 	log.Printf("Callback recebido | action=%s | params=%v", action, params)
 
-	msgResponse := MsgResponse{
-		Message: "",
-		Img:     tgbotapi.FilePath(fmt.Sprintf("assets/error.png")),
-	}
 	switch action {
 
 	case "select_man":
-		_, err := h.onboardingService.SetGender(userID, "MAN")
+		gameResp, err := h.onboardingService.SetGender(userID, "MAN")
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao definir gênero"
+			fmt.Printf("select_man -> ", err)
 			break
 		}
-		msgResponse = MsgResponse{
-			Message:  "✍️ Ótima escolha!\n\nAgora digite o nome do seu personagem:",
-			Img:      tgbotapi.FilePath(fmt.Sprintf("assets/skins/man_skin_basic.png")),
-			Menu:     nil,
-			CameFrom: "select_man",
-		}
-	case "select_woman":
-		_, err := h.onboardingService.SetGender(userID, "WOMAN")
-		if err != nil {
-			msgResponse.Message = "❌ Erro ao definir gênero"
-			break
-		}
+		inputTelegram = ToTelegramResponse(gameResp, false, "select_woman")
 
-		msgResponse = MsgResponse{
-			Message:  "✍️ Ótima escolha!\n\nAgora digite o nome do seu personagem:",
-			Img:      tgbotapi.FilePath(fmt.Sprintf("assets/skins/woman_skin_basic.png")),
-			Menu:     nil, // ❗ sem menu enquanto digita nome
-			CameFrom: "select_woman",
+	case "select_woman":
+		gameResp, err := h.onboardingService.SetGender(userID, "WOMAN")
+		if err != nil {
+			fmt.Printf("select_woman -> ", err)
+			break
 		}
+		inputTelegram = ToTelegramResponse(gameResp, false, "select_woman")
+
 	case "action_menu":
 		gameResp, err := h.menuService.Menu(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao buscar menu"
+			fmt.Printf("action_menu -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "action_menu",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "action_menu")
+
 	case "action_status":
 		gameResp, err := h.menuService.Menu(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao buscar menu"
+			fmt.Printf("action_status -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "action_status",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "action_status")
+
 	case "action_fight":
 		gameResp, err := h.battleService.Battle(userID, params)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao buscar menu"
+			fmt.Printf("action_fight -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "to_sleep",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "action_fight")
 
 	case "action_escape":
 		gameResp, err, _ := h.battleService.Escape(userID, params)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao buscar menu"
-			gameResp.Image.Path = fmt.Sprintf("assets/error.png")
+			fmt.Printf("action_escape -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "to_sleep",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "action_escape")
+
 	case "action_cacar":
 		gameResp, err := h.battleService.GetBattle(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao caçar"
+			fmt.Printf("action_cacar -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "to_sleep",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "action_cacar")
+
 	case "action_transformar":
 		gameResp, err := h.transformService.Transform(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Não foi possível transformar"
+			fmt.Printf("action_transformar -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "to_sleep",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "action_transformar")
+
 	case "to_sleep":
 		gameResp, err := h.energyService.Energy(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao calcular energia"
+			fmt.Printf("to_sleep -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "to_sleep",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "to_sleep")
+
 	case "action_sleep":
 		gameResp, err := h.energyService.Sleep(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao calcular energia"
+			fmt.Printf("action_sleep -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "action_rest",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "action_sleep")
+
 	case "action_rest":
 		gameResp, err := h.energyService.Rest(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao calcular energia"
+			fmt.Printf("action_rest -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "action_rest",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "action_rest")
+
 	case "to_shop":
 		gameResp, err := h.shopService.OpenShop(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao abrir lojinha"
+			fmt.Printf("to_shop -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "action_buy_ki",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "to_shop")
+
 	case "action_buy_ki":
 		gameResp, err := h.paymentService.HandleBuyKi(userID)
 		if err != nil {
-			msgResponse.Message = "❌ Erro ao calcular energia"
+			fmt.Printf("action_buy_ki -> ", err)
 			break
 		}
-		text, photo, menu := ToTelegramResponse(gameResp)
-		msgResponse = MsgResponse{
-			Message:  text,
-			Img:      photo,
-			Menu:     menu,
-			CameFrom: "action_buy_ki",
-		}
+		inputTelegram = ToTelegramResponse(gameResp, true, "action_buy_ki")
 	}
 
 	// 🔥 atualiza a tela principal
-	h.editPanel(chatID, messageID, msgResponse)
+	h.editPanel(chatID, messageID, inputTelegram)
 
 	// remove loading do botão
 	h.bot.Request(
