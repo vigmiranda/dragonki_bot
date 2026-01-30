@@ -16,10 +16,12 @@ type Image struct {
 	Data []byte
 	Name string
 }
+
 type GameResponse struct {
-	Message    string
-	Img        *Image
-	Conditions bool
+	Text       string
+	Image      *Image
+	MenuKey    string
+	MenuParams map[string]any
 }
 
 type MsgResponse struct {

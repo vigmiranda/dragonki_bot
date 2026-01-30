@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
@@ -19,11 +18,13 @@ func NewEnergyService(repo ports.PlayerRepository) *EnergyService {
 	return &EnergyService{PlayerRepository: repo}
 }
 
-func (s *EnergyService) Energy(userID int64) (view.MsgResponse, error) {
+func (s *EnergyService) Energy(userID int64) (view.GameResponse, error) {
 	var player, err = s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//todo remover daqui
 	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
 		player.RegenEnergy()
 	}
@@ -32,29 +33,40 @@ func (s *EnergyService) Energy(userID int64) (view.MsgResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// --------
 
-	var msgResponse view.MsgResponse
-	msgResponse.Message =
-		fmt.Sprintf(
-			"🛏️ Sir Soneca, Guardião do Descanso 🛏️ \n\n"+
-				"“Ooooh… hã? Um aventureiro?” 😴 \n"+
-				"Bem-vindo %s à minha humilde pousada… \n\n"+
-				"Sou Sir Soneca, cavaleiro aposentado e mestre supremo da arte de dormir bem. \n\n"+
-				"Aqui você pode descansar, recuperar suas forças e deixar que o cansaço da batalha desapareça. \n"+
-				"Uma boa noite de sono cura feridas, restaura o HP e prepara seu espírito para a próxima luta. \n\n"+
-				"🕯️ Camas macias, silêncio garantido… e roncos inclusos no pacote. \n\n"+
-				"Então, jovem guerreiro(a) … vai apenas descansar um pouco… \n"+
-				"ou dormir como um verdadeiro herói? 😴💤 \n\n",
-			player.Name)
-	msgResponse.Img =
-		tgbotapi.FilePath(fmt.Sprintf("assets/npcs/sir_soneca.png"))
-	return msgResponse, nil
+	msg := fmt.Sprintf(
+		"🛏️ Sir Soneca, Guardião do Descanso 🛏️ \n\n"+
+			"“Ooooh… hã? Um aventureiro?” 😴 \n"+
+			"Bem-vindo %s à minha humilde pousada… \n\n"+
+			"Sou Sir Soneca, cavaleiro aposentado e mestre supremo da arte de dormir bem. \n\n"+
+			"Aqui você pode descansar, recuperar suas forças e deixar que o cansaço da batalha desapareça. \n"+
+			"Uma boa noite de sono cura feridas, restaura o HP e prepara seu espírito para a próxima luta. \n\n"+
+			"🕯️ Camas macias, silêncio garantido… e roncos inclusos no pacote. \n\n"+
+			"Então, jovem guerreiro(a) … vai apenas descansar um pouco… \n"+
+			"ou dormir como um verdadeiro herói? 😴💤 \n\n",
+		player.Name)
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/npcs/sir_soneca.png"),
+	}
+	menu := "ENERGY_MENU"
+
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}
+
+	return viewResponse, nil
 }
-func (s *EnergyService) Rest(userID int64) (view.MsgResponse, error) {
+func (s *EnergyService) Rest(userID int64) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//todo remover daqui
 	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
 		player.RegenEnergy()
 	}
@@ -63,16 +75,17 @@ func (s *EnergyService) Rest(userID int64) (view.MsgResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var msgResponse view.MsgResponse
-	msgResponse = view.MsgResponse{
-		Message: fmt.Sprintf(
-			"Você nao tem energia\n"+
-				"Aguarde %s!! e volter aqui para descansar!!\n",
-			os.Getenv("ENERGY_REGEN_TIME"),
-		),
-		Img:        tgbotapi.FilePath(fmt.Sprintf("assets/npcs/sir_soneca.png")),
-		Conditions: false,
+	// --------
+
+	msg := fmt.Sprintf(
+		"Você nao tem energia\n"+
+			"Aguarde %s!! e volter aqui para descansar!!\n",
+		os.Getenv("ENERGY_REGEN_TIME"))
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/npcs/sir_soneca.png"),
 	}
+	menu := "ENERGY_MENU"
 
 	if player.Energy >= 1 {
 		player.Energy -= 1
@@ -82,29 +95,34 @@ func (s *EnergyService) Rest(userID int64) (view.MsgResponse, error) {
 			player.HP = player.MaxHP
 		}
 
-		msgResponse = view.MsgResponse{
-			Message: fmt.Sprintf(
-				"❤️ HP recarregado!!! %d/%d\n"+
-					"Bora voltar pra Luta ⚔️!! \n",
-				player.HP,
-				player.MaxHP,
-			),
-			Img:        tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender))),
-			Conditions: true,
-		}
+		msg = fmt.Sprintf(
+			"❤️ HP recarregado!!! %d/%d\n"+
+				"Bora voltar pra Luta ⚔️!! \n",
+			player.HP,
+			player.MaxHP,
+		)
+		img.Path = fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender))
 		err := s.PlayerRepository.Save(player)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	return msgResponse, nil
+
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}
+	return viewResponse, nil
 
 }
-func (s *EnergyService) Sleep(userID int64) (view.MsgResponse, error) {
+func (s *EnergyService) Sleep(userID int64) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//todo remover daqui
 	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
 		player.RegenEnergy()
 	}
@@ -113,33 +131,35 @@ func (s *EnergyService) Sleep(userID int64) (view.MsgResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// --------
 
-	var msgResponse view.MsgResponse
-	msgResponse = view.MsgResponse{
-		Message: fmt.Sprintf(
-			"Infelizmente você não podera ficar \n" +
-				"Junte mais gold e retorne!!\n",
-		),
-		Img:        tgbotapi.FilePath(fmt.Sprintf("assets/npcs/sir_soneca.png")),
-		Conditions: false,
+	msg := fmt.Sprintf(
+		"Infelizmente você não podera ficar \n" +
+			"Junte mais gold e retorne!!\n",
+	)
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/npcs/sir_soneca.png"),
 	}
+	menu := "ENERGY_MENU"
 
 	if player.Gold >= 500 {
 		player.Gold = player.Gold - 500
 		player.HP = player.MaxHP
-		msgResponse = view.MsgResponse{
-			Message: fmt.Sprintf(
-				"❤️ HP recarregado!!! \n" +
-					"Bora voltar pra Luta ⚔️!! \n",
-			),
-			Img:        tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender))),
-			Conditions: true,
-		}
+		msg = fmt.Sprintf(
+			"❤️ HP recarregado!!! \n" +
+				"Bora voltar pra Luta ⚔️!! \n",
+		)
 		err := s.PlayerRepository.Save(player)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}
 
-	return msgResponse, nil
+	return viewResponse, nil
 }

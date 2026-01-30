@@ -79,135 +79,123 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 			CameFrom: "action_status",
 		}
 	case "action_fight":
-		msg, err := h.battleService.Battle(userID, params)
+		gameResp, err := h.battleService.Battle(userID, params)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao buscar menu"
 			break
 		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
-			Menu:     mainMenu(),
-			CameFrom: "action_fight",
-		}
-	case "action_escape":
-		menu := mainMenu()
-		msg, monster, err := h.battleService.Escape(userID, params)
-		if err != nil {
-			msgResponse.Message = "❌ Erro ao buscar menu"
-			msg.Img = tgbotapi.FilePath(fmt.Sprintf("assets/error.png"))
-			break
-		}
-		if msg.Conditions {
-			menu = battleMenu(monster.MonsterID)
+			Message:  text,
+			Img:      photo,
+			Menu:     menu,
+			CameFrom: "to_sleep",
 		}
 
+	case "action_escape":
+		gameResp, err, _ := h.battleService.Escape(userID, params)
+		if err != nil {
+			msgResponse.Message = "❌ Erro ao buscar menu"
+			gameResp.Image.Path = fmt.Sprintf("assets/error.png")
+			break
+		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
+			Message:  text,
+			Img:      photo,
 			Menu:     menu,
-			CameFrom: "action_escape",
+			CameFrom: "to_sleep",
 		}
 	case "action_cacar":
-		menu := mainMenu()
-		msg, monster, err := h.battleService.GetBattle(userID)
+		gameResp, err := h.battleService.GetBattle(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao caçar"
 			break
 		}
-		if msg.Conditions {
-			menu = battleMenu(monster)
-		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
+			Message:  text,
+			Img:      photo,
 			Menu:     menu,
-			CameFrom: "action_cacar",
+			CameFrom: "to_sleep",
 		}
 	case "action_transformar":
-		msg, err := h.transformService.Transform(userID)
+		gameResp, err := h.transformService.Transform(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Não foi possível transformar"
 			break
 		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
-			Menu:     mainMenu(),
-			CameFrom: "action_transformar",
+			Message:  text,
+			Img:      photo,
+			Menu:     menu,
+			CameFrom: "to_sleep",
 		}
 	case "to_sleep":
-		msg, err := h.energyService.Energy(userID)
+		gameResp, err := h.energyService.Energy(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
 		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
-			Menu:     energyMenu(),
+			Message:  text,
+			Img:      photo,
+			Menu:     menu,
 			CameFrom: "to_sleep",
 		}
 	case "action_sleep":
-		menu := energyMenu()
-		msg, err := h.energyService.Sleep(userID)
+		gameResp, err := h.energyService.Sleep(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
 		}
-		if msg.Conditions {
-			menu = mainMenu()
-		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
+			Message:  text,
+			Img:      photo,
 			Menu:     menu,
-			CameFrom: "action_sleep",
+			CameFrom: "action_rest",
 		}
 	case "action_rest":
-		menu := energyMenu()
-		msg, err := h.energyService.Rest(userID)
+		gameResp, err := h.energyService.Rest(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
 		}
-		if msg.Conditions {
-			menu = mainMenu()
-		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
+			Message:  text,
+			Img:      photo,
 			Menu:     menu,
 			CameFrom: "action_rest",
 		}
 	case "to_shop":
-		menu := shopMenu()
-		msg, err := h.shopService.OpenShop(userID)
+		gameResp, err := h.shopService.OpenShop(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao abrir lojinha"
 			break
 		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
+			Message:  text,
+			Img:      photo,
 			Menu:     menu,
-			CameFrom: "to_shop",
+			CameFrom: "action_buy_ki",
 		}
 	case "action_buy_ki":
-		menu := mainMenu()
-		msg, err := h.paymentService.HandleBuyKi(chatID, userID)
+		gameResp, err := h.paymentService.HandleBuyKi(userID)
 		if err != nil {
 			msgResponse.Message = "❌ Erro ao calcular energia"
 			break
 		}
-		if msg.Conditions {
-			menu = mainMenu()
-		}
+		text, photo, menu := ToTelegramResponse(gameResp)
 		msgResponse = MsgResponse{
-			Message:  msg.Message,
-			Img:      msg.Img,
+			Message:  text,
+			Img:      photo,
 			Menu:     menu,
-			CameFrom: "action_sleep",
+			CameFrom: "action_buy_ki",
 		}
 	}
 
