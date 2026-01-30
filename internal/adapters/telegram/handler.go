@@ -22,10 +22,10 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 		return
 	}
 
-	status, _ := h.playerService.HasCompletedOnboarding(update.Message.Chat.ID)
+	status, _ := h.onboardingService.HasCompletedOnboarding(update.Message.Chat.ID)
 
 	if update.Message.Text == "/start" {
-		status, err := h.playerService.HasCompletedOnboarding(update.Message.Chat.ID)
+		status, err := h.onboardingService.HasCompletedOnboarding(update.Message.Chat.ID)
 		if err != nil {
 			h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "❌ Erro interno"))
 			return

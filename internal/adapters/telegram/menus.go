@@ -49,7 +49,7 @@ func energyMenu() *tgbotapi.InlineKeyboardMarkup {
 	)
 	return &menu
 }
-func battleMenu(monsterID int) *tgbotapi.InlineKeyboardMarkup {
+func battleMenu(monsterID int64) *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar ", fmt.Sprintf("action_fight?monsterID=%d", monsterID)),

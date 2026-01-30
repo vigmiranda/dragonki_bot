@@ -20,10 +20,10 @@ func (h *Handler) sendInitialPanel(chatID int64) {
 	photo.ReplyMarkup = choosingGenderMenu()
 	h.bot.Send(photo)
 }
-func (h *Handler) handleNameInput(chatID int64, userID int64, name string) (MsgResponse, error) {
+func (h *Handler) handleNameInput(chatID int64, userID int64, name string) (InputTelegram, error) {
 	name = strings.TrimSpace(name)
 
-	response := MsgResponse{
+	response := InputTelegram{
 		Message: "🔥 Nome definido com sucesso! Bem-vindo ao DragonKi!",
 		Img:     tgbotapi.FilePath(fmt.Sprintf("assets/skins/man_skin_basic.png")),
 	}
@@ -38,7 +38,7 @@ func (h *Handler) handleNameInput(chatID int64, userID int64, name string) (MsgR
 		response.Img = tgbotapi.FilePath(fmt.Sprintf("error.png"))
 	}
 
-	h.playerService.SetName(userID, name)
+	h.onboardingService.SetName(userID, name)
 
 	return response, nil
 }
@@ -76,13 +76,13 @@ func (h *Handler) newPanel(chatID int64, origin string) {
 func (h *Handler) editPanel(
 	chatID int64,
 	messageID int,
-	msgResponse MsgResponse,
+	input InputTelegram,
 ) {
-	menu := mainMenu()
-	caption := msgResponse.Message + "\n\n"
+
+	caption := input.Message + "\n\n"
 	media := utils.NewPhotoMedia(
-		msgResponse.Img,
-		msgResponse.Message,
+		input.Img,
+		input.Message,
 	)
 
 	media.Caption = caption
@@ -94,15 +94,9 @@ func (h *Handler) editPanel(
 		},
 		Media: *media,
 	}
-
-	if msgResponse.Menu != nil {
-		menu = msgResponse.Menu
+	if input.ShowMenu {
+		edit.ReplyMarkup = input.Menu
 	}
-	if msgResponse.CameFrom == "select_man" || msgResponse.CameFrom == "select_woman" {
-		menu = nil
-	}
-
-	edit.ReplyMarkup = menu
 	_, err := h.bot.Send(edit)
 	if err != nil {
 		if strings.Contains(err.Error(), "message is not modified") {

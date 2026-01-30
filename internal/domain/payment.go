@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type PaymentStatus string
 
@@ -19,4 +22,9 @@ type Payment struct {
 	QRCodeBase64 string `json:"qr_code_base64"`
 	PartnerId    int64
 	CreatedAt    time.Time
+}
+
+func BuildNumericPaymentID(userID int64) string {
+	timestamp := time.Now().UnixMilli()
+	return fmt.Sprintf("%d%d", userID, timestamp)
 }

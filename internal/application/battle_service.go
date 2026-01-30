@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
+	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
@@ -28,76 +28,91 @@ func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *postgres.M
 	}
 }
 
-func (s *BattleService) GetBattle(userID int64) (MsgResponse, int, error) {
+func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//todo tirar daqui
 	player.SetTransformBase()
 	err = s.playerRepo.Save(player)
 	if err != nil {
 		log.Fatal(err)
 	}
+	// ------------
+
+	msg := fmt.Sprintf("⚡ Energia esgotada \n Vá ate a pousada para descansar!")
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/skins/%s_tired.png", domain.ConvertLowCase(player.Gender)),
+	}
+	menu := "BATTLE_MENU"
 	monsterID := 0
-	if err != nil {
-		log.Fatal(err)
-		return MsgResponse{
-			Message: "Sinto muito, erro ao iniciar Batalha!",
-			Img:     tgbotapi.FilePath(fmt.Sprintf("assets/error.png")),
-		}, monsterID, err
-	}
-
-	msg := MsgResponse{
-		Message:    "⚡ Energia esgotada \n Vá ate a pousada para descansar!",
-		Img:        tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_tired.png", domain.ConvertLowCase(player.Gender))),
-		Conditions: false,
-	}
-
 	if player.Energy > 0 {
 		monsters, err := s.monsterRepo.ListByLevel(int64(player.Level))
 		if err != nil || len(monsters) == 0 {
-			return MsgResponse{}, monsterID, fmt.Errorf("nenhum monstro encontrado")
+			msg = fmt.Sprintf("Error ao encontra um monstro")
+			img.Path = fmt.Sprintf("assets/error.png")
 		}
 
 		monster := pickMonsterByWeight(monsters)
 		if monster == nil {
-			return MsgResponse{}, monsterID, fmt.Errorf("falha ao sortear monstro")
+			msg = fmt.Sprintf("Error ao encontra um monstro")
+			img.Path = fmt.Sprintf("assets/error.png")
 		}
+
+		msg = fmt.Sprintf(
+			"🐉<b> Um %s apareceu! </b>\n\n"+
+				"💪 <b>Lv:</b> %d\n"+
+				"❤️ <b>HP:</b> %d\n"+
+				"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d\n",
+			monster.Name,
+			monster.Level,
+			monster.HP,
+			monster.ATK,
+			monster.DEF,
+		)
+		img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)
 		monsterID = monster.MonsterID
-		msg = MsgResponse{
-			Message: fmt.Sprintf(
-				"🐉<b> Um %s apareceu! </b>\n\n"+
-					"💪 <b>Lv:</b> %d\n"+
-					"❤️ <b>HP:</b> %d\n"+
-					"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d\n",
-				monster.Name,
-				monster.Level,
-				monster.HP,
-				monster.ATK,
-				monster.DEF,
-			),
-			Img:        tgbotapi.FilePath(fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)),
-			Conditions: true,
-		}
+	}
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+		MenuParams: map[string]any{
+			"monsterID": monsterID,
+		},
 	}
 
-	return msg, monsterID, nil
+	return viewResponse, nil
 }
-func (s *BattleService) Battle(userID int64, params map[string]string) (MsgResponse, error) {
+func (s *BattleService) Battle(userID int64, params map[string]string) (view.GameResponse, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
-	levelMult, _ := strconv.ParseInt(os.Getenv("LEVEL_MULT"), 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	levelMulti, err := strconv.ParseInt(os.Getenv("LEVEL_MULT"), 10, 64)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	monsterIDStr, _ := params["monsterID"]
 	monsterId, err := strconv.ParseInt(monsterIDStr, 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
 	monster, err := s.monsterRepo.GetByID(monsterId)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	msgResponse := MsgResponse{
-		Message: "💀 Ocorreu um erro ao fim da batalha!!!",
-		Img:     tgbotapi.FilePath(fmt.Sprintf("assets/error.png")),
+	msg := fmt.Sprintf("💀 Ocorreu um erro ao fim da batalha!!!")
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/error.png"),
 	}
+	menu := "MAIN_MENU"
 
 	monsterHP := monster.HP
 	playerHp := player.HP
@@ -117,7 +132,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 		player.XP += xpReceived
 		player.Gold += moneyReceived
 
-		if player.XP >= player.Level*int(levelMult) {
+		if player.XP >= player.Level*int(levelMulti) {
 			player.Level++
 			player.ATK += int(float64(player.ATK) * 0.2)
 			player.DEF += int(float64(player.DEF) * 0.2)
@@ -127,7 +142,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 			player.FormBattlesLeft = 0
 			player.Form = "Base"
 			player.HP = player.MaxHP
-			googNews = "⬆️ Subiu de nível!\n"
+			googNews = "⬆️ <b>Subiu de nível!</b> \n"
 			if player.FormBattlesLeft > 0 {
 				player.FormBattlesLeft = 0
 				player.Form = "Base"
@@ -138,8 +153,8 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 			player.FormBattlesLeft--
 		}
 
-		msgResponse.Message = fmt.Sprintf(
-			"🏆 Vitória! %s\n"+
+		msg = fmt.Sprintf(
+			"🏆 Vitória! %s \n"+
 				"%s"+
 				"Você recebeu de dano: %d\n"+
 				"⚔️ +%d XP\n"+
@@ -158,8 +173,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 			player.MaxEnergy,
 			player.Level,
 		)
-		msgResponse.Img =
-			tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_battle_win.png", domain.ConvertLowCase(player.Gender)))
+		img.Path = fmt.Sprintf("assets/skins/%s_battle_win.png", domain.ConvertLowCase(player.Gender))
 
 	} else {
 		if player.FormBattlesLeft > 0 {
@@ -171,7 +185,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 		player.Gold -= int(float64(player.Gold) * 0.9)
 		player.HP = 1
 		player.Form = "Base"
-		msgResponse.Message = fmt.Sprintf(
+		msg = fmt.Sprintf(
 			"💀 Derrota! %s\n"+
 				"⚔️ -10%% de XP = %d\n"+
 				"💰 -10%% de Gold = %d\n"+
@@ -184,18 +198,22 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (MsgRespo
 			player.MaxEnergy,
 			player.Level,
 		)
-		msgResponse.Img =
-			tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_battle_loss.png", domain.ConvertLowCase(player.Gender)))
+		img.Path = fmt.Sprintf("assets/skins/%s_battle_loss.png", domain.ConvertLowCase(player.Gender))
 	}
 	if err := s.playerRepo.Save(player); err != nil {
-		return MsgResponse{
-			Message: "💀 Ocorreu um erro ao fim da batalha!!!",
-			Img:     tgbotapi.FilePath(fmt.Sprintf("assets/error.png")),
-		}, err
+		msg = fmt.Sprintf("💀 Ocorreu um erro ao fim da batalha!!!")
+		img.Path = fmt.Sprintf("assets/error.png")
+
 	}
-	return msgResponse, nil
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}
+
+	return viewResponse, nil
 }
-func (s *BattleService) Escape(userID int64, params map[string]string) (MsgResponse, *domain.Monster, error) {
+func (s *BattleService) Escape(userID int64, params map[string]string) (view.GameResponse, *domain.Monster, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
@@ -207,34 +225,40 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (MsgRespo
 	if err != nil {
 		log.Fatal(err)
 	}
-	msgResponse := MsgResponse{
-		Message:    "💀 Você consegui fugir!!!",
-		Img:        tgbotapi.FilePath(fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender))),
-		Conditions: false,
+
+	msg := fmt.Sprintf("💀 Você consegui fugir!!!")
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
 	}
+	menu := "MAIN_MENU"
+
 	escapePlayer := rand.Intn(10)
 	escapeMonster := rand.Intn(10)
 	if escapePlayer < escapeMonster {
 		player.HP -= rand.Intn(monster.ATK/2+1) + monster.ATK/2
-		msgResponse = MsgResponse{
-			Message: fmt.Sprintf(
-				"💀 Você não consegui fugir!!! \n"+
-					"❤️ Seu HP agora é %d/%d \n"+
-					"⚡️ E sua Energia é %d/%d \n",
-				player.HP,
-				player.MaxHP,
-				player.Energy,
-				player.MaxEnergy,
-			),
-			Img:        tgbotapi.FilePath(fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)),
-			Conditions: true,
-		}
+		msg = fmt.Sprintf(
+			"💀 Você não consegui fugir!!! \n"+
+				"❤️ Seu HP agora é %d/%d \n"+
+				"⚡️ E sua Energia é %d/%d \n",
+			player.HP,
+			player.MaxHP,
+			player.Energy,
+			player.MaxEnergy,
+		)
+		img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)
 	}
 	err = s.playerRepo.Save(player)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return msgResponse, monster, nil
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}
+
+	return viewResponse, monster, nil
 }
 
 func pickMonsterByWeight(monsters []domain.Monster) *domain.Monster {

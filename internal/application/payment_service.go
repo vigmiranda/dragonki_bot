@@ -6,8 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
+	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
@@ -39,7 +39,7 @@ func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Paym
 	return payment, qrCode, nil
 }
 
-func (s *PaymentService) HandleBuyKi(chatID int64, userID int64) (MsgResponse, error) {
+func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
 
 	amount := 1
 
@@ -50,37 +50,24 @@ func (s *PaymentService) HandleBuyKi(chatID int64, userID int64) (MsgResponse, e
 		amount = int(amountEnv)
 	}
 	log.Println(fmt.Sprintf("Valor do KiDragons: %d Atual: %d", amountEnv, amount))
-
-	var msgResponse MsgResponse
-
-	media := tgbotapi.FilePath("assets/error.png")
-	msgResponse = MsgResponse{
-		Message: fmt.Sprintf(
-			"",
-		),
-		Img:        media,
-		Conditions: false,
-	}
-
 	payment, qrCode, err := s.CreatePix(userID, float64(amount))
-	if err != nil {
-		log.Fatal(chatID, "❌ Erro ao gerar pagamento", err)
-	}
-	log.Println(fmt.Sprintf("Codigo do pagamento: %d", payment))
-	msgResponse.Message = fmt.Sprintf(
+	msg := fmt.Sprintf(
 		"💎 *Comprar Ki Divino*\n\n"+
 			"Escaneie o QR Code ou copie o código PIX abaixo.\n\n"+
 			"%s\n\n"+
 			"<i>Após o pagamento, o Ki será creditado automaticamente.</i>",
 		payment.QRCode)
 
-	// Envia QR Code como imagem
-	msgResponse.Img = tgbotapi.FileBytes{
-		Name:  "pix.png",
-		Bytes: utils.DecodeBase64(qrCode),
+	viewResponse := view.GameResponse{
+		Text: msg,
+		Image: &view.Image{
+			Type: view.ImageBytes,
+			Data: utils.DecodeBase64(qrCode),
+			Name: "pix.png",
+		},
+		MenuKey: "MAIN_MENU",
 	}
-
-	return msgResponse, nil
+	return viewResponse, nil
 }
 
 func (s *PaymentService) ConfirmPayment(paymentID int64) error {

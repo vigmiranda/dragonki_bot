@@ -47,11 +47,15 @@ func main() {
 	// 🔹 Services (Application)
 	playerService := application.NewPlayerService(playerRepo, regionRepo)
 	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo)
+	onboardingService := application.NewOnboardingService(playerRepo)
+	transformService := application.NewTransformService(playerRepo)
+	menuService := application.NewMenuService(playerRepo, regionRepo)
+	energyService := application.NewEnergyService(playerRepo)
+	shopService := application.NewShopService(playerRepo)
 
 	// 🔹 Mercado Pago (Gateway)
 	mpClient := mercadopago.NewClient()
 	mpGateway := mercadopago.NewGateway(mpClient)
-
 	paymentService := application.NewPaymentService(
 		mpGateway,
 		paymentRepo,
@@ -72,6 +76,11 @@ func main() {
 		playerService,
 		battleService,
 		paymentService,
+		onboardingService,
+		transformService,
+		menuService,
+		energyService,
+		shopService,
 	)
 
 	// 🔹 Telegram Webhook HTTP
