@@ -12,7 +12,6 @@ func mapMenu(
 	key string,
 	params map[string]any,
 ) *tgbotapi.InlineKeyboardMarkup {
-	fmt.Printf("testes")
 	switch key {
 
 	case "MAIN_MENU":
