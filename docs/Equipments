@@ -1,0 +1,605 @@
+Bora 💪⚔️
+Essa é uma **decisão-chave de arquitetura** pro DragonKi, então vamos fazer do jeito certo desde já.
+
+A resposta curta é: **sim, é boa prática separar itens consumíveis de equipamentos**, mas **eles podem (e devem) compartilhar uma base comum**.
+
+Vou te passar um **modelo sólido, escalável e alinhado com RPG + hexagonal**.
+
+---
+
+## 🎒 Visão Geral da Estratégia de Itens
+
+### Princípios
+
+1. **Todo item é um Item**
+2. Existem **categorias de item**
+3. O comportamento depende da categoria:
+
+   * Consumíveis → usados, desaparecem
+   * Equipamentos → equipados, alteram status
+4. Nada de `if gigante` no código → usamos **polimorfismo / tipo**
+
+---
+
+## 🧱 Domínio Base: Item
+
+```go
+// internal/domain/item.go
+package domain
+
+type ItemType string
+
+const (
+	ItemConsumable ItemType = "CONSUMABLE"
+	ItemEquipment  ItemType = "EQUIPMENT"
+	ItemKey        ItemType = "KEY"
+)
+
+type Item struct {
+	ID          int64
+	Code        string        // ex: POTION_HP_SMALL
+	Name        string
+	Description string
+	Type        ItemType
+	Rarity      ItemRarity
+}
+```
+
+---
+
+## ⭐ Raridade (já pensando no futuro)
+
+```go
+// internal/domain/item_rarity.go
+package domain
+
+type ItemRarity string
+
+const (
+	Common    ItemRarity = "COMMON"
+	Rare      ItemRarity = "RARE"
+	Epic      ItemRarity = "EPIC"
+	Legendary ItemRarity = "LEGENDARY"
+)
+```
+
+---
+
+## 🧪 Consumáveis
+
+Consumíveis **têm efeito** e **somem após uso**.
+
+```go
+// internal/domain/consumable.go
+package domain
+
+type ConsumableEffect string
+
+const (
+	EffectRecoverHP     ConsumableEffect = "RECOVER_HP"
+	EffectRecoverEnergy ConsumableEffect = "RECOVER_ENERGY"
+	EffectBoostAttack   ConsumableEffect = "BOOST_ATTACK"
+)
+
+type Consumable struct {
+	Item
+	Effect ConsumableEffect
+	Value  int // quanto recupera ou aumenta
+}
+```
+
+### Exemplos
+
+* Poção de HP (+50)
+* Poção de Energia (+5)
+* Poção de Força (+10 ATK por X batalhas)
+
+---
+
+## 🛡️ Equipamentos
+
+Equipamentos **não somem**, ficam equipados e alteram stats.
+
+### Slots de Equipamento
+
+```go
+// internal/domain/equipment_slot.go
+package domain
+
+type EquipmentSlot string
+
+const (
+	SlotWeapon EquipmentSlot = "WEAPON"
+	SlotGloves EquipmentSlot = "GLOVES"
+	SlotBoots  EquipmentSlot = "BOOTS"
+	SlotRing   EquipmentSlot = "RING"
+	SlotAmulet EquipmentSlot = "AMULET"
+)
+```
+
+---
+
+### Estrutura de Equipamento
+
+```go
+// internal/domain/equipment.go
+package domain
+
+type Equipment struct {
+	Item
+	Slot EquipmentSlot
+
+	BonusHP     int
+	BonusEnergy int
+	BonusATK    int
+	BonusDEF    int
+}
+```
+
+### Exemplos
+
+* Luvas do Dragão (+5 ATK)
+* Botas do Vento (+2 Energia)
+* Anel Sombrio (+10 HP, +2 DEF)
+
+---
+
+## 🎒 Inventário do Player
+
+```go
+// internal/domain/inventory.go
+package domain
+
+type InventoryItem struct {
+	ItemID   int64
+	Quantity int
+}
+
+type Inventory struct {
+	PlayerID int64
+	Items    []InventoryItem
+}
+```
+
+---
+
+## 🧍 Equipamentos do Player
+
+```go
+// internal/domain/player_equipment.go
+package domain
+
+type PlayerEquipment struct {
+	PlayerID int64
+
+	Weapon Equipment
+	Gloves Equipment
+	Boots  Equipment
+	Ring   Equipment
+	Amulet Equipment
+}
+```
+
+> 💡 Aqui você garante **1 item por slot** (boa prática de RPG)
+
+---
+
+## 🗃️ Script de Banco (PostgreSQL)
+
+### Tabela de Itens
+
+```sql
+CREATE TABLE items (
+	id BIGSERIAL PRIMARY KEY,
+	code TEXT UNIQUE NOT NULL,
+	name TEXT NOT NULL,
+	description TEXT,
+	type TEXT NOT NULL,
+	rarity TEXT NOT NULL
+);
+```
+
+---
+
+### Consumáveis
+
+```sql
+CREATE TABLE consumables (
+	item_id BIGINT PRIMARY KEY REFERENCES items(id),
+	effect TEXT NOT NULL,
+	value INTEGER NOT NULL
+);
+```
+
+---
+
+### Equipamentos
+
+```sql
+CREATE TABLE equipments (
+	item_id BIGINT PRIMARY KEY REFERENCES items(id),
+	slot TEXT NOT NULL,
+	bonus_hp INTEGER DEFAULT 0,
+	bonus_energy INTEGER DEFAULT 0,
+	bonus_atk INTEGER DEFAULT 0,
+	bonus_def INTEGER DEFAULT 0
+);
+```
+
+---
+
+### Inventário do Player
+
+```sql
+CREATE TABLE player_inventory (
+	player_id BIGINT,
+	item_id BIGINT,
+	quantity INTEGER DEFAULT 1,
+	PRIMARY KEY (player_id, item_id)
+);
+```
+
+---
+
+### Equipamentos do Player
+
+```sql
+CREATE TABLE player_equipment (
+	player_id BIGINT PRIMARY KEY,
+	weapon_id BIGINT,
+	gloves_id BIGINT,
+	boots_id BIGINT,
+	ring_id BIGINT,
+	amulet_id BIGINT
+);
+```
+
+---
+
+## 🧠 Como isso ajuda no futuro?
+
+✔ Loja (Kiara) fica simples
+✔ Drop de monstros fica fácil
+✔ Equipamentos raros / lendários
+✔ Buff temporário vs permanente
+✔ Craft, upgrade, encantamento
+✔ Balanceamento por tabela, não por código
+
+---
+
+## 🔜 Próximo passo (te recomendo)
+
+1. Criar **ItemService**
+2. Criar **InventoryService**
+3. Integrar com:
+
+   * Kiara (loja)
+   * Drops de batalha
+   * Equipar / Desequipar
+4. UI de menu no Telegram (🎒 Inventário)
+
+
+----------
+
+Perfeito — esse fluxo é **o coração do RPG**, então vou te entregar **bem desenhado, simples e escalável**, do jeito que dá pra codar sem dor depois.
+
+Vou dividir em **visão macro**, **passo a passo**, **responsabilidades (hexagonal)** e **pontos de decisão**.
+
+---
+
+# 🔁 Fluxo Completo: **Loot → Inventário → Uso**
+
+## 🧠 Visão Macro
+
+```
+Batalha vencida
+   ↓
+Sistema de Loot
+   ↓
+Inventário do Player
+   ↓
+(Ação do jogador)
+   ├── Usar item (consumível)
+   └── Equipar item (equipamento)
+```
+
+---
+
+## ⚔️ 1. Loot (Drop após batalha)
+
+### 📌 Quando acontece
+
+* Após **vitória em batalha**
+* Opcionalmente após:
+
+  * Eventos raros
+  * NPC especial (ex: mercador místico)
+  * Missões
+
+---
+
+### 🎯 Responsável
+
+**BattleService**
+
+---
+
+### 🔄 Fluxo
+
+```
+BattleService
+  ↓
+Resolve vitória
+  ↓
+Chama LootService.Generate(monster, player)
+```
+
+---
+
+### 🧱 LootService
+
+```go
+type LootService struct {
+	itemRepo ItemRepository
+	rng      RandomProvider
+}
+```
+
+### O que ele faz:
+
+1. Consulta tabela de loot do monstro
+2. Aplica chance (%)
+3. Retorna lista de itens
+
+```go
+type LootResult struct {
+	Items []LootItem
+	Gold  int
+}
+
+type LootItem struct {
+	ItemID   int64
+	Quantity int
+}
+```
+
+---
+
+### 🧠 Exemplo de lógica
+
+* 100% → Gold
+* 60% → Poção pequena
+* 15% → Equipamento comum
+* 2% → Equipamento raro
+
+---
+
+## 🎒 2. Inventário (Receber itens)
+
+### 📌 Quando acontece
+
+Imediatamente após o loot ser gerado.
+
+---
+
+### 🎯 Responsável
+
+**InventoryService**
+
+---
+
+### 🔄 Fluxo
+
+```
+LootService retorna itens
+   ↓
+InventoryService.AddItems(playerID, loot)
+   ↓
+Banco de dados
+```
+
+---
+
+### InventoryService (responsabilidades)
+
+```go
+type InventoryService struct {
+	inventoryRepo InventoryRepository
+}
+```
+
+### Regras:
+
+* Se item já existe → soma quantidade
+* Se não existe → cria novo registro
+* Equipamentos sempre entram com quantidade = 1
+
+---
+
+### 🗃️ Resultado
+
+O jogador **não usa nada automaticamente**, apenas recebe:
+
+> 🎁 *Você obteve:*
+> 🧪 Poção de HP x2
+> 🥾 Botas do Vento
+
+---
+
+## 🧍 3. Ação do Jogador
+
+Agora o controle é do player.
+
+### Menus possíveis:
+
+* 🎒 Inventário
+* 🧪 Usar item
+* 🛡️ Equipar item
+* ❌ Descarta (futuro)
+
+---
+
+## 🧪 4. Uso de Consumível
+
+### 📌 Quando
+
+Player escolhe:
+
+```
+Inventário → Consumíveis → Poção
+```
+
+---
+
+### 🎯 Responsável
+
+**ItemUseService** (ou ConsumableService)
+
+---
+
+### 🔄 Fluxo
+
+```
+Telegram Callback
+   ↓
+ItemUseService.Use(playerID, itemID)
+   ↓
+Valida tipo (CONSUMABLE)
+   ↓
+Aplica efeito
+   ↓
+Atualiza Player
+   ↓
+Remove 1 do inventário
+```
+
+---
+
+### 🧠 Regras importantes
+
+* HP não pode ultrapassar MaxHP
+* Energia não pode ultrapassar MaxEnergy
+* Item some após uso
+
+---
+
+### 📜 Exemplo de retorno
+
+> 🧪 *Poção de HP usada!*
+> ❤️ +50 HP
+> HP atual: 120 / 150
+
+---
+
+## 🛡️ 5. Equipar Item
+
+### 📌 Quando
+
+```
+Inventário → Equipamentos → Seleciona item
+```
+
+---
+
+### 🎯 Responsável
+
+**EquipmentService**
+
+---
+
+### 🔄 Fluxo
+
+```
+Telegram Callback
+   ↓
+EquipmentService.Equip(playerID, itemID)
+   ↓
+Valida tipo (EQUIPMENT)
+   ↓
+Valida slot
+   ↓
+Desequipa item atual (se existir)
+   ↓
+Equipa novo item
+   ↓
+Recalcula atributos do player
+```
+
+---
+
+### 🧠 Regras
+
+* Apenas **1 item por slot**
+* Equipar ≠ remover do inventário
+* Bonus vem do equipamento, não do player base
+
+---
+
+### 📜 Exemplo de retorno
+
+> 🥾 *Botas do Vento equipadas!*
+> ⚡ Energia máxima +2
+
+---
+
+## 📊 6. Cálculo de Status (muito importante)
+
+Nunca grave status final no banco.
+
+### Regra de ouro:
+
+```
+Status final = Status base + bônus dos equipamentos
+```
+
+---
+
+### Exemplo
+
+```go
+ATK = BaseATK + Weapon.ATK + Gloves.ATK
+HP  = BaseHP  + Armor.HP
+```
+
+Isso evita bugs e facilita balanceamento.
+
+---
+
+## 🧩 Onde cada coisa vive (Hexagonal)
+
+| Camada            | Responsabilidade                                |
+| ----------------- | ----------------------------------------------- |
+| domain            | Item, Equipment, Consumable                     |
+| application       | LootService, InventoryService, EquipmentService |
+| adapters/db       | Repositórios                                    |
+| adapters/telegram | Menus + callbacks                               |
+| infra             | RNG, tempo, configs                             |
+
+---
+
+## 🔮 Próximos upgrades fáceis com esse fluxo
+
+✔ Drop raro
+✔ Buff temporário
+✔ Encantamento
+✔ Craft
+✔ Itens vinculados ao player
+✔ Loja da Kiara
+✔ NPC raro dourado (👀)
+
+---
+
+## 👉 Próximo passo sugerido
+
+Escolhe um 👇
+1️⃣ **Desenhar menus do Telegram para Inventário**
+2️⃣ **Refatorar PlayerService** (tirar tudo que não é Player)
+3️⃣ **Criar LootService + tabelas de drop**
+4️⃣ **Implementar Equipar/Desequipar**
+
+Tu tá construindo isso **do jeito certo**, meu amigo. DragonKi já tem alma de jogo grande 🐉🔥
+
+
+
+
+
