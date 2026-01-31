@@ -228,4 +228,49 @@ var migrations = []migration{
 		ADD COLUMN last_update TIMESTAMP DEFAULT now()
 		`,
 	},
+	{
+		version: 15,
+		sql: `	
+			CREATE TABLE items (
+			id BIGSERIAL PRIMARY KEY,
+			code TEXT UNIQUE NOT NULL,
+			name TEXT NOT NULL,
+			description TEXT,
+			type TEXT NOT NULL,
+			rarity TEXT NOT NULL
+			);
+
+			CREATE TABLE consumables (
+				item_id BIGINT PRIMARY KEY REFERENCES items(id),
+				effect TEXT NOT NULL,
+				value INTEGER NOT NULL
+			);
+			
+			CREATE TABLE equipments (
+				item_id BIGINT PRIMARY KEY REFERENCES items(id),
+				slot TEXT NOT NULL,
+				bonus_hp INTEGER DEFAULT 0,
+				bonus_energy INTEGER DEFAULT 0,
+				bonus_atk INTEGER DEFAULT 0,
+				bonus_def INTEGER DEFAULT 0
+			);
+
+			CREATE TABLE player_inventory (
+				player_id BIGINT,
+				item_id BIGINT,
+				quantity INTEGER DEFAULT 1,
+				PRIMARY KEY (player_id, item_id)
+			);
+
+			CREATE TABLE player_equipment (
+				player_id BIGINT PRIMARY KEY,
+				weapon_id BIGINT,
+				gloves_id BIGINT,
+				boots_id BIGINT,
+				ring_id BIGINT,
+				amulet_id BIGINT
+			);
+
+		`,
+	},
 }

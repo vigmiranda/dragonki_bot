@@ -50,7 +50,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		inputTelegram = ToTelegramResponse(gameResp, true, "action_menu")
 
 	case "action_status":
-		gameResp, err := h.menuService.Menu(userID)
+		gameResp, err := h.playerService.Status(userID)
 		if err != nil {
 			fmt.Printf("action_status -> ", err)
 			break
