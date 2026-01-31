@@ -47,7 +47,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/skins/%s_tired.png", domain.ConvertLowCase(player.Gender)),
 	}
-	menu := "BATTLE_MENU"
+	menu := "MAIN_MENU"
 	monsterID := 0
 	if player.Energy > 0 {
 		monsters, err := s.monsterRepo.ListByLevel(int64(player.Level))
@@ -75,6 +75,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 		)
 		img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)
 		monsterID = monster.MonsterID
+		menu = "BATTLE_MENU"
 	}
 	viewResponse := view.GameResponse{
 		Text:    msg,
@@ -220,13 +221,13 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	}
 	player.Energy--
 	monsterIDStr, _ := params["monsterID"]
-	monsterId, err := strconv.ParseInt(monsterIDStr, 10, 64)
-	monster, err := s.monsterRepo.GetByID(monsterId)
+	monsterID, err := strconv.ParseInt(monsterIDStr, 10, 64)
+	monster, err := s.monsterRepo.GetByID(monsterID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	msg := fmt.Sprintf("💀 Você consegui fugir!!!")
+	msg := fmt.Sprintf("💀 Você consegui fugir do %s!!!", monster.Name)
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
@@ -235,8 +236,9 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 
 	escapePlayer := rand.Intn(10)
 	escapeMonster := rand.Intn(10)
-	if escapePlayer < escapeMonster {
+	if escapePlayer <= escapeMonster {
 		player.HP -= rand.Intn(monster.ATK/2+1) + monster.ATK/2
+		menu = "BATTLE_MENU"
 		msg = fmt.Sprintf(
 			"💀 Você não consegui fugir!!! \n"+
 				"❤️ Seu HP agora é %d/%d \n"+
@@ -247,6 +249,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 			player.MaxEnergy,
 		)
 		img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)
+
 	}
 	err = s.playerRepo.Save(player)
 	if err != nil {
@@ -256,6 +259,9 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		Text:    msg,
 		Image:   img,
 		MenuKey: menu,
+		MenuParams: map[string]any{
+			"monsterID": monster.MonsterID,
+		},
 	}
 
 	return viewResponse, monster, nil
