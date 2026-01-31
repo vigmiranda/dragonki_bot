@@ -32,6 +32,12 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL(
+				"💬 Entrar na Comunidade",
+				"https://t.me/dragonki_community",
+			),
+		),
 	)
 	return &menu
 }
