@@ -3,10 +3,9 @@ package telegram
 import (
 	"fmt"
 	"log"
-	"net/url"
-	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
 )
 
 func (h *Handler) handleCallback(update tgbotapi.Update) {
@@ -19,7 +18,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	chatID := cb.Message.Chat.ID
 	userID := cb.From.ID
 	messageID := cb.Message.MessageID
-	action, params := parseCallbackData(data)
+	action, params := utils.ParseCallbackData(data)
 	inputTelegram := InputTelegram{}
 	log.Printf("Callback recebido | action=%s | params=%v", action, params)
 
@@ -137,38 +136,4 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	h.bot.Request(
 		tgbotapi.NewCallback(cb.ID, ""),
 	)
-}
-
-// ===============================
-// CALLBACK PARSER
-// ===============================
-
-// parseCallbackData transforma:
-// "action_fight?monsterID=12"
-// em:
-// action = "action_fight"
-// params = map[string]string{"monsterID":"12"}
-func parseCallbackData(data string) (string, map[string]string) {
-	result := make(map[string]string)
-
-	parts := strings.SplitN(data, "?", 2)
-	action := parts[0]
-
-	if len(parts) < 2 {
-		return action, result
-	}
-
-	values, err := url.ParseQuery(parts[1])
-	if err != nil {
-		log.Println("❌ Erro ao parsear callback:", err)
-		return action, result
-	}
-
-	for k, v := range values {
-		if len(v) > 0 {
-			result[k] = v[0]
-		}
-	}
-
-	return action, result
 }
