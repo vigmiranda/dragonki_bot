@@ -1,11 +1,18 @@
 package domain
 
 type InventoryItem struct {
-	ItemID   int64
+	ID          uint `gorm:"primaryKey"`
+	InventoryID uint
+
+	ItemID uint
+	Item   Item `gorm:"foreignKey:ItemID"`
+
 	Quantity int
 }
 
 type Inventory struct {
-	PlayerID int64
-	Items    []InventoryItem
+	ID       uint  `gorm:"primaryKey"`
+	PlayerID int64 `gorm:"uniqueIndex"`
+
+	Items []InventoryItem `gorm:"foreignKey:InventoryID"`
 }
