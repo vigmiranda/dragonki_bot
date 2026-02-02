@@ -20,13 +20,13 @@ func (h *Handler) handleBattle(action string, userID int64, params map[string]st
 		}
 		return ToTelegramResponse(gameResp, true, "action_escape")
 
-	case "action_cacar":
+	case "action_hunt":
 		gameResp, err := h.battleService.GetBattle(userID)
 		if err != nil {
-			fmt.Printf("action_cacar -> ", err)
+			fmt.Printf("action_hunt -> ", err)
 			break
 		}
-		return ToTelegramResponse(gameResp, true, "action_cacar")
+		return ToTelegramResponse(gameResp, true, "action_hunt")
 	}
 	return InputTelegram{}
 }

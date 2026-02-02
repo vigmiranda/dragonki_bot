@@ -1,11 +1,21 @@
 package domain
 
 type PlayerEquipment struct {
-	PlayerID int64
+	ID       uint  `gorm:"primaryKey"`
+	PlayerID int64 `gorm:"uniqueIndex"`
 
-	Weapon Equipment
-	Gloves Equipment
-	Boots  Equipment
-	Ring   Equipment
-	Amulet Equipment
+	WeaponID uint
+	Weapon   Equipment `gorm:"foreignKey:WeaponID"`
+
+	GlovesID uint
+	Gloves   Equipment `gorm:"foreignKey:GlovesID"`
+
+	BootsID uint
+	Boots   Equipment `gorm:"foreignKey:BootsID"`
+
+	RingID uint
+	Ring   Equipment `gorm:"foreignKey:RingID"`
+
+	AmuletID uint
+	Amulet   Equipment `gorm:"foreignKey:AmuletID"`
 }

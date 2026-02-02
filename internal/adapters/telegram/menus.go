@@ -6,6 +6,15 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+func onboardingMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("✅ Iniciar", "to_start"),
+		),
+	)
+	return &menu
+}
+
 func choosingGenderMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -26,11 +35,12 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar (Lv +3)", "action_transformar"),
-			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar (Lv +3)", "action_transform"),
+			tgbotapi.NewInlineKeyboardButtonData("⛩ Câmara do Ki Ancestral", "to_training"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
+			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonURL(

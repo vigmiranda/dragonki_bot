@@ -29,6 +29,11 @@ func main() {
 		&domain.Monster{},
 		&domain.Region{},
 		&domain.Payment{},
+		&domain.Item{},
+		&domain.Equipment{},
+		&domain.Inventory{},
+		&domain.InventoryItem{},
+		&domain.PlayerEquipment{},
 	)
 	if err != nil {
 		log.Fatal("❌ error ao rodar automigrate", err)

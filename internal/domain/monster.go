@@ -11,4 +11,5 @@ type Monster struct {
 	MaxXP       int
 	MaxMoney    int
 	SpawnWeight int
+	RegionID    int64
 }

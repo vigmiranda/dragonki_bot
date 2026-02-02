@@ -50,7 +50,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 	menu := "MAIN_MENU"
 	monsterID := 0
 	if player.Energy > 0 {
-		monsters, err := s.monsterRepo.ListByLevel(int64(player.Level))
+		monsters, err := s.monsterRepo.ListByRegion(player.RegionID)
 		if err != nil || len(monsters) == 0 {
 			msg = fmt.Sprintf("Error ao encontra um monstro")
 			img.Path = fmt.Sprintf("assets/error.png")
@@ -238,18 +238,32 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	escapeMonster := rand.Intn(10)
 	if escapePlayer <= escapeMonster {
 		player.HP -= rand.Intn(monster.ATK/2+1) + monster.ATK/2
-		menu = "BATTLE_MENU"
-		msg = fmt.Sprintf(
-			"💀 Você não consegui fugir!!! \n"+
-				"❤️ Seu HP agora é %d/%d \n"+
-				"⚡️ E sua Energia é %d/%d \n",
-			player.HP,
-			player.MaxHP,
-			player.Energy,
-			player.MaxEnergy,
-		)
-		img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)
-
+		if player.HP <= 0 {
+			player.HP = 1
+			player.XP -= int(float64(player.XP) * 0.9)
+			player.Gold -= int(float64(player.Gold) * 0.9)
+			menu = "ENERGY_MENU"
+			msg = fmt.Sprintf(
+				"💀 Você zerou seu HP!!! \n\n"+
+					"%s não é derrota, é aprendizado. \n"+
+					"Venha, guerreiro. \nO descanso do Sir Soneca curará suas feridas. \n\n"+
+					"O mundo ainda precisa da sua força. \n",
+				player.Name,
+			)
+			img.Path = fmt.Sprintf("assets/npcs/mestre_kalunga.png")
+		} else {
+			menu = "BATTLE_MENU"
+			msg = fmt.Sprintf(
+				"💀 Você não consegui fugir!!! \n"+
+					"❤️ Seu HP agora é %d/%d \n"+
+					"⚡️ E sua Energia é %d/%d \n",
+				player.HP,
+				player.MaxHP,
+				player.Energy,
+				player.MaxEnergy,
+			)
+			img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)
+		}
 	}
 	err = s.playerRepo.Update(player)
 	if err != nil {
