@@ -1,40 +1,47 @@
 package postgres
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/vigmiranda/dragonki/internal/domain"
+	"gorm.io/gorm"
 )
 
 type PaymentRepo struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewPaymentRepo(postgres *Postgres) *PaymentRepo {
-	return &PaymentRepo{db: postgres.DB}
+func NewPaymentRepo(db *gorm.DB) *PaymentRepo {
+	return &PaymentRepo{db: db}
 }
 
 func (r *PaymentRepo) Save(p *domain.Payment) error {
-	_, err := r.db.Exec(`
-		INSERT INTO payments (id, player_id, amount, status, qr_code, qr_code_base64, partner_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`, p.ID, p.PlayerID, p.Amount, p.Status, p.QRCode, p.QRCodeBase64, p.PartnerId, time.Now())
+	err := r.db.Create(&p).Error
+	if err != nil {
+		return err
+	}
 	return err
 }
 
 func (r *PaymentRepo) FindByPartnerID(id int64) (*domain.Payment, error) {
 	var p domain.Payment
-	err := r.db.QueryRow(`
-		SELECT id, player_id, amount, status,  qr_code, qr_code_base64, created_at
-		FROM payments WHERE partner_id=$1 AND status = 'pending'
-	`, id).Scan(&p.ID, &p.PlayerID, &p.Amount, &p.Status, &p.QRCode, &p.QRCodeBase64, &p.CreatedAt)
+
+	err := r.db.Where("partner_id = ? and status = 'pending'", id).Scan(&p).Error
+	if err != nil {
+		return nil, err
+	}
 	return &p, err
 }
 
 func (r *PaymentRepo) UpdateStatus(id string, status domain.PaymentStatus) error {
-	_, err := r.db.Exec(`
-		UPDATE payments SET status=$1, last_update= now() WHERE id=$2
-	`, status, id)
-	return err
+	updates := map[string]interface{}{
+		"status":      status,
+		"last_update": time.Now(),
+	}
+
+	return r.db.
+		Model(&domain.Payment{}).
+		Where("id = ?", id).
+		Updates(updates).
+		Error
 }

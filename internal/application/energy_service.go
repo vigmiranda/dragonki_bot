@@ -29,7 +29,7 @@ func (s *EnergyService) Energy(userID int64) (view.GameResponse, error) {
 		player.RegenEnergy()
 	}
 	player.SetTransformBase()
-	err = s.PlayerRepository.Save(player)
+	err = s.PlayerRepository.Update(player)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func (s *EnergyService) Rest(userID int64) (view.GameResponse, error) {
 		player.RegenEnergy()
 	}
 	player.SetTransformBase()
-	err = s.PlayerRepository.Save(player)
+	err = s.PlayerRepository.Update(player)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func (s *EnergyService) Rest(userID int64) (view.GameResponse, error) {
 			player.MaxHP,
 		)
 		img.Path = fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender))
-		err := s.PlayerRepository.Save(player)
+		err := s.PlayerRepository.Update(player)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -127,7 +127,7 @@ func (s *EnergyService) Sleep(userID int64) (view.GameResponse, error) {
 		player.RegenEnergy()
 	}
 	player.SetTransformBase()
-	err = s.PlayerRepository.Save(player)
+	err = s.PlayerRepository.Update(player)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func (s *EnergyService) Sleep(userID int64) (view.GameResponse, error) {
 			"❤️ HP recarregado!!! \n" +
 				"Bora voltar pra Luta ⚔️!! \n",
 		)
-		err := s.PlayerRepository.Save(player)
+		err := s.PlayerRepository.Update(player)
 		if err != nil {
 			log.Fatal(err)
 		}

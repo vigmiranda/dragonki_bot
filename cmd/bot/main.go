@@ -1,13 +1,13 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/vigmiranda/dragonki/internal/domain"
 
 	"github.com/vigmiranda/dragonki/internal/adapters/mercadopago"
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
@@ -19,30 +19,26 @@ import (
 
 func main() {
 
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		log.Fatal("❌ DATABASE_URL não definida")
-	}
-
 	// 🔹 Abre conexão com o banco
-	db, err := sql.Open("pgx", dbURL)
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := postgres.OpenDB()
 
 	// 🔹 Roda migrations
-	if err := postgres.RunMigrations(db); err != nil {
-		log.Fatal(err)
+	err := db.AutoMigrate(
+		&domain.Player{},
+		&domain.Class{},
+		&domain.Monster{},
+		&domain.Region{},
+		&domain.Payment{},
+	)
+	if err != nil {
+		log.Fatal("❌ error ao rodar automigrate", err)
 	}
 
-	// 🔹 Infra DB (wrapper)
-	postgresDB := postgres.NewPostgres(db)
-
 	// 🔹 Repositórios
-	playerRepo := postgres.NewPlayerPostgresRepo(postgresDB)
-	monsterRepo := postgres.NewMonsterPostgresRepo(postgresDB)
-	regionRepo := postgres.NewRegionPostgresRepo(postgresDB)
-	paymentRepo := postgres.NewPaymentRepo(postgresDB)
+	playerRepo := postgres.NewPlayerPostgresRepo(db)
+	monsterRepo := postgres.NewMonsterPostgresRepo(db)
+	regionRepo := postgres.NewRegionPostgresRepo(db)
+	paymentRepo := postgres.NewPaymentRepo(db)
 
 	// 🔹 Services (Application)
 	playerService := application.NewPlayerService(playerRepo, regionRepo)

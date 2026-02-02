@@ -22,6 +22,7 @@ type Payment struct {
 	QRCodeBase64 string `json:"qr_code_base64"`
 	PartnerId    int64
 	CreatedAt    time.Time
+	LastUpdate   time.Time
 }
 
 func BuildNumericPaymentID(userID int64) string {

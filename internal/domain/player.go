@@ -9,44 +9,38 @@ import (
 )
 
 type Player struct {
-	UserID int64
+	ID uint `gorm:"primaryKey;autoIncrement"`
 
-	// Identidade
+	UserID int64 `gorm:"uniqueIndex;not null"`
+
 	Name      string
 	Gender    string
-	ClassID   int64
+	ClassID   uint
 	ClassName string
 
-	// Progressão
 	Level int
 	XP    int
 
-	// Combate
 	HP    int
 	MaxHP int
+	ATK   int
+	DEF   int
 
-	ATK int
-	DEF int
-
-	// Energia
 	Energy    int
 	MaxEnergy int
 
-	// Economia
 	Gold       int
 	KiCrystals int
 
-	// Mundo
 	RegionID int64
 
-	// Estados
-	LastEnergyAt    time.Time
+	LastEnergyAt time.Time
+
 	Form            string
 	FormBattlesLeft int
 
 	OnboardingStep string
-
-	LastUpdate time.Time
+	LastUpdate     time.Time
 }
 
 func (p *Player) SetTransformBase() *Player {
@@ -83,12 +77,6 @@ func KiAwakened(player *Player) *Player {
 func ConvertLowCase(text string) string {
 	return strings.ToLower(text)
 }
-
-
-
-
-
-
 
 func (p *Player) RegenEnergy() {
 	now := time.Now().UTC()

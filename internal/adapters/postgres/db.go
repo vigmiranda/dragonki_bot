@@ -1,11 +1,25 @@
 package postgres
 
-import "database/sql"
+import (
+	"log"
+	"os"
 
-type Postgres struct {
-	DB *sql.DB
-}
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+)
 
-func NewPostgres(db *sql.DB) *Postgres {
-	return &Postgres{DB: db}
+func OpenDB() *gorm.DB {
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Fatal("❌ DATABASE_URL não definida")
+	}
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
+	if err != nil {
+		log.Fatal("❌ erro ao conectar no banco:", err)
+	}
+
+	return db
 }

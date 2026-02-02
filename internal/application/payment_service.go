@@ -92,5 +92,5 @@ func (s *PaymentService) ConfirmPayment(paymentID int64) error {
 	}
 
 	player.KiCrystals += int(payment.Amount * 10)
-	return s.playersRepository.Save(player)
+	return s.playersRepository.Update(player)
 }
