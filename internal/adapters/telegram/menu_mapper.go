@@ -13,6 +13,8 @@ func mapMenu(
 	params map[string]any,
 ) *tgbotapi.InlineKeyboardMarkup {
 	switch key {
+	case "GENDER_MENU":
+		return choosingGenderMenu()
 
 	case "MAIN_MENU":
 		return mainMenu()

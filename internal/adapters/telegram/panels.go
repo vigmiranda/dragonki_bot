@@ -13,14 +13,18 @@ import (
 func (h *Handler) sendInitialPanel(chatID int64) {
 	photo := tgbotapi.NewPhoto(
 		chatID,
-		tgbotapi.FilePath("assets/skins/man_woman_select.png"),
+		tgbotapi.FilePath("assets/npcs/mestre_kalunga.png"),
 	)
-	photo.Caption = "Selecione o genero do seu personagem"
+	photo.Caption = "Bem vindo guerreiro!! \n" +
+		"Eu sou o Mestre Kalungá \n" +
+		"Caso queira entrar nesta jornada eu irei te acompanhar!!!\n\n" +
+		"Vamos?"
 	photo.ParseMode = "HTML"
-	photo.ReplyMarkup = choosingGenderMenu()
+	photo.ReplyMarkup = onboardingMenu()
 	h.bot.Send(photo)
 }
-func (h *Handler) handleNameInput(chatID int64, userID int64, name string) (InputTelegram, error) {
+
+func (h *Handler) handleNameInput(userID int64, name string) (InputTelegram, error) {
 	name = strings.TrimSpace(name)
 
 	response := InputTelegram{

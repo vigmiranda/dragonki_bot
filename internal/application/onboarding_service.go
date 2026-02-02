@@ -27,6 +27,20 @@ func (s *OnboardingService) HasCompletedOnboarding(userID int64) (string, error)
 	}
 	return player.OnboardingStep, nil
 }
+func (s *OnboardingService) HandleSelectGender() (view.GameResponse, error) {
+	msg := fmt.Sprintf("Selecione o genero do seu personagem")
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/skins/man_woman_select.png"),
+	}
+	menu := "GENDER_MENU"
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}
+	return viewResponse, nil
+}
 
 func (s *OnboardingService) SetGender(userID int64, gender string) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)

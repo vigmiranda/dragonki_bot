@@ -23,7 +23,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 
 	switch action {
 
-	case "select_man", "select_woman":
+	case "to_start", "select_man", "select_woman":
 		inputTelegram = h.handleOnboarding(action, userID)
 
 	case "action_menu":
