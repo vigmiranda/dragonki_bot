@@ -2,15 +2,22 @@ package telegram
 
 import "fmt"
 
-func (h *Handler) handleTransform(action string, userID int64) InputTelegram {
+func (h *Handler) handleTraining(action string, userID int64) InputTelegram {
 	switch action {
-	case "action_transformar":
-		gameResp, err := h.transformService.Transform(userID)
+	case "to_training":
+		gameResp, err := h.transformService.Training()
 		if err != nil {
-			fmt.Printf("action_transformar -> ", err)
+			fmt.Printf("to_training -> ", err)
 			break
 		}
-		return ToTelegramResponse(gameResp, true, "action_transformar")
+		return ToTelegramResponse(gameResp, true, "action_transform")
+	case "action_transform":
+		gameResp, err := h.transformService.Transform(userID)
+		if err != nil {
+			fmt.Printf("action_transform -> ", err)
+			break
+		}
+		return ToTelegramResponse(gameResp, true, "action_transform")
 
 	}
 	return InputTelegram{}

@@ -26,11 +26,12 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar (Lv +3)", "action_transformar"),
-			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar (Lv +3)", "action_transform"),
+			tgbotapi.NewInlineKeyboardButtonData("⛩ Câmara do Ki Ancestral", "to_training"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
+			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonURL(

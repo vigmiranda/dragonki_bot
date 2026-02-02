@@ -16,6 +16,24 @@ type TransformService struct {
 func NewTransformService(repo ports.PlayerRepository) *TransformService {
 	return &TransformService{PlayerRepository: repo}
 }
+func (s *TransformService) Training() (view.GameResponse, error) {
+	msg := fmt.Sprintf(
+		"✨ Câmara do Ki Ancestral ✨ \n\n" +
+			"Sentimos muito mas ela ainda se encontra em construção!!",
+	)
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/maps/ki_ancestral_hall.png"),
+	}
+	menu := "MAIN_MENU"
+
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}
+	return viewResponse, nil
+}
 
 func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)

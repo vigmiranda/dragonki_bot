@@ -32,11 +32,11 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	case "action_status":
 		inputTelegram = h.handlePlayer(action, userID)
 
-	case "action_fight", "action_escape", "action_cacar":
+	case "action_fight", "action_escape", "action_hunt":
 		inputTelegram = h.handleBattle(action, userID, params)
 
-	case "action_transformar":
-		inputTelegram = h.handleTransform(action, userID)
+	case "action_transform", "to_training":
+		inputTelegram = h.handleTraining(action, userID)
 
 	case "to_sleep", "action_sleep", "action_rest":
 		inputTelegram = h.handleEnergy(action, userID)
