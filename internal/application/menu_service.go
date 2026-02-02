@@ -34,7 +34,7 @@ func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 		player.RegenEnergy()
 	}
 	player.SetTransformBase()
-	err = s.PlayerRepository.Save(player)
+	err = s.PlayerRepository.Update(player)
 	if err != nil {
 		log.Fatal(err)
 	}

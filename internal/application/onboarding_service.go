@@ -36,7 +36,7 @@ func (s *OnboardingService) SetGender(userID int64, gender string) (view.GameRes
 
 	player.Gender = gender
 	player.OnboardingStep = "CHOOSING_NAME"
-	err = s.PlayerRepository.Save(player)
+	err = s.PlayerRepository.Update(player)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,5 +63,5 @@ func (s *OnboardingService) SetName(userID int64, name string) error {
 	player.Name = name
 	player.OnboardingStep = "DONE"
 
-	return s.PlayerRepository.Save(player)
+	return s.PlayerRepository.Update(player)
 }

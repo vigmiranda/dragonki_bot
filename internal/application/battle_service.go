@@ -36,7 +36,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 
 	//todo tirar daqui
 	player.SetTransformBase()
-	err = s.playerRepo.Save(player)
+	err = s.playerRepo.Update(player)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	if err != nil {
 		log.Fatal(err)
 	}
-	monster, err := s.monsterRepo.GetByID(monsterId)
+	monster, err := s.monsterRepo.GetByMonsterID(monsterId)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		)
 		img.Path = fmt.Sprintf("assets/skins/%s_battle_loss.png", domain.ConvertLowCase(player.Gender))
 	}
-	if err := s.playerRepo.Save(player); err != nil {
+	if err := s.playerRepo.Update(player); err != nil {
 		msg = fmt.Sprintf("💀 Ocorreu um erro ao fim da batalha!!!")
 		img.Path = fmt.Sprintf("assets/error.png")
 
@@ -222,7 +222,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	player.Energy--
 	monsterIDStr, _ := params["monsterID"]
 	monsterID, err := strconv.ParseInt(monsterIDStr, 10, 64)
-	monster, err := s.monsterRepo.GetByID(monsterID)
+	monster, err := s.monsterRepo.GetByMonsterID(monsterID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -251,7 +251,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)
 
 	}
-	err = s.playerRepo.Save(player)
+	err = s.playerRepo.Update(player)
 	if err != nil {
 		log.Fatal(err)
 	}

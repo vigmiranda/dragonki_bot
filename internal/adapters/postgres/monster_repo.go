@@ -1,83 +1,38 @@
 package postgres
 
 import (
-	"database/sql"
-
 	"github.com/vigmiranda/dragonki/internal/domain"
+	"gorm.io/gorm"
 )
 
 type MonsterPostgresRepo struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewMonsterPostgresRepo(postgres *Postgres) *MonsterPostgresRepo {
+func NewMonsterPostgresRepo(db *gorm.DB) *MonsterPostgresRepo {
 	return &MonsterPostgresRepo{
-		db: postgres.DB,
+		db: db,
 	}
 }
-func (r *MonsterPostgresRepo) GetByID(monsterId int64) (*domain.Monster, error) {
+func (r *MonsterPostgresRepo) GetByMonsterID(monsterId int64) (*domain.Monster, error) {
 	var monster domain.Monster
 
-	err := r.db.QueryRow(`
-		SELECT monster_id, name, tag, level, hp, atk, def, max_xp, max_money
-		FROM monsters
-		WHERE monster_id = $1
-	`, monsterId).Scan(
-		&monster.MonsterID,
-		&monster.Name,
-		&monster.Tag,
-		&monster.Level,
-		&monster.HP,
-		&monster.ATK,
-		&monster.DEF,
-		&monster.MaxXP,
-		&monster.MaxMoney,
-	)
-
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-
+	err := r.db.Model(&domain.Monster{}).
+		Where("monster_id = ?", monsterId).
+		First(&monster).Error
 	if err != nil {
 		return nil, err
 	}
-
 	return &monster, nil
 }
 func (r *MonsterPostgresRepo) ListByLevel(level int64) ([]domain.Monster, error) {
-	rows, err := r.db.Query(`
-		SELECT monster_id, name, tag, level, hp, atk, def,
-		       max_xp, max_money, spawn_weight
-		FROM monsters
-		WHERE level <= $1
-		ORDER BY monster_id`,
-		level,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	var monsters []domain.Monster
 
-	for rows.Next() {
-		var m domain.Monster
-		err := rows.Scan(
-			&m.MonsterID,
-			&m.Name,
-			&m.Tag,
-			&m.Level,
-			&m.HP,
-			&m.ATK,
-			&m.DEF,
-			&m.MaxXP,
-			&m.MaxMoney,
-			&m.SpawnWeight,
-		)
-		if err != nil {
-			return nil, err
-		}
-		monsters = append(monsters, m)
+	err := r.db.Model(&domain.Monster{}).
+		Where("level <= ?", level).
+		Scan(&monsters).Error
+	if err != nil {
+		return nil, err
 	}
 
 	return monsters, nil

@@ -27,7 +27,7 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
 		player.RegenEnergy()
 	}
-	err = s.PlayerRepository.Save(player)
+	err = s.PlayerRepository.Update(player)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 		img.Path = fmt.Sprintf("assets/skins/%s_ki_awakened.png", domain.ConvertLowCase(player.Gender))
 	}
 
-	err = s.PlayerRepository.Save(player)
+	err = s.PlayerRepository.Update(player)
 	if err != nil {
 		log.Fatal(err)
 	}
