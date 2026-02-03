@@ -11,9 +11,11 @@ const (
 type Item struct {
 	ID uint `gorm:"primaryKey"`
 
-	Code        string `gorm:"uniqueIndex"`
+	Code        string
 	Name        string
 	Description string
 	Type        ItemType
 	Rarity      string
+	Amount      int
+	Price       int
 }

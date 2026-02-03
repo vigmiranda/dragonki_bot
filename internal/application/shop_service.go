@@ -3,17 +3,25 @@ package application
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
+	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
 
 type ShopService struct {
-	PlayerRepository ports.PlayerRepository
+	PlayerRepository    ports.PlayerRepository
+	ItemRepository      ports.ItemsRepository
+	InventoryRepository ports.InventoryRepository
 }
 
-func NewShopService(repo ports.PlayerRepository) *ShopService {
-	return &ShopService{PlayerRepository: repo}
+func NewShopService(repo ports.PlayerRepository, itemRepo ports.ItemsRepository, inventoryRepo ports.InventoryRepository) *ShopService {
+	return &ShopService{
+		PlayerRepository:    repo,
+		ItemRepository:      itemRepo,
+		InventoryRepository: inventoryRepo,
+	}
 }
 
 func (s *ShopService) OpenShop(userID int64) (view.GameResponse, error) {
@@ -40,5 +48,114 @@ func (s *ShopService) OpenShop(userID int64) (view.GameResponse, error) {
 		},
 		MenuKey: "SHOP_MENU",
 	}
+	return viewResponse, nil
+}
+
+func (s *ShopService) ListPotions() (view.GameResponse, error) {
+	potions, err := s.ItemRepository.GetRandomList(domain.ItemConsumable, domain.Common)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	menuParams := make(map[string]any)
+	for _, potion := range potions {
+
+		label := fmt.Sprintf(
+			"%d x %s - %d Gold",
+			potion.Amount,
+			potion.Name,
+			potion.Price,
+		)
+
+		menuParams[label] = strconv.Itoa(int(potion.ID))
+	}
+
+	msg := fmt.Sprintf(
+		"🪙 Kiara, a Mercadora 🪙 \n\n" +
+			"Certo estas são as poções que tenho disponíveis hoje!!  \n\n" +
+			"Qual delas você vai querer?   \n\n",
+	)
+
+	viewResponse := view.GameResponse{
+		Text: msg,
+		Image: &view.Image{
+			Type: view.ImageAsset,
+			Path: fmt.Sprintf("assets/npcs/kiara_mercadora.png"),
+		},
+		MenuKey:    "SHOP_ITEMS_MENU",
+		MenuParams: menuParams,
+	}
+
+	return viewResponse, nil
+}
+
+func (s *ShopService) ListEquipments() (view.GameResponse, error) {
+	equipments, err := s.ItemRepository.GetRandomList(domain.ItemEquipment, domain.Common)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	menuParams := make(map[string]any)
+	for _, equipament := range equipments {
+
+		label := fmt.Sprintf(
+			"%d x %s - %d Gold",
+			equipament.Amount,
+			equipament.Name,
+			equipament.Price,
+		)
+
+		menuParams[label] = strconv.Itoa(int(equipament.ID))
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Sprintf("->", equipments)
+	msg := fmt.Sprintf(
+		"🪙 Kiara, a Mercadora 🪙 \n\n" +
+			"Certo estes são os equipamentos que tenho aqui na lojinha!!   \n\n" +
+			"Teve interesse em algum?     \n\n")
+
+	viewResponse := view.GameResponse{
+		Text: msg,
+		Image: &view.Image{
+			Type: view.ImageAsset,
+			Path: fmt.Sprintf("assets/npcs/kiara_mercadora.png"),
+		},
+		MenuKey:    "SHOP_ITEMS_MENU",
+		MenuParams: menuParams,
+	}
+	return viewResponse, nil
+}
+func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.GameResponse, error) {
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	itemIDStr, _ := params["itemID"]
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	item, err := s.ItemRepository.GetItemById(int(itemID))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = s.InventoryRepository.CreateOrUpdateInventory(int64(player.ID), item.ID, item.Amount)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	msg := fmt.Sprintf(
+		"🪙 Kiara, a Mercadora 🪙 \n\n" +
+			"Obrigada por sua compara, caso precise pode retornar aqui!!   \n\n")
+
+	viewResponse := view.GameResponse{
+		Text: msg,
+		Image: &view.Image{
+			Type: view.ImageAsset,
+			Path: fmt.Sprintf("assets/npcs/kiara_mercadora.png"),
+		},
+		MenuKey: "SHOP_MENU",
+	}
+
 	return viewResponse, nil
 }

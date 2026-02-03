@@ -25,6 +25,9 @@ func mapMenu(
 	case "SHOP_MENU":
 		return shopMenu()
 
+	case "SHOP_ITEMS_MENU":
+		return shopItemsMenu(params)
+
 	case "BATTLE_MENU":
 		monsterID, ok := params["monsterID"]
 		monster, err := strconv.ParseInt(fmt.Sprint(monsterID), 10, 64)

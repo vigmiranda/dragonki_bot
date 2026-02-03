@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
 )
 
 func onboardingMenu() *tgbotapi.InlineKeyboardMarkup {
@@ -81,8 +82,15 @@ func shopMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("📖 Menu", "action_menu"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🧪 Poções", "list_potions"),
+			tgbotapi.NewInlineKeyboardButtonData("📿 Equipamentos", "list_equipments"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("💎 Comprar 10 KiCrystals", "action_buy_ki"),
 		),
 	)
 	return &menu
+}
+func shopItemsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
+	return utils.BuildMenuItems(itemsParams)
 }
