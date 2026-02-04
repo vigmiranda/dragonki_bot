@@ -65,7 +65,7 @@ func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
 			Data: utils.DecodeBase64(qrCode),
 			Name: "pix.png",
 		},
-		MenuKey: "MAIN_MENU",
+		MenuKey: "EXCHANGE_MENU",
 	}
 	return viewResponse, nil
 }

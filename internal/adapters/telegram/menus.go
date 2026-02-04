@@ -2,6 +2,9 @@ package telegram
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
@@ -29,9 +32,6 @@ func choosingGenderMenu() *tgbotapi.InlineKeyboardMarkup {
 func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📖 Menu", "action_menu"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⚔️ Caçar", "action_cacar"),
 			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
 		),
@@ -42,6 +42,9 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
 			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🔄 Casa de Câmbio", "to_exchange"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonURL(
@@ -61,7 +64,7 @@ func energyMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("🥱 Descansar -1 ⚡️Energia / +30% ❤️HP", "action_rest"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📖 Menu", "action_menu"),
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
 		),
 	)
 	return &menu
@@ -78,19 +81,48 @@ func battleMenu(monsterID int64) *tgbotapi.InlineKeyboardMarkup {
 }
 func shopMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📖 Menu", "action_menu"),
-		),
+
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🧪 Poções", "list_potions"),
 			tgbotapi.NewInlineKeyboardButtonData("📿 Equipamentos", "list_equipments"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("💎 Comprar 10 KiCrystals", "action_buy_ki"),
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
 		),
 	)
 	return &menu
 }
 func shopItemsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	return utils.BuildMenuItems(itemsParams)
+}
+func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
+	kiCrystalsConvert, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_CONVERT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("Converter 1 Ki Crystals 💎 em %d de Gold 💰", kiCrystalsConvert),
+				"action_convert?amountConvert=1"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("Converter 5 Ki Crystals 💎 em %d de Gold 💰", 5*kiCrystalsConvert),
+				"action_convert?amountConvert=5"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("Converter 10 Ki Crystals 💎 em %d de Gold 💰", 10*kiCrystalsConvert),
+				"action_convert?amountConvert=10"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("💎 Comprar 10 Ki Crystals", "action_buy_ki"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+		),
+	)
+	return &menu
 }

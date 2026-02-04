@@ -55,6 +55,7 @@ func main() {
 	menuService := application.NewMenuService(playerRepo, regionRepo)
 	energyService := application.NewEnergyService(playerRepo)
 	shopService := application.NewShopService(playerRepo, itemRepo, inventoryRepo)
+	exchangeService := application.NewExchangeService(playerRepo)
 
 	// 🔹 Mercado Pago (Gateway)
 	mpClient := mercadopago.NewClient()
@@ -84,6 +85,7 @@ func main() {
 		menuService,
 		energyService,
 		shopService,
+		exchangeService,
 	)
 
 	// 🔹 Telegram Webhook HTTP

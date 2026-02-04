@@ -25,6 +25,9 @@ func mapMenu(
 	case "SHOP_MENU":
 		return shopMenu()
 
+	case "EXCHANGE_MENU":
+		return exchangeMenu()
+
 	case "SHOP_ITEMS_MENU":
 		return shopItemsMenu(params)
 

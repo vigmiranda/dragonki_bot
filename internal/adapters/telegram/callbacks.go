@@ -44,8 +44,12 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	case "to_shop", "list_potions", "list_equipments", "buy_item":
 		inputTelegram = h.handleShop(action, userID, params)
 
+	case "to_exchange", "action_convert":
+		inputTelegram = h.handleExchange(action, userID, params)
+
 	case "action_buy_ki":
 		inputTelegram = h.handlePayment(action, userID)
+
 	}
 
 	// 🔥 atualiza a tela principal
