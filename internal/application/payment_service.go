@@ -43,7 +43,7 @@ func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
 
 	amount := 1
 
-	amountEnv, err := strconv.ParseInt(os.Getenv("KI_DRAGONS_VALUE"), 10, 64)
+	amountEnv, err := strconv.ParseInt(os.Getenv("KI_CRYSTALS_VALUE"), 10, 64)
 	if err != nil {
 		log.Fatal(err)
 	} else {
@@ -71,6 +71,10 @@ func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
 }
 
 func (s *PaymentService) ConfirmPayment(paymentID int64) error {
+	kiCrystalsMult, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_MULT"))
+	if err != nil {
+		log.Fatal(err)
+	}
 	payment, err := s.paymentRepository.FindByPartnerID(paymentID)
 	if err != nil {
 		return err
@@ -91,6 +95,6 @@ func (s *PaymentService) ConfirmPayment(paymentID int64) error {
 		return err
 	}
 
-	player.KiCrystals += int(payment.Amount * 10)
+	player.KiCrystals += int(payment.Amount) * kiCrystalsMult
 	return s.playersRepository.Update(player)
 }

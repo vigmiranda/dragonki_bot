@@ -96,7 +96,15 @@ func shopItemsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	return utils.BuildMenuItems(itemsParams)
 }
 func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
+	kiCrystalsValue, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_VALUE"))
+	if err != nil {
+		log.Fatal(err)
+	}
 	kiCrystalsConvert, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_CONVERT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	kiCrystalsMult, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_MULT"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -118,7 +126,9 @@ func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
 				"action_convert?amountConvert=10"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("💎 Comprar 10 Ki Crystals", "action_buy_ki"),
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("💎 Comprar %d Ki Crystals por R$%d,00", kiCrystalsMult*kiCrystalsValue, kiCrystalsValue),
+				"action_buy_ki"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
