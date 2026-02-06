@@ -17,6 +17,7 @@ type Handler struct {
 	energyService     *application.EnergyService
 	shopService       *application.ShopService
 	exchangeService   *application.ExchangeService
+	inventoryService  *application.InventoryService
 }
 
 func NewHandler(
@@ -30,6 +31,7 @@ func NewHandler(
 	energyService *application.EnergyService,
 	shopService *application.ShopService,
 	exchangeService *application.ExchangeService,
+	inventoryService *application.InventoryService,
 
 ) *Handler {
 	return &Handler{
@@ -43,5 +45,6 @@ func NewHandler(
 		energyService:     energyService,
 		shopService:       shopService,
 		exchangeService:   exchangeService,
+		inventoryService:  inventoryService,
 	}
 }

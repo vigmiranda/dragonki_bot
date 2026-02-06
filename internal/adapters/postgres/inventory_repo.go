@@ -18,6 +18,62 @@ func NewInventoryPostgresRepo(db *gorm.DB) *InventoryPostgres {
 	}
 }
 
+func (r *InventoryPostgres) ListItemsByUserAndType(
+	playerID int64,
+	itemType domain.ItemType,
+	page int,
+	pageSize int,
+) ([]domain.InventoryItem, int64, error) {
+
+	var inventory domain.Inventory
+	err := r.db.
+		Where("player_id = ?", playerID).
+		First(&inventory).
+		Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var items []domain.InventoryItem
+	var total int64
+
+	offset := (page - 1) * pageSize
+
+	// 🔢 Total de itens
+	err = r.db.
+		Model(&domain.InventoryItem{}).
+		Where("inventory_id = ?", inventory.ID).
+		Count(&total).
+		Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 📦 Busca paginada + preload do item
+	err = r.db.
+		Model(&domain.InventoryItem{}).
+		Joins("JOIN items ON items.id = inventory_items.item_id").
+		Where("inventory_items.inventory_id = ?", inventory.ID).
+		Where("items.type = ?", itemType).
+		Preload("Item").
+		Order("inventory_items.id ASC").
+		Limit(pageSize).
+		Offset(offset).
+		Find(&items).
+		Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return items, total, nil
+
+	// items, total, err := inventoryRepo.ListItemsByUser(userID, page, 5)
+	// totalPages :=int(math.Ceil(float64(total)/float(pageSize)))
+}
+
 func (r *InventoryPostgres) CreateOrUpdateInventory(
 	userID int64,
 	itemID uint,

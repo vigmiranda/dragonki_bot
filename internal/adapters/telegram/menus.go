@@ -32,7 +32,7 @@ func choosingGenderMenu() *tgbotapi.InlineKeyboardMarkup {
 func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⚔️ Caçar", "action_cacar"),
+			tgbotapi.NewInlineKeyboardButtonData("⚔️ Caçar", "action_hunt"),
 			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -44,6 +44,9 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🧳 Inventory", "open_inventory"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🔄 Casa de Câmbio", "to_exchange"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -51,6 +54,20 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 				"💬 Entrar na Comunidade",
 				"https://t.me/dragonki_community",
 			),
+		),
+	)
+	return &menu
+}
+func inventoryMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🧪 Poções", "open_inventory_potions"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📿 Equipamentos", "open_inventory_equipaments"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
 		),
 	)
 	return &menu

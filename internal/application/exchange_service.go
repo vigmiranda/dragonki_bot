@@ -14,6 +14,10 @@ type ExchangeService struct {
 	PlayerRepository ports.PlayerRepository
 }
 
+func NewExchangeService(repo ports.PlayerRepository) *ExchangeService {
+	return &ExchangeService{PlayerRepository: repo}
+}
+
 func (s ExchangeService) Open() (view.GameResponse, error) {
 	msg := fmt.Sprintf(
 		"💠 Casa de Câmbio de DragonKi 💠\n\n" +
@@ -84,8 +88,4 @@ func (s ExchangeService) Convert(userID int64, params map[string]string) (view.G
 		MenuKey: menu,
 	}
 	return viewResponse, nil
-}
-
-func NewExchangeService(repo ports.PlayerRepository) *ExchangeService {
-	return &ExchangeService{PlayerRepository: repo}
 }
