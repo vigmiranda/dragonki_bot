@@ -6,6 +6,7 @@ type InventoryItem struct {
 
 	ItemID uint
 	Item   Item `gorm:"foreignKey:ItemID"`
+	Code   string
 
 	Quantity int
 }

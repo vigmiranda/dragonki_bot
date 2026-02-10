@@ -44,6 +44,8 @@ func main() {
 	monsterRepo := postgres.NewMonsterPostgresRepo(db)
 	regionRepo := postgres.NewRegionPostgresRepo(db)
 	paymentRepo := postgres.NewPaymentRepo(db)
+	itemRepo := postgres.NewItemsPostgresRepo(db)
+	inventoryRepo := postgres.NewInventoryPostgresRepo(db)
 
 	// 🔹 Services (Application)
 	playerService := application.NewPlayerService(playerRepo, regionRepo)
@@ -52,7 +54,9 @@ func main() {
 	transformService := application.NewTransformService(playerRepo)
 	menuService := application.NewMenuService(playerRepo, regionRepo)
 	energyService := application.NewEnergyService(playerRepo)
-	shopService := application.NewShopService(playerRepo)
+	shopService := application.NewShopService(playerRepo, itemRepo, inventoryRepo)
+	exchangeService := application.NewExchangeService(playerRepo)
+	inventoryService := application.NewInventoryService(inventoryRepo, playerRepo, itemRepo)
 
 	// 🔹 Mercado Pago (Gateway)
 	mpClient := mercadopago.NewClient()
@@ -82,6 +86,8 @@ func main() {
 		menuService,
 		energyService,
 		shopService,
+		exchangeService,
+		inventoryService,
 	)
 
 	// 🔹 Telegram Webhook HTTP

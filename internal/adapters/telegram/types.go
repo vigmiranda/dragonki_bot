@@ -16,6 +16,8 @@ type Handler struct {
 	menuService       *application.MenuService
 	energyService     *application.EnergyService
 	shopService       *application.ShopService
+	exchangeService   *application.ExchangeService
+	inventoryService  *application.InventoryService
 }
 
 func NewHandler(
@@ -28,6 +30,9 @@ func NewHandler(
 	menuService *application.MenuService,
 	energyService *application.EnergyService,
 	shopService *application.ShopService,
+	exchangeService *application.ExchangeService,
+	inventoryService *application.InventoryService,
+
 ) *Handler {
 	return &Handler{
 		bot:               bot,
@@ -39,5 +44,7 @@ func NewHandler(
 		menuService:       menuService,
 		energyService:     energyService,
 		shopService:       shopService,
+		exchangeService:   exchangeService,
+		inventoryService:  inventoryService,
 	}
 }
