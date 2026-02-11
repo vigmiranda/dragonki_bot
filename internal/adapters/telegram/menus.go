@@ -112,6 +112,9 @@ func shopMenu() *tgbotapi.InlineKeyboardMarkup {
 func shopItemsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	return utils.BuildMenuItems(itemsParams)
 }
+func potionMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
+	return utils.PotionMenu(itemsParams)
+}
 func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
 	kiCrystalsValue, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_VALUE"))
 	if err != nil {

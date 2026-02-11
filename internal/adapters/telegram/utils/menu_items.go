@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
 func BuildMenuItems(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
@@ -27,4 +28,85 @@ func BuildMenuItems(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 
 	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	return &menu
+}
+
+func PotionMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
+
+	rawItems, ok := params["Items"].([]domain.InventoryItem)
+	if !ok {
+		fmt.Printf("PotionMenu -> ", ok)
+	}
+
+	page := toInt(params["page"])
+	totalPages := toInt(params["totalPages"])
+
+	var rows [][]tgbotapi.InlineKeyboardButton
+
+	for _, item := range rawItems {
+
+		label := fmt.Sprintf(
+			"%dx %s",
+			item.Quantity,
+			item.Item.Name,
+		)
+
+		callback := fmt.Sprintf(
+			"use_item?inventoryItemID=%d",
+			item.ID,
+		)
+
+		rows = append(rows,
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(label, callback),
+			),
+		)
+	}
+
+	// 🔹 Paginação
+	var navRow []tgbotapi.InlineKeyboardButton
+
+	if page > 1 {
+		navRow = append(navRow,
+			tgbotapi.NewInlineKeyboardButtonData(
+				"⬅️",
+				fmt.Sprintf("inventory?page=%d", page-1),
+			),
+		)
+	}
+
+	if page < totalPages {
+		navRow = append(navRow,
+			tgbotapi.NewInlineKeyboardButtonData(
+				"➡️",
+				fmt.Sprintf("inventory?page=%d", page+1),
+			),
+		)
+	}
+
+	if len(navRow) > 0 {
+		rows = append(rows, navRow)
+	}
+
+	// 🔹 Botão voltar
+	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🔙 Voltar", "open_inventory"),
+		),
+	)
+
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	return &menu
+}
+
+func toInt(v any) int {
+	switch val := v.(type) {
+	case int:
+		return val
+	case int64:
+		return int(val)
+	case float64:
+		return int(val)
+	default:
+		return 0
+	}
 }
