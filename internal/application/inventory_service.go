@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strings"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -29,11 +30,6 @@ func NewInventoryService(
 }
 
 func (s InventoryService) Open(userID int64) (view.GameResponse, error) {
-	//player, err := s.PlayerRepository.GetOrCreate(userID)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-
 	msg := fmt.Sprintf(
 		"🌌 Arkanis, o Guardião dos Ecos \n\n" +
 			"“Eu sou Arkanis… aquele que vigia o que você conquista.\n" +
@@ -114,13 +110,41 @@ func (s *InventoryService) UseItem(playerID int64, inventoryItemID uint) (view.G
 			MenuKey: "MAIN_MENU",
 		}, nil
 	}
-	player.HP += 30
-	if player.HP > player.MaxHP {
-		player.HP = player.MaxHP
+	if strings.Contains(invItem.Code, "HP") {
+		size := strings.Split(invItem.Code, "_")
+
+		switch size[2] {
+		case "SMALL":
+			player.HP += int(float64(player.MaxHP) * 0.2)
+		case "MEDIUM":
+			player.HP += int(float64(player.MaxHP) * 0.5)
+		case "LARGE":
+			player.HP = player.MaxHP
+		}
+
+		if player.HP > player.MaxHP {
+			player.HP = player.MaxHP
+		}
+	}
+
+	if strings.Contains(invItem.Code, "ENERGY") {
+		size := strings.Split(invItem.Code, "_")
+
+		switch size[2] {
+		case "SMALL":
+			player.Energy += int(float64(player.MaxEnergy) * 0.2)
+		case "MEDIUM":
+			player.Energy += int(float64(player.MaxEnergy) * 0.5)
+		case "LARGE":
+			player.Energy = player.MaxEnergy
+		}
+
+		if player.Energy > player.MaxEnergy {
+			player.Energy = player.MaxEnergy
+		}
 	}
 
 	invItem.Quantity--
-
 	err = s.InventoryRepository.UpdateInventoryItem(invItem)
 	if err != nil {
 		return view.GameResponse{}, err

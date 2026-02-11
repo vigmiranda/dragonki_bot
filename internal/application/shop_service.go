@@ -113,8 +113,7 @@ func (s *ShopService) ListEquipments() (view.GameResponse, error) {
 	fmt.Sprintf("->", equipments)
 	msg := fmt.Sprintf(
 		"🪙 Kiara, a Mercadora 🪙 \n\n" +
-			"Certo estes são os equipamentos que tenho aqui na lojinha!!   \n\n" +
-			"Teve interesse em algum?     \n\n")
+			"Ainda não temos nenhum equipamento disponível aqui na lojinha!!   \n\n")
 
 	viewResponse := view.GameResponse{
 		Text: msg,
@@ -122,8 +121,7 @@ func (s *ShopService) ListEquipments() (view.GameResponse, error) {
 			Type: view.ImageAsset,
 			Path: fmt.Sprintf("assets/npcs/kiara_mercadora.png"),
 		},
-		MenuKey:    "SHOP_ITEMS_MENU",
-		MenuParams: menuParams,
+		MenuKey: "SHOP_ITEMS_MENU",
 	}
 	return viewResponse, nil
 }
@@ -139,14 +137,24 @@ func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.Game
 		log.Fatal(err)
 	}
 
-	err = s.InventoryRepository.CreateOrUpdateInventory(int64(player.ID), item.ID, item.Amount)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	msg := fmt.Sprintf(
 		"🪙 Kiara, a Mercadora 🪙 \n\n" +
-			"Obrigada por sua compara, caso precise pode retornar aqui!!   \n\n")
+			"Você não tem gold suficiente para este item, junte mais um pouco e retorne quando tiver.!!   \n\n")
+
+	if player.Gold >= item.Price {
+		err = s.InventoryRepository.CreateOrUpdateInventory(int64(player.ID), item.ID, item.Amount)
+		if err != nil {
+			return view.GameResponse{}, err
+		}
+		player.Gold -= item.Price
+		err = s.PlayerRepository.Update(player)
+		if err != nil {
+			return view.GameResponse{}, err
+		}
+		msg = fmt.Sprintf(
+			"🪙 Kiara, a Mercadora 🪙 \n\n" +
+				"Obrigada por sua compara, caso precise pode retornar aqui!!   \n\n")
+	}
 
 	viewResponse := view.GameResponse{
 		Text: msg,
