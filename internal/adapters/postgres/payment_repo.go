@@ -26,7 +26,7 @@ func (r *PaymentRepo) Save(p *domain.Payment) error {
 func (r *PaymentRepo) FindByPartnerID(id int64) (*domain.Payment, error) {
 	var p domain.Payment
 
-	err := r.db.Where("partner_id = ? and status = 'pending'", id).Scan(&p).Error
+	err := r.db.Model(&domain.Payment{}).Where("partner_id = ? and status = 'pending'", id).Scan(&p).Error
 	if err != nil {
 		return nil, err
 	}
