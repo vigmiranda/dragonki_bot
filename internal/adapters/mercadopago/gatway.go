@@ -26,15 +26,31 @@ func (g *Gateway) CreatePix(
 
 	externalID := domain.BuildNumericPaymentID(playerID)
 	email := fmt.Sprintf("%d_@dragonki.com", playerID)
+	payer := &payment.PayerRequest{
+		Email: email,
+	}
 
 	req := payment.Request{
-		TransactionAmount: amount,
-		Description:       "DragonKi - Ki Divino",
-		PaymentMethodID:   "pix",
-		ExternalReference: externalID,
-		Payer: &payment.PayerRequest{
-			Email: email,
+		TransactionAmount:   amount,
+		Description:         "DragonKi - Ki Divino",
+		PaymentMethodID:     "pix",
+		ExternalReference:   externalID,
+		StatementDescriptor: "DragonKi",
+		AdditionalInfo: &payment.AdditionalInfoRequest{
+			Items: []payment.ItemRequest{
+				{
+					EventDate:   fmt.Sprintf("%d", time.Now().UTC()),
+					ID:          fmt.Sprintf("ki_%d", amount),
+					Title:       fmt.Sprintf("%d Ki Crystals", amount),
+					Description: "Moeda premium DragonKi",
+					CategoryID:  "digital_goods",
+					UnitPrice:   float64(amount),
+					Quantity:    1,
+				},
+			},
 		},
+		Payer:    payer,
+		DeviceID: fmt.Sprintf("telegram_%d_%d", playerID, time.Now().Unix()),
 	}
 
 	resp, err := g.client.Payment.Create(
