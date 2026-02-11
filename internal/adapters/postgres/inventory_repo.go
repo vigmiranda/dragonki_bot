@@ -18,6 +18,10 @@ func NewInventoryPostgresRepo(db *gorm.DB) *InventoryPostgres {
 	}
 }
 
+func (r *InventoryPostgres) UpdateInventoryItem(item *domain.InventoryItem) error {
+	return r.db.Save(item).Error
+}
+
 func (r *InventoryPostgres) ListItemsByUserAndType(
 	playerID int64,
 	itemType domain.ItemType,
@@ -168,4 +172,24 @@ func (r *InventoryPostgres) CreateOrUpdateInventory(
 	default:
 		return fmt.Errorf("tipo de item inválido: %s", item.Type)
 	}
+}
+func (r *InventoryPostgres) GetInventoryItemByUser(
+	playerID int64,
+	inventoryItemID uint,
+) (*domain.InventoryItem, error) {
+
+	var invItem domain.InventoryItem
+
+	err := r.db.
+		Joins("JOIN inventories ON inventories.id = inventory_items.inventory_id").
+		Preload("Item").
+		Where("inventory_items.id = ?", inventoryItemID).
+		Where("inventories.player_id = ?", playerID).
+		First(&invItem).
+		Error
+
+	if err != nil {
+		return nil, err
+	}
+	return &invItem, nil
 }

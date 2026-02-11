@@ -3,6 +3,7 @@ package ports
 import "github.com/vigmiranda/dragonki/internal/domain"
 
 type InventoryRepository interface {
+	UpdateInventoryItem(item *domain.InventoryItem) error
 	CreateOrUpdateInventory(
 		userID int64,
 		itemID uint,
@@ -14,4 +15,8 @@ type InventoryRepository interface {
 		page int,
 		pageSize int,
 	) ([]domain.InventoryItem, int64, error)
+	GetInventoryItemByUser(
+		playerID int64,
+		inventoryItemID uint,
+	) (*domain.InventoryItem, error)
 }
