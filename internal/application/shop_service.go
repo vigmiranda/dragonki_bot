@@ -139,7 +139,7 @@ func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.Game
 
 	msg := fmt.Sprintf(
 		"🪙 Kiara, a Mercadora 🪙 \n\n" +
-			"Você não tem gold suficiente para este item, junte mais um pouco e retorne quando tiver.!!   \n\n")
+			"Você não tem gold suficiente para este item, junte mais um pouco e retorne quando tiver!!\n\n")
 
 	if player.Gold >= item.Price {
 		err = s.InventoryRepository.CreateOrUpdateInventory(int64(player.ID), item.ID, item.Amount)
