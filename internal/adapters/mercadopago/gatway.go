@@ -1,7 +1,9 @@
 package mercadopago
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/mercadopago/sdk-go/pkg/payment"
@@ -35,7 +37,8 @@ func (g *Gateway) CreatePix(
 		Description:         "DragonKi - Ki Divino",
 		PaymentMethodID:     "pix",
 		ExternalReference:   externalID,
-		StatementDescriptor: "DragonKi",
+		StatementDescriptor: "DRAGONKI GAME",
+		NotificationURL:     os.Getenv("MP_NOTIFICATION_URL"),
 		AdditionalInfo: &payment.AdditionalInfoRequest{
 			Items: []payment.ItemRequest{
 				{
@@ -52,8 +55,14 @@ func (g *Gateway) CreatePix(
 		Payer: payer,
 	}
 
+	ctx := context.WithValue(
+		g.client.Ctx,
+		"X-Device-Id",
+		fmt.Sprintf("telegram_%d_%d", playerID, time.Now().Unix()),
+	)
+
 	resp, err := g.client.Payment.Create(
-		g.client.Ctx, // ✅ context obrigatório
+		ctx,
 		req,
 	)
 	if err != nil {
