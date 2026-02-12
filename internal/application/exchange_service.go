@@ -65,6 +65,7 @@ func (s ExchangeService) Convert(userID int64, params map[string]string) (view.G
 	if player.KiCrystals >= amountConvert {
 		player.KiCrystals -= amountConvert
 		player.Gold += amountConvert * kiCrystalsConvert
+		err = s.PlayerRepository.Update(player)
 
 		msg = fmt.Sprintf(
 			"💠 Casa de Câmbio de DragonKi 💠\n\n"+
@@ -74,7 +75,7 @@ func (s ExchangeService) Convert(userID int64, params map[string]string) (view.G
 			player.Gold,
 			player.KiCrystals,
 		)
-		s.PlayerRepository.Update(player)
+
 	}
 	img := &view.Image{
 		Type: view.ImageAsset,

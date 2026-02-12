@@ -71,10 +71,30 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 }
 
 func (r *PlayerPostgresRepo) Update(p *domain.Player) error {
+	updates := map[string]interface{}{
+		"class_id":          p.ClassID,
+		"class_name":        p.ClassName,
+		"level":             p.Level,
+		"xp":                p.XP,
+		"hp":                p.HP,
+		"max_hp":            p.MaxHP,
+		"atk":               p.ATK,
+		"def":               p.DEF,
+		"energy":            p.Energy,
+		"max_energy":        p.MaxEnergy,
+		"gold":              p.Gold,
+		"ki_crystals":       p.KiCrystals,
+		"region_id":         p.RegionID,
+		"last_energy_at":    time.Now(),
+		"form":              p.Form,
+		"form_battles_left": p.FormBattlesLeft,
+		"last_update":       time.Now(),
+	}
+
 	return r.db.
 		Model(&domain.Player{}).
 		Where("id = ?", p.ID).
-		Updates(&p).
+		Updates(updates).
 		Error
 }
 func (r *PlayerPostgresRepo) CountOnlineLast15Min() (int, error) {
