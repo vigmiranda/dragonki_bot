@@ -49,8 +49,7 @@ func (g *Gateway) CreatePix(
 				},
 			},
 		},
-		Payer:    payer,
-		DeviceID: fmt.Sprintf("telegram_%d_%d", playerID, time.Now().Unix()),
+		Payer: payer,
 	}
 
 	resp, err := g.client.Payment.Create(
