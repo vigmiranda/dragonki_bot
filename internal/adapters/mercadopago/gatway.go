@@ -37,7 +37,7 @@ func (g *Gateway) CreatePix(
 		Description:         "DragonKi - Ki Divino",
 		PaymentMethodID:     "pix",
 		ExternalReference:   externalID,
-		StatementDescriptor: "DRAGONKI GAME",
+		StatementDescriptor: "DRAGONKIGAMEPLAY",
 		NotificationURL:     os.Getenv("MP_NOTIFICATION_URL"),
 		AdditionalInfo: &payment.AdditionalInfoRequest{
 			Items: []payment.ItemRequest{
