@@ -37,6 +37,12 @@ func mapMenu(
 	case "POTION_MENU":
 		return potionMenu(params)
 
+	case "TRANSFORM_MENU":
+		return transformMenu()
+
+	case "REGIONS_MENU":
+		return regionsMenu(params)
+
 	case "BATTLE_MENU":
 		monsterID, ok := params["monsterID"]
 		monster, err := strconv.ParseInt(fmt.Sprint(monsterID), 10, 64)

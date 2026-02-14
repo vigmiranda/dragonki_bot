@@ -24,9 +24,13 @@ func (r *RegionPostgres) GetByID(regionID int64) (*domain.Region, error) {
 	return &region, nil
 }
 
-func (r *RegionPostgres) ListAll() ([]domain.Region, error) {
+func (r *RegionPostgres) ListByLevel(level int64) ([]domain.Region, error) {
 	var regions []domain.Region
-	err := r.db.Find(&regions).Error
+	err := r.db.
+		Where("min_level <= ?", level).
+		Order("min_level ASC").
+		Find(&regions).
+		Error
 	if err != nil {
 		return nil, err
 	}

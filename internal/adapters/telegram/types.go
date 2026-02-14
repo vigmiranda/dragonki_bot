@@ -14,6 +14,7 @@ type Handler struct {
 	onboardingService *application.OnboardingService
 	transformService  *application.TransformService
 	menuService       *application.MenuService
+	mapService        *application.MapService
 	energyService     *application.EnergyService
 	shopService       *application.ShopService
 	exchangeService   *application.ExchangeService
@@ -28,6 +29,7 @@ func NewHandler(
 	onboardingService *application.OnboardingService,
 	transformService *application.TransformService,
 	menuService *application.MenuService,
+	mapService *application.MapService,
 	energyService *application.EnergyService,
 	shopService *application.ShopService,
 	exchangeService *application.ExchangeService,
@@ -42,6 +44,7 @@ func NewHandler(
 		onboardingService: onboardingService,
 		transformService:  transformService,
 		menuService:       menuService,
+		mapService:        mapService,
 		energyService:     energyService,
 		shopService:       shopService,
 		exchangeService:   exchangeService,

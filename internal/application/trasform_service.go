@@ -35,6 +35,36 @@ func (s *TransformService) Training() (view.GameResponse, error) {
 	return viewResponse, nil
 }
 
+func (s *TransformService) ListTransform(playerID int64) (view.GameResponse, error) {
+	msg := fmt.Sprintf(
+		"“Ouça com atenção, discípulo…” \n\n" +
+			"A transformação não é apenas força… é disciplina.\n" +
+			"Ao concentrar sua energia vital, você desperta um poder oculto dentro de si.\n" +
+			"Seu Ki se intensifica, seus golpes se tornam mais devastadores… mas há um preço.\n" +
+			"Cada transformação consome sua energia.\n" +
+			"Quanto maior o poder, maior o desgaste.\n" +
+			"A partir do nível 5, seu espírito já é forte o bastante para sustentar essa elevação.\n" +
+			"Use com sabedoria.\n" +
+			"Não é a fúria que vence batalhas…\n" +
+			"É o controle do próprio Ki.\n\n" +
+			"Ah, e ela dura apenas 3 batalhas!!!\n\n",
+	)
+
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/npcs/mestre_kalunga.png"),
+	}
+	menu := "TRANSFORM_MENU"
+
+	viewResponse := view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}
+
+	return viewResponse, nil
+}
+
 func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
@@ -51,7 +81,7 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 	}
 	// ---------------------
 
-	msg := fmt.Sprintf("❌ Transformação desbloqueia no nível 3")
+	msg := fmt.Sprintf("❌ Transformação desbloqueia no nível 5")
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
@@ -71,7 +101,7 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 		img.Path = fmt.Sprintf("assets/skins/%s_ki_awakened.png", domain.ConvertLowCase(player.Gender))
 	}
 
-	if player.Level >= 3 && player.Level <= 15 && player.Energy >= 3 && player.FormBattlesLeft == 0 {
+	if player.Level >= 5 && player.Level <= 15 && player.Energy >= 3 && player.FormBattlesLeft == 0 {
 		player.Form = "Ki Awakened"
 		player.FormBattlesLeft = 3
 		player.Energy -= 3

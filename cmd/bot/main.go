@@ -53,6 +53,7 @@ func main() {
 	onboardingService := application.NewOnboardingService(playerRepo)
 	transformService := application.NewTransformService(playerRepo)
 	menuService := application.NewMenuService(playerRepo, regionRepo)
+	mapService := application.NewMapService(playerRepo, regionRepo)
 	energyService := application.NewEnergyService(playerRepo)
 	shopService := application.NewShopService(playerRepo, itemRepo, inventoryRepo)
 	exchangeService := application.NewExchangeService(playerRepo)
@@ -84,6 +85,7 @@ func main() {
 		onboardingService,
 		transformService,
 		menuService,
+		mapService,
 		energyService,
 		shopService,
 		exchangeService,
