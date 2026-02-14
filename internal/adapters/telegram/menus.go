@@ -36,7 +36,7 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar (Lv +3)", "action_transform"),
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar", "list_transform"),
 			tgbotapi.NewInlineKeyboardButtonData("⛩ Câmara do Ki Ancestral", "to_training"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -54,6 +54,17 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 				"💬 Entrar na Comunidade",
 				"https://t.me/dragonki_community",
 			),
+		),
+	)
+	return &menu
+}
+func transformMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar", "action_transform"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
 		),
 	)
 	return &menu

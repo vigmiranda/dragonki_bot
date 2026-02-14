@@ -35,12 +35,14 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		log.Fatal(err)
 	}
 
+	skin := "skin_basic"
 	genderIcon := "🧝‍♂️"
 	if player.Gender == "WOMAN" {
 		genderIcon = "🧝‍♀️️"
 	}
 	if player.Form == "Ki Awakened" {
 		player = domain.KiAwakened(player)
+		skin = "ki_awakened"
 	}
 
 	msg := fmt.Sprintf(
@@ -68,7 +70,9 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 	)
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
+		Path: fmt.Sprintf("assets/skins/%s_%s.png",
+			domain.ConvertLowCase(player.Gender),
+			skin),
 	}
 	menu := "MAIN_MENU"
 
