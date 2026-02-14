@@ -72,6 +72,7 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 
 func (r *PlayerPostgresRepo) Update(p *domain.Player) error {
 	updates := map[string]interface{}{
+		"name":              p.Name,
 		"class_id":          p.ClassID,
 		"class_name":        p.ClassName,
 		"level":             p.Level,
