@@ -33,18 +33,19 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⚔️ Caçar", "action_hunt"),
-			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
+			tgbotapi.NewInlineKeyboardButtonData("🗺 Explorar", "list_map"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
 			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar", "list_transform"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🧳 Inventory", "open_inventory"),
 			tgbotapi.NewInlineKeyboardButtonData("⛩ Câmara do Ki Ancestral", "to_training"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
 			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🧳 Inventory", "open_inventory"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🔄 Casa de Câmbio", "to_exchange"),
@@ -101,7 +102,6 @@ func battleMenu(monsterID int64) *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar ", fmt.Sprintf("action_fight?monsterID=%d", monsterID)),
-			//tgbotapi.NewInlineKeyboardButtonData("🧪 Poções ", "use_potion"),
 			tgbotapi.NewInlineKeyboardButtonData("🏃🏻 Escapar ", fmt.Sprintf("action_escape?monsterID=%d", monsterID)),
 		),
 	)
@@ -125,6 +125,9 @@ func shopItemsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 }
 func potionMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	return utils.PotionMenu(itemsParams)
+}
+func regionsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
+	return utils.RegionsMenu(itemsParams)
 }
 func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
 	kiCrystalsValue, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_VALUE"))

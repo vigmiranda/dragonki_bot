@@ -29,7 +29,44 @@ func BuildMenuItems(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	return &menu
 }
+func RegionsMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
+	rawRegions, ok := params["Regions"].([]domain.Region)
+	if !ok {
+		fmt.Printf("RegionsMenu -> ", ok)
+	}
 
+	var rows [][]tgbotapi.InlineKeyboardButton
+
+	for _, region := range rawRegions {
+
+		label := fmt.Sprintf(
+			"%s - Lvl (%d)",
+			region.Name,
+			region.MinLevel,
+		)
+
+		callback := fmt.Sprintf(
+			"to_region?regionID=%d",
+			region.RegionID,
+		)
+
+		rows = append(rows,
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(label, callback),
+			),
+		)
+	}
+
+	// 🔹 Botão voltar
+	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🔙 Voltar", "action_menu"),
+		),
+	)
+
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	return &menu
+}
 func PotionMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 
 	rawItems, ok := params["Items"].([]domain.InventoryItem)
