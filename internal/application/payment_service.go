@@ -52,11 +52,9 @@ func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
 	log.Println(fmt.Sprintf("Valor do KiDragons: %d Atual: %d", amountEnv, amount))
 	payment, qrCode, err := s.CreatePix(userID, float64(amount))
 	msg := fmt.Sprintf(
-		"💎 *Comprar Ki Divino*\n\n"+
-			"Escaneie o QR Code ou copie o código PIX abaixo.\n\n"+
-			"%s\n\n"+
-			"<i>Após o pagamento, o Ki será creditado automaticamente.</i>",
-		payment.QRCode)
+		"%s",
+		payment.QRCode,
+	)
 
 	viewResponse := view.GameResponse{
 		Text: msg,

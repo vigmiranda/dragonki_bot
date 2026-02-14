@@ -21,8 +21,9 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var payload struct {
-		Type string `json:"type"`
-		Data struct {
+		Type   string `json:"type"`
+		Action string `json:"action"`
+		Data   struct {
 			ID string `json:"id"`
 		} `json:"data"`
 	}
@@ -40,6 +41,10 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("🔔 Webhook MP recebido:", payload.Data.ID)
+	if payload.Action == "payment.created" {
+		log.Println("Pagamento criado no mercadopago --->", payload.Data.ID)
+		return
+	}
 	partnerId, err := strconv.ParseInt(payload.Data.ID, 10, 64)
 	if err != nil {
 		log.Println("❌ ID inválido no webhook:", payload.Data.ID)
