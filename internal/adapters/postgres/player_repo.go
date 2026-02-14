@@ -88,6 +88,7 @@ func (r *PlayerPostgresRepo) Update(p *domain.Player) error {
 		"last_energy_at":    time.Now(),
 		"form":              p.Form,
 		"form_battles_left": p.FormBattlesLeft,
+		"onboarding_step":   p.OnboardingStep,
 		"last_update":       time.Now(),
 	}
 
