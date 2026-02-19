@@ -92,6 +92,9 @@ func (r *PlayerPostgresRepo) Update(p *domain.Player) error {
 		"form_battles_left": p.FormBattlesLeft,
 		"onboarding_step":   p.OnboardingStep,
 		"last_update":       time.Now(),
+		"user_id_telegram":  p.UserIDTelegram,
+		"name_telegram":     p.NameTelegram,
+		"user_name":         p.UserName,
 	}
 
 	return r.db.
