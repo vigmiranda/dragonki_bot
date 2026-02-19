@@ -73,7 +73,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 			monster.ATK,
 			monster.DEF,
 		)
-		img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)
+		img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.RegionID, monster.Tag)
 		monsterID = monster.MonsterID
 		menu = "BATTLE_MENU"
 	}
@@ -262,7 +262,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 				player.Energy,
 				player.MaxEnergy,
 			)
-			img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.Level, monster.Tag)
+			img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.RegionID, monster.Tag)
 		}
 	}
 	err = s.playerRepo.Update(player)
