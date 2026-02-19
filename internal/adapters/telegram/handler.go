@@ -22,7 +22,11 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 		return
 	}
 
-	status, err := h.onboardingService.HasCompletedOnboarding(update.Message.Chat.ID)
+	userID := update.Message.From.ID
+	nameTelegram := update.Message.From.FirstName
+	userName := update.Message.From.UserName
+
+	status, err := h.onboardingService.HasCompletedOnboarding(update.Message.Chat.ID, userID, nameTelegram, userName)
 	if err != nil {
 		h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "❌ Erro interno"))
 		return

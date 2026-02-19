@@ -41,6 +41,10 @@ type Player struct {
 
 	OnboardingStep string
 	LastUpdate     time.Time
+
+	UserIDTelegram int64
+	NameTelegram   string
+	UserName       string
 }
 
 func (p *Player) SetTransformBase() *Player {

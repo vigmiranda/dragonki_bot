@@ -20,11 +20,20 @@ func NewOnboardingService(repo ports.PlayerRepository) *OnboardingService {
 func (s *OnboardingService) Onboarding(userID int64) (*domain.Player, error) {
 	return s.PlayerRepository.GetOrCreate(userID)
 }
-func (s *OnboardingService) HasCompletedOnboarding(userID int64) (string, error) {
+func (s *OnboardingService) HasCompletedOnboarding(
+	userID int64,
+	userIDTelegram int64,
+	nameTelegram string,
+	userName string,
+) (string, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		return "", err
 	}
+	player.UserIDTelegram = userIDTelegram
+	player.NameTelegram = nameTelegram
+	player.UserName = userName
+	s.PlayerRepository.Update(player)
 	return player.OnboardingStep, nil
 }
 func (s *OnboardingService) HandleSelectGender() (view.GameResponse, error) {
