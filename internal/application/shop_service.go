@@ -61,7 +61,7 @@ func (s *ShopService) ListPotions() (view.GameResponse, error) {
 	for _, potion := range potions {
 
 		label := fmt.Sprintf(
-			"%d x %s - %d Gold",
+			"%d x %s - %d 💰",
 			potion.Amount,
 			potion.Name,
 			potion.Price,
