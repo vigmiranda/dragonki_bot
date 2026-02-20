@@ -41,7 +41,7 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🧳 Inventory", "open_inventory"),
-			tgbotapi.NewInlineKeyboardButtonData("⛩ Câmara do Ki Ancestral", "to_training"),
+			tgbotapi.NewInlineKeyboardButtonData("⛩ Câm. Ki Ancestral", "to_training"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
@@ -87,10 +87,10 @@ func inventoryMenu() *tgbotapi.InlineKeyboardMarkup {
 func energyMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("💤 Dormir -500 💰Gold / +100% ❤️HP", "action_sleep"),
+			tgbotapi.NewInlineKeyboardButtonData("💤 -500💰 / +100%❤️", "action_sleep"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🥱 Descansar -1 ⚡️Energia / +30% ❤️HP", "action_rest"),
+			tgbotapi.NewInlineKeyboardButtonData("🥱 -1⚡️/ +30%❤️", "action_rest"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
@@ -146,22 +146,22 @@ func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("Converter 1 Ki Crystals 💎 em %d de Gold 💰", kiCrystalsConvert),
+				fmt.Sprintf("🔄 1💎 em %d de 💰", kiCrystalsConvert),
 				"action_convert?amountConvert=1"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("Converter 5 Ki Crystals 💎 em %d de Gold 💰", 5*kiCrystalsConvert),
+				fmt.Sprintf("🔄 5💎 em %d de 💰", 5*kiCrystalsConvert),
 				"action_convert?amountConvert=5"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("Converter 10 Ki Crystals 💎 em %d de Gold 💰", 10*kiCrystalsConvert),
+				fmt.Sprintf("🔄 10💎 em %d de 💰", 10*kiCrystalsConvert),
 				"action_convert?amountConvert=10"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("💎 Comprar %d Ki Crystals por R$%d,00", kiCrystalsMult*kiCrystalsValue, kiCrystalsValue),
+				fmt.Sprintf("Comprar %d 💎 por R$%d,00", kiCrystalsMult*kiCrystalsValue, kiCrystalsValue),
 				"action_buy_ki"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
