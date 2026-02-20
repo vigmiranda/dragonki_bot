@@ -3,8 +3,6 @@ package application
 import (
 	"fmt"
 	"log"
-	"os"
-	"strconv"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -38,8 +36,8 @@ func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	multiPlayersOnlineDB := os.Getenv("MULT_PLAYERS")
-	multiPlayersOnline, _ := strconv.Atoi(multiPlayersOnlineDB)
+	//multiPlayersOnlineDB := os.Getenv("MULT_PLAYERS")
+	//multiPlayersOnline, _ := strconv.Atoi(multiPlayersOnlineDB)
 
 	msg := fmt.Sprintf(
 		"<b> %s </b> \n\n"+
@@ -50,7 +48,7 @@ func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 			"💪 <b>Level</b>: %d\n"+
 			"💰 <b>Gold</b>: %d\n",
 		player.Name,
-		playersOnline*multiPlayersOnline,
+		playersOnline*2,
 		region.Name,
 		region.MinLevel,
 		player.HP,
