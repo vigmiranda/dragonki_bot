@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -35,6 +36,12 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		log.Fatal(err)
 	}
 
+	// 🔹 fallback seguro
+	recoveryStr := os.Getenv("ENERGY_REGEN_TIME")
+	if recoveryStr == "" {
+		recoveryStr = "10m"
+	}
+
 	skin := "skin_basic"
 	genderIcon := "🧝‍♂️"
 	if player.Gender == "WOMAN" {
@@ -52,7 +59,8 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 			"❤️ <b>HP</b>: %d/%d   ⚡️ <b>Energia</b>: %d/%d\n"+
 			"⚔️ <b>ATK</b>: %d     🛡️ <b>DEF</b>: %d \n"+
 			"💰 <b>Gold</b>: %d\n"+
-			"💎 <b>Ki Crystals</b>: %d\n",
+			"💎 <b>Ki Crystals</b>: %d\n"+
+			"💎 <b>+1 de ⚡️ em </b>: %s\n",
 		player.Name,
 		player.ClassName,
 		region.Name,
@@ -68,6 +76,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		player.DEF,
 		player.Gold,
 		player.KiCrystals,
+		recoveryStr,
 	)
 	img := &view.Image{
 		Type: view.ImageAsset,
