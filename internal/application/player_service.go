@@ -48,7 +48,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 	msg := fmt.Sprintf(
 		genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
 			"🗺️ <b>Local</b>: %s - (Lv %d+)\n"+
-			"💪 <b>Level</b>: %d   🧬 <b>XP</b>: %d\n"+
+			"💪 <b>Level</b>: %d   🧬 <b>XP</b>: %d/%d\n"+
 			"❤️ <b>HP</b>: %d/%d   ⚡️ <b>Energia</b>: %d/%d\n"+
 			"⚔️ <b>ATK</b>: %d     🛡️ <b>DEF</b>: %d \n"+
 			"💰 <b>Gold</b>: %d\n"+
@@ -59,6 +59,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		region.MinLevel,
 		player.Level,
 		player.XP,
+		player.Level*80,
 		player.HP,
 		player.MaxHP,
 		player.Energy,
