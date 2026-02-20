@@ -37,14 +37,14 @@ func (s *EnergyService) Energy(userID int64) (view.GameResponse, error) {
 
 	msg := fmt.Sprintf(
 		"🛏️ Sir Soneca, Guardião do Descanso 🛏️ \n\n"+
-			"“Ooooh… hã? Um aventureiro?” 😴 \n"+
-			"Bem-vindo %s à minha humilde pousada… \n\n"+
+			"“Ooooh… hã? Um aventureiro(a)?” 😴 \n"+
+			"Bem-vindo(a) %s à minha humilde pousada… \n\n"+
 			"Sou Sir Soneca, cavaleiro aposentado e mestre supremo da arte de dormir bem. \n\n"+
 			"Aqui você pode descansar, recuperar suas forças e deixar que o cansaço da batalha desapareça. \n"+
 			"Uma boa noite de sono cura feridas, restaura o HP e prepara seu espírito para a próxima luta. \n\n"+
 			"🕯️ Camas macias, silêncio garantido… e roncos inclusos no pacote. \n\n"+
 			"Então, jovem guerreiro(a) … vai apenas descansar um pouco… \n"+
-			"ou dormir como um verdadeiro herói? 😴💤 \n\n",
+			"ou dormir como quem teve um dia de grandes batalhas? 😴💤 \n\n",
 		player.Name)
 	img := &view.Image{
 		Type: view.ImageAsset,
