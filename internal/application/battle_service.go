@@ -33,7 +33,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	recoveryStr := os.Getenv("ENERGY_REGEN_TIME")
 	//todo tirar daqui
 	player.SetTransformBase()
 	err = s.playerRepo.Update(player)
@@ -42,7 +42,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 	}
 	// ------------
 
-	msg := fmt.Sprintf("⚡ Energia esgotada \n Vá ate a pousada para descansar!")
+	msg := fmt.Sprintf("⚡ Energia esgotada. \n Aguarde %s para recarregar", recoveryStr)
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/skins/%s_tired.png", domain.ConvertLowCase(player.Gender)),

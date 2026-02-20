@@ -35,7 +35,7 @@ func (s InventoryService) Open(userID int64) (view.GameResponse, error) {
 			"“Eu sou Arkanis… aquele que vigia o que você conquista.\n" +
 			"Cada item que carrega conta a história das suas batalhas.”\n\n" +
 			"✨ “Organize-se. Prepare-se.\n" +
-			"Um guerreiro forte não é feito só de Ki… mas de estratégia.”\n\n" +
+			"Um(a) guerreiro(a) forte não é feito só de Ki… mas de estratégia.”\n\n" +
 			"📦 Abra seu inventário e escolha com sabedoria.\n\n",
 	)
 	img := &view.Image{

@@ -31,12 +31,12 @@ func (s *ShopService) OpenShop(userID int64) (view.GameResponse, error) {
 	}
 	msg := fmt.Sprintf(
 		"🪙 Kiara, a Mercadora 🪙 \n\n"+
-			"Seja bem-vindo %s à minha lojinha! \n\n"+
+			"Seja bem-vindo(a) %s à minha lojinha! \n\n"+
 			"Eu sou Kiara, mercadora viajante e guardiã de artefatos raros. \n\n"+
 			"Aqui você encontrará poções, equipamentos e itens especiais que vão fortalecer seu corpo, "+
 			"renovar seu Ki e te ajudar a sobreviver aos desafios que te esperam lá fora. \n\n"+
 			"💎 Cada item aqui foi escolhido para quem busca evoluir, não apenas lutar. \n"+
-			"Prepare-se bem… a jornada de um verdadeiro guerreiro (a) começa com as escolhas certas. \n\n"+
+			"Prepare-se bem… a jornada de um verdadeiro guerreiro(a) começa com as escolhas certas. \n\n"+
 			"O que posso fazer por você hoje? 😄 \n\n",
 		player.Name)
 
@@ -153,7 +153,7 @@ func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.Game
 		}
 		msg = fmt.Sprintf(
 			"🪙 Kiara, a Mercadora 🪙 \n\n" +
-				"Obrigada por sua compara, caso precise pode retornar aqui!!   \n\n")
+				"Obrigada por sua compra, caso precise pode retornar aqui!!   \n\n")
 	}
 
 	viewResponse := view.GameResponse{
