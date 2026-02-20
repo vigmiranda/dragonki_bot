@@ -63,7 +63,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 		}
 
 		msg = fmt.Sprintf(
-			"🐉<b> Um %s apareceu! </b>\n\n"+
+			"🐉<b> %s apareceu! </b>\n\n"+
 				"💪 <b>Lv:</b> %d\n"+
 				"❤️ <b>HP:</b> %d\n"+
 				"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d\n",
