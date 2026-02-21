@@ -60,7 +60,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 			"⚔️ <b>ATK</b>: %d     🛡️ <b>DEF</b>: %d \n"+
 			"💰 <b>Gold</b>: %d\n"+
 			"💎 <b>Ki Crystals</b>: %d\n"+
-			"💎 <b>+1 de ⚡️ em </b>: %s\n",
+			"<b>+1 de ⚡️ em </b>: %s\n",
 		player.Name,
 		player.ClassName,
 		region.Name,
