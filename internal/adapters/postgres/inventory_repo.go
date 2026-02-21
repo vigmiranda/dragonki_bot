@@ -61,6 +61,7 @@ func (r *InventoryPostgres) ListItemsByUserAndType(
 		Joins("JOIN items ON items.id = inventory_items.item_id").
 		Where("inventory_items.inventory_id = ?", inventory.ID).
 		Where("items.type = ?", itemType).
+		Where("inventory_items.quantity > 0 ").
 		Preload("Item").
 		Order("inventory_items.id ASC").
 		Limit(pageSize).
