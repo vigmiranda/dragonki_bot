@@ -87,7 +87,7 @@ func (r *PlayerPostgresRepo) Update(p *domain.Player) error {
 		"gold":              p.Gold,
 		"ki_crystals":       p.KiCrystals,
 		"region_id":         p.RegionID,
-		"last_energy_at":    time.Now(),
+		"last_energy_at":    p.LastEnergyAt,
 		"form":              p.Form,
 		"form_battles_left": p.FormBattlesLeft,
 		"onboarding_step":   p.OnboardingStep,
