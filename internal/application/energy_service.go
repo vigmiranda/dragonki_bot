@@ -79,7 +79,7 @@ func (s *EnergyService) Rest(userID int64) (view.GameResponse, error) {
 
 	msg := fmt.Sprintf(
 		"Você nao tem energia\n"+
-			"Aguarde %s!! e volter aqui para descansar!!\n",
+			"Aguarde %s!! e volte aqui para descansar!!\n",
 		os.Getenv("ENERGY_REGEN_TIME"))
 	img := &view.Image{
 		Type: view.ImageAsset,
