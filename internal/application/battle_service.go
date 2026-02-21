@@ -67,8 +67,8 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 				"Você \n"+
 				"💪 <b>Lv:</b> %d\n"+
 				"❤️ <b>HP:</b> %d/%d\n"+
-				"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d \n\n\n",
-			"%s \n"+
+				"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d \n\n\n"+
+				"%s \n"+
 				"💪 <b>Lv:</b> %d\n"+
 				"❤️ <b>HP:</b> %d\n"+
 				"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d\n",
