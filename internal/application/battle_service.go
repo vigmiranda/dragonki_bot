@@ -264,7 +264,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		} else {
 			menu = "BATTLE_MENU"
 			msg = fmt.Sprintf(
-				"💀 Você não consegui fugir!!! \n"+
+				"💀 Você não conseguiu fugir!!! \n"+
 					"❤️ Seu HP agora é %d/%d \n"+
 					"⚡️ E sua Energia é %d/%d \n",
 				player.HP,
