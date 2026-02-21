@@ -230,7 +230,6 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	if err != nil {
 		log.Fatal(err)
 	}
-	player.Energy--
 	monsterIDStr, _ := params["monsterID"]
 	monsterID, err := strconv.ParseInt(monsterIDStr, 10, 64)
 	monster, err := s.monsterRepo.GetByMonsterID(monsterID)
