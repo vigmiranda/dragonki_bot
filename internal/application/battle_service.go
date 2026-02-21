@@ -227,7 +227,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		log.Fatal(err)
 	}
 
-	msg := fmt.Sprintf("💀 Você consegui fugir do %s!!!", monster.Name)
+	msg := fmt.Sprintf("💀 Você conseguiu fugir do %s!!!", monster.Name)
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
