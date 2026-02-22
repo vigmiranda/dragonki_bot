@@ -65,8 +65,8 @@ func (p *Player) Transform() {
 }
 
 func KiAwakened(player *Player) *Player {
-	atk := int(float64(player.ATK) * 0.1)
-	def := int(float64(player.DEF) * 0.1)
+	atk := int(float64(player.ATK) * 0.2)
+	def := int(float64(player.DEF) * 0.2)
 	if atk < 1 {
 		atk = 1
 	}

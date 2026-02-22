@@ -109,6 +109,10 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		log.Fatal(err)
 	}
 
+	if player.Form == "Ki Awakened" {
+		player = domain.KiAwakened(player)
+	}
+
 	monsterIDStr, _ := params["monsterID"]
 	monsterId, err := strconv.ParseInt(monsterIDStr, 10, 64)
 	if err != nil {

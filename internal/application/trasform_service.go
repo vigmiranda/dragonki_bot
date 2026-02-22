@@ -107,7 +107,7 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 		player.Energy -= 3
 		msg = fmt.Sprintf(
 			"🔥 Você ascendeu o <b>Ki Awakened</b>! \n\n" +
-				"Essa transformação te dá 10%% em ATK, DEF \n" +
+				"Essa transformação te dá 20% em ATK, DEF \n" +
 				"Gasta 3 de energia e dura 3 batalhas \n" +
 				"Ahhh! Caso você morra ou suba de nível.\n" +
 				"Você irá retornar à forma base",
