@@ -42,6 +42,10 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 	}
 	// ------------
 
+	if player.Form == "Ki Awakened" {
+		player = domain.KiAwakened(player)
+	}
+
 	msg := fmt.Sprintf("⚡ Energia esgotada. \n Aguarde %s para recarregar", recoveryStr)
 	img := &view.Image{
 		Type: view.ImageAsset,
@@ -109,10 +113,6 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		log.Fatal(err)
 	}
 
-	if player.Form == "Ki Awakened" {
-		player = domain.KiAwakened(player)
-	}
-
 	monsterIDStr, _ := params["monsterID"]
 	monsterId, err := strconv.ParseInt(monsterIDStr, 10, 64)
 	if err != nil {
@@ -133,11 +133,21 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	monsterHP := monster.HP
 	playerHp := player.HP
 	player.Energy--
+	atkTransform := 0
+	defTransform := 0
+	if player.Form == "Ki Awakened" {
+		atkTransform = int(float64(player.ATK) * 0.2)
+		defTransform = int(float64(player.ATK) * 0.2)
+	}
 
 	//logica de dano
 	for monsterHP > 0 && player.HP > 0 {
-		monsterHP -= player.ATK
-		player.HP -= rand.Intn(monster.ATK/2+1) + monster.ATK/2
+		monsterHP -= player.ATK + atkTransform
+		atkMonster := rand.Intn(monster.ATK) - (player.DEF + defTransform)
+		if atkMonster < 0 {
+			atkMonster = 1
+		}
+		player.HP -= atkMonster
 	}
 
 	if player.HP > 0 {
