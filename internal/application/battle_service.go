@@ -143,7 +143,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	//logica de dano
 	for monsterHP > 0 && player.HP > 0 {
 		monsterHP -= player.ATK + atkTransform
-		atkMonster := rand.Intn(monster.ATK) - (player.DEF + defTransform)
+		atkMonster := rand.Intn(monster.ATK+(monster.ATK/2)+1) - (player.DEF + defTransform)
 		if atkMonster < 0 {
 			atkMonster = 1
 		}
