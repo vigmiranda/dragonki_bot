@@ -44,7 +44,7 @@ func (g *Gateway) CreatePix(
 				{
 					EventDate:   fmt.Sprintf("%d", time.Now().UTC()),
 					ID:          fmt.Sprintf("ki_%d", amount),
-					Title:       fmt.Sprintf("%d Ki Crystals", amount),
+					Title:       fmt.Sprintf("%d Ki Crystals", int(amount)),
 					Description: "Moeda premium DragonKi",
 					CategoryID:  "digital_goods",
 					UnitPrice:   float64(amount),
