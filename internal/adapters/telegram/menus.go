@@ -62,7 +62,7 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 func transformMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar", "action_transform"),
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar -3⚡️", "action_transform"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
