@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
 	"github.com/vigmiranda/dragonki/internal/application/view"
@@ -17,14 +18,20 @@ type BattleService struct {
 	playerRepo  ports.PlayerRepository
 	monsterRepo ports.MonsterRepository
 	regionRepo  ports.RegionRepository
+	battleRepo  ports.BattleRepository
 }
 
-func NewBattleService(playerRepo ports.PlayerRepository, monsterRepo *postgres.MonsterPostgresRepo,
-	regionRepo *postgres.RegionPostgres) *BattleService {
+func NewBattleService(
+	playerRepo ports.PlayerRepository,
+	monsterRepo *postgres.MonsterPostgresRepo,
+	regionRepo *postgres.RegionPostgres,
+	battleRepo ports.BattleRepository,
+) *BattleService {
 	return &BattleService{
 		playerRepo:  playerRepo,
 		monsterRepo: monsterRepo,
 		regionRepo:  regionRepo,
+		battleRepo:  battleRepo,
 	}
 }
 
@@ -130,19 +137,24 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	}
 	menu := "MAIN_MENU"
 
+	resultBattle := "LOSE"
+
 	monsterHP := monster.HP
 	playerHp := player.HP
 	player.Energy--
 	atkTransform := 0
 	defTransform := 0
+	skin := ""
 	if player.Form == "Ki Awakened" {
 		atkTransform = int(float64(player.ATK) * 0.2)
 		defTransform = int(float64(player.ATK) * 0.2)
+		skin = "_ki_awakened"
 	}
-
+	atkTotalPlayer := 0
 	//logica de dano
 	for monsterHP > 0 && player.HP > 0 {
 		monsterHP -= player.ATK + atkTransform
+		atkTotalPlayer += player.ATK + atkTransform
 		atkMonster := rand.Intn(monster.ATK+(monster.ATK/2)+1) - (player.DEF + defTransform)
 		if atkMonster < 0 {
 			atkMonster = 1
@@ -150,9 +162,10 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		player.HP -= atkMonster
 	}
 
+	xpReceived := rand.Intn(monster.MaxXP) + 1
+	moneyReceived := rand.Intn(monster.MaxMoney) + 1
+
 	if player.HP > 0 {
-		xpReceived := rand.Intn(monster.MaxXP) + 1
-		moneyReceived := rand.Intn(monster.MaxMoney) + 1
 		googNews := ""
 
 		player.XP += xpReceived
@@ -178,7 +191,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		if player.FormBattlesLeft > 0 {
 			player.FormBattlesLeft--
 		}
-
+		resultBattle = "WIN"
 		msg = fmt.Sprintf(
 			"🏆 Vitória! %s \n"+
 				"%s"+
@@ -199,7 +212,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.MaxEnergy,
 			player.Level,
 		)
-		img.Path = fmt.Sprintf("assets/skins/%s_battle_win.png", domain.ConvertLowCase(player.Gender))
+		img.Path = fmt.Sprintf("assets/skins/%s%s_battle_win.png", domain.ConvertLowCase(player.Gender), skin)
 
 	} else {
 		if player.FormBattlesLeft > 0 {
@@ -226,6 +239,23 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		)
 		img.Path = fmt.Sprintf("assets/skins/%s_battle_loss.png", domain.ConvertLowCase(player.Gender))
 	}
+
+	battleLog := &domain.BattleLog{
+		PlayerID:           int64(player.ID),
+		MonsterID:          monster.MonsterID,
+		Result:             resultBattle,
+		XPGained:           xpReceived,
+		GoldGained:         moneyReceived,
+		PlayerDamageTotal:  atkTotalPlayer,
+		MonsterDamageTotal: playerHp - player.HP,
+		CreatedAt:          time.Now(),
+	}
+
+	err = s.battleRepo.SaveBattleLog(battleLog)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+
 	if err := s.playerRepo.Update(player); err != nil {
 		msg = fmt.Sprintf("💀 Ocorreu um erro ao fim da batalha!!!")
 		img.Path = fmt.Sprintf("assets/error.png")
@@ -260,8 +290,10 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 
 	escapePlayer := rand.Intn(10)
 	escapeMonster := rand.Intn(10)
+	damage := 0
 	if escapePlayer <= escapeMonster {
-		player.HP -= rand.Intn(monster.ATK/2+1) + monster.ATK/2
+		damage = rand.Intn(monster.ATK/2+1) + monster.ATK/2
+		player.HP -= damage
 		if player.HP <= 0 {
 			player.HP = 1
 			player.XP -= int(float64(player.XP) * 0.9)
@@ -289,6 +321,23 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 			img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.RegionID, monster.Tag)
 		}
 	}
+
+	battleLog := &domain.BattleLog{
+		PlayerID:           int64(player.ID),
+		MonsterID:          monster.MonsterID,
+		Result:             "ESCAPE",
+		XPGained:           0,
+		GoldGained:         0,
+		PlayerDamageTotal:  0,
+		MonsterDamageTotal: damage,
+		CreatedAt:          time.Now(),
+	}
+
+	err = s.battleRepo.SaveBattleLog(battleLog)
+	if err != nil {
+		return view.GameResponse{}, monster, err
+	}
+
 	err = s.playerRepo.Update(player)
 	if err != nil {
 		log.Fatal(err)
