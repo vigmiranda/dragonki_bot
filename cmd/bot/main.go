@@ -34,6 +34,7 @@ func main() {
 		&domain.Inventory{},
 		&domain.InventoryItem{},
 		&domain.PlayerEquipment{},
+		&domain.BattleLog{},
 	)
 	if err != nil {
 		log.Fatal("❌ error ao rodar automigrate", err)
@@ -46,10 +47,11 @@ func main() {
 	paymentRepo := postgres.NewPaymentRepo(db)
 	itemRepo := postgres.NewItemsPostgresRepo(db)
 	inventoryRepo := postgres.NewInventoryPostgresRepo(db)
+	battleRepo := postgres.NewBattlePostgresRepo(db)
 
 	// 🔹 Services (Application)
 	playerService := application.NewPlayerService(playerRepo, regionRepo)
-	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo)
+	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo, battleRepo)
 	onboardingService := application.NewOnboardingService(playerRepo)
 	transformService := application.NewTransformService(playerRepo)
 	menuService := application.NewMenuService(playerRepo, regionRepo)
