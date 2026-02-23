@@ -220,8 +220,8 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.Form = "Base"
 		}
 
-		player.XP -= int(float64(player.XP) * 0.1)
-		player.Gold -= int(float64(player.Gold) * 0.1)
+		player.XP = int(float64(player.XP) * 0.9)
+		player.Gold = int(float64(player.Gold) * 0.9)
 		player.HP = 1
 		player.Form = "Base"
 		msg = fmt.Sprintf(
