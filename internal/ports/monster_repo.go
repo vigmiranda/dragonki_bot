@@ -3,6 +3,6 @@ package ports
 import "github.com/vigmiranda/dragonki/internal/domain"
 
 type MonsterRepository interface {
-	ListByRegion(userID int64) ([]domain.Monster, error)
+	ListByRegionAndPlayerLvl(userID int64, lvl int) ([]domain.Monster, error)
 	GetByMonsterID(monsterID int64) (*domain.Monster, error)
 }

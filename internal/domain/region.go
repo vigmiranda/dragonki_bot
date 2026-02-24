@@ -5,4 +5,5 @@ type Region struct {
 	Name     string
 	Tag      string
 	MinLevel int
+	Nerf     int
 }

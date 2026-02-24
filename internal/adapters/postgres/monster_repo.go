@@ -25,11 +25,11 @@ func (r *MonsterPostgresRepo) GetByMonsterID(monsterId int64) (*domain.Monster, 
 	}
 	return &monster, nil
 }
-func (r *MonsterPostgresRepo) ListByRegion(regionId int64) ([]domain.Monster, error) {
+func (r *MonsterPostgresRepo) ListByRegionAndPlayerLvl(regionId int64, lvl int) ([]domain.Monster, error) {
 	var monsters []domain.Monster
 
 	err := r.db.Model(&domain.Monster{}).
-		Where("region_id <= ?", regionId).
+		Where("region_id = ?", regionId).
 		Scan(&monsters).Error
 	if err != nil {
 		return nil, err
