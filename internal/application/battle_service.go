@@ -203,7 +203,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 				"%s"+
 				"Você recebeu de dano: %d\n"+
 				"⚔️ +%d XP\n"+
-				"💰 +%d Gold\n"+
+				"💰 +%d Gold - 🎉 Evento 2x 🎉\n"+
 				"❤️ HP: %d/%d\n"+
 				"⚡️ Energia: %d/%d\n"+
 				"💪 Level: %d\n",
