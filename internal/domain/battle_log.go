@@ -10,8 +10,12 @@ type BattleLog struct {
 
 	Result string // WIN | LOSE | ESCAPE
 
-	XPGained   int
-	GoldGained int
+	OldXP       int
+	XPGained    int
+	XPCurrent   int
+	OldGold     int
+	GoldGained  int
+	GoldCurrent int
 
 	PlayerDamageTotal  int
 	MonsterDamageTotal int

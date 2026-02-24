@@ -151,12 +151,16 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	atkTransform := 0
 	defTransform := 0
 	skin := ""
+	oldXP := player.XP
+	oldGold := player.Gold
+
 	if player.Form == "Ki Awakened" {
 		atkTransform = int(float64(player.ATK) * 0.2)
 		defTransform = int(float64(player.ATK) * 0.2)
 		skin = "_ki_awakened"
 	}
 	atkTotalPlayer := 0
+	atkTotalMonster := 0
 	//logica de dano
 	for monsterHP > 0 && player.HP > 0 {
 		monsterHP -= player.ATK + atkTransform
@@ -166,6 +170,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			atkMonster = 1
 		}
 		player.HP -= atkMonster
+		atkTotalMonster += atkMonster
 	}
 
 	xpReceived := rand.Intn(monster.MaxXP) + 1
@@ -225,8 +230,6 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.FormBattlesLeft = 0
 			player.Form = "Base"
 		}
-		oldXP := player.XP
-		oldGold := player.Gold
 		nerf := float64(region.Nerf) / 100.0
 
 		xpReduction := math.Round(float64(player.XP) * nerf)
@@ -260,10 +263,14 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		PlayerID:           int64(player.ID),
 		MonsterID:          monster.MonsterID,
 		Result:             resultBattle,
+		OldXP:              oldXP,
 		XPGained:           xpReceived,
+		XPCurrent:          player.XP,
+		OldGold:            oldGold,
 		GoldGained:         moneyReceived,
+		GoldCurrent:        player.Gold,
 		PlayerDamageTotal:  atkTotalPlayer,
-		MonsterDamageTotal: playerHp - player.HP,
+		MonsterDamageTotal: atkTotalMonster,
 		CreatedAt:          time.Now(),
 	}
 
@@ -304,6 +311,8 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	result := "ESCAPE"
 	xpResult := 0
 	goldResult := 0
+	oldXP := player.XP
+	oldGold := player.Gold
 
 	msg := fmt.Sprintf("💀 Você conseguiu fugir do %s!!!", monster.Name)
 	img := &view.Image{
@@ -362,8 +371,12 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		PlayerID:           int64(player.ID),
 		MonsterID:          monster.MonsterID,
 		Result:             result,
+		OldXP:              oldXP,
 		XPGained:           xpResult,
+		XPCurrent:          player.XP,
+		OldGold:            oldGold,
 		GoldGained:         goldResult,
+		GoldCurrent:        player.Gold,
 		PlayerDamageTotal:  0,
 		MonsterDamageTotal: damage,
 		CreatedAt:          time.Now(),
