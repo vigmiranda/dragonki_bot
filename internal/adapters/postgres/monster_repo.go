@@ -25,7 +25,7 @@ func (r *MonsterPostgresRepo) GetByMonsterID(monsterId int64) (*domain.Monster, 
 	}
 	return &monster, nil
 }
-func (r *MonsterPostgresRepo) ListByRegionAndPlayerLvl(regionId int64, lvl int) ([]domain.Monster, error) {
+func (r *MonsterPostgresRepo) ListByRegion(regionId int64) ([]domain.Monster, error) {
 	var monsters []domain.Monster
 
 	err := r.db.Model(&domain.Monster{}).

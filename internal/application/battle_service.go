@@ -62,7 +62,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 	menu := "MAIN_MENU"
 	monsterID := 0
 	if player.Energy > 0 {
-		monsters, err := s.monsterRepo.ListByRegionAndPlayerLvl(player.RegionID, player.Level)
+		monsters, err := s.monsterRepo.ListByRegion(player.RegionID)
 		if err != nil || len(monsters) == 0 {
 			msg = fmt.Sprintf("Error ao encontra um monstro")
 			img.Path = fmt.Sprintf("assets/error.png")
