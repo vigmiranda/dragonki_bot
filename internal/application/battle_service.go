@@ -211,7 +211,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			googNews,
 			playerHp-player.HP,
 			xpReceived,
-			moneyReceived,
+			moneyReceived*2,
 			player.HP,
 			player.MaxHP,
 			player.Energy,
