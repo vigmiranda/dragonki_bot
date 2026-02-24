@@ -7,16 +7,17 @@ SELECT
 FROM battle_logs bl
          JOIN players p on p.id = bl.player_id
 WHERE created_at >= date_trunc('week', NOW())
-group by p.name
+group by p.name;
 
 ---------------
 
 SELECT
     p.name,
     m.name,
+    m.level,
     count(*)
 FROM battle_logs bl
          JOIN players p on p.id = bl.player_id
          JOIN monsters m on bl.monster_id = m.monster_id
-group by m.name, p.name
-order by p.name
+group by m.name, p.name, m.level
+order by m.level desc,p.name;

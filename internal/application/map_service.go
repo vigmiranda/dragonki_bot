@@ -30,7 +30,14 @@ func (s MapService) ListMap(playerID int64) (view.GameResponse, error) {
 	}
 
 	msg := fmt.Sprintf(
-		"\n\n <b> Lugares que você pode explorar!!!</b> \n\n",
+		"<b>Word:</b>\n\n" +
+			"Plains lvl 1-15 \n" +
+			"Forest of Spirits lvl 15-34 \n" +
+			"Volcano Lands lvl 35-50 \n" +
+			"Frozen Peaks lvl 50-70 \n" +
+			"Swamp of Shadows lvl 70+" +
+			"\n\n<b>Lugares que você pode explorar!!!</b> \n\n" +
+			"",
 	)
 	img := &view.Image{
 		Type: view.ImageAsset,
