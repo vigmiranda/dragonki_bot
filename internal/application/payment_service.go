@@ -77,13 +77,13 @@ func (s *PaymentService) ConfirmPayment(paymentID int64) error {
 	if err != nil {
 		return err
 	}
-
+	log.Println("kiCrystalsMult -> ", kiCrystalsMult)
 	if payment.Status == domain.PaymentApproved {
 		return nil
 	}
 
 	payment.Status = domain.PaymentApproved
-
+	log.Println("UpdateStatus -- Atualizando ki crystals -> ", paymentID)
 	if err := s.paymentRepository.UpdateStatus(payment.ID, payment.Status); err != nil {
 		return err
 	}
@@ -94,5 +94,6 @@ func (s *PaymentService) ConfirmPayment(paymentID int64) error {
 	}
 
 	player.KiCrystals += int(payment.Amount) * kiCrystalsMult
+	log.Println("------ Player name: ", player.Name, "Update(player) -- Atualizando ki crystals => ", int(payment.Amount)*kiCrystalsMult, player.KiCrystals)
 	return s.playersRepository.Update(player)
 }
