@@ -219,7 +219,8 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.FormBattlesLeft = 0
 			player.Form = "Base"
 		}
-
+		oldXP := player.XP
+		oldGold := player.Gold
 		player.XP = int(float64(player.XP) * 0.9)
 		player.Gold = int(float64(player.Gold) * 0.9)
 		player.HP = 1
@@ -231,13 +232,15 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 				"⚡️ Energia: %d/%d\n"+
 				"💪 Level: %d\n",
 			player.Name,
-			player.XP,
-			player.Gold,
+			oldXP-player.XP,
+			oldGold-player.Gold,
 			player.Energy,
 			player.MaxEnergy,
 			player.Level,
 		)
 		img.Path = fmt.Sprintf("assets/skins/%s_battle_loss.png", domain.ConvertLowCase(player.Gender))
+		xpReceived = player.XP - oldXP
+		moneyReceived = player.Gold - oldGold
 	}
 
 	battleLog := &domain.BattleLog{
