@@ -77,13 +77,8 @@ func (s MapService) ToRegion(playerID int64, params map[string]string) (view.Gam
 		return view.GameResponse{}, err
 	}
 
-	msg := fmt.Sprintf(
-		"\n\n <b>Viagem concluida!!!</b> \n\n",
-	)
-	img := &view.Image{
-		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/maps/%s.png", domain.ConvertLowCase(region.Tag)),
-	}
+	msg, img := getMsgAndImgByRegion(region)
+
 	menu := "MAIN_MENU"
 
 	viewResponse := view.GameResponse{
@@ -93,4 +88,59 @@ func (s MapService) ToRegion(playerID int64, params map[string]string) (view.Gam
 	}
 
 	return viewResponse, nil
+}
+
+func getMsgAndImgByRegion(region *domain.Region) (string, *view.Image) {
+	msg := fmt.Sprintf(
+		"\n\n <b>Viagem concluida!!!</b> \n\n",
+	)
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/maps/%s.png", domain.ConvertLowCase(region.Tag)),
+	}
+
+	switch region.RegionID {
+	case 1:
+		msg = fmt.Sprintf(
+			"\n\n <b>🌿 Bem-vindo às Planícies de Aethoria, guerreiro.</b> \n\n"+
+				"Meu nome é Lyra, e sou a guardiã desta rota.\n"+
+				"É aqui que muitos iniciam sua jornada… e onde apenas os determinados avançam.\n"+
+				"Os inimigos que habitam estas terras variam do nível 1 ao 15.\n"+
+				"Cada batalha será um teste da sua força e do seu controle sobre o Ki.\n\n"+
+				"Mas lembre-se…\n"+
+				"⚔️ A derrota tem preço.\n"+
+				"Se cair em combate, perderá <b> %d%% </b> do seu XP e do seu Gold.\n"+
+				"Respire fundo.\n"+
+				"Mantenha o foco.\n"+
+				"E avance com coragem.\n"+
+				"As Planícies estão observando.",
+			region.Nerf,
+		)
+		img = &view.Image{
+			Type: view.ImageAsset,
+			Path: fmt.Sprintf("assets/npcs/lyra.png"),
+		}
+	case 2:
+		msg = fmt.Sprintf(
+			"\n\n <b>🌲 Bem-vindo à Forest Spirit, viajante.</b> \n\n"+
+				"Eu sou Nyssara, guardiã destas terras ancestrais.\n"+
+				"Aqui, a floresta não é apenas cenário… ela observa, sente e reage.\n"+
+				"Os espíritos que habitam estas matas são mais astutos e perigosos.\n"+
+				"Cada passo descuidado pode atrair algo que você não está preparado para enfrentar.\n"+
+				"A floresta recompensa os fortes…"+
+				"mas pune os imprudentes.\n\n"+
+				"Saiba que aqui…\n"+
+				"⚔️ Cada derrota te custará <b> %d%% </b> do seu XP e do seu Gold.\n\n"+
+				"Mantenha seu Ki sob controle.\n"+
+				"Escute o vento entre as folhas.\n"+
+				"E jamais subestime o silêncio.\n\n"+
+				"<b>A Forest Spirit já sabe que você chegou. </b>🌿✨",
+			region.Nerf,
+		)
+		img = &view.Image{
+			Type: view.ImageAsset,
+			Path: fmt.Sprintf("assets/npcs/nyssara_guardia_das_raizes.png"),
+		}
+	}
+	return msg, img
 }

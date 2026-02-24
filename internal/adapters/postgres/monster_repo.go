@@ -29,7 +29,7 @@ func (r *MonsterPostgresRepo) ListByRegion(regionId int64) ([]domain.Monster, er
 	var monsters []domain.Monster
 
 	err := r.db.Model(&domain.Monster{}).
-		Where("region_id <= ?", regionId).
+		Where("region_id = ?", regionId).
 		Scan(&monsters).Error
 	if err != nil {
 		return nil, err

@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"strconv"
@@ -130,6 +131,11 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		log.Fatal(err)
 	}
 
+	region, err := s.regionRepo.GetByID(player.RegionID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	msg := fmt.Sprintf("💀 Ocorreu um erro ao fim da batalha!!!")
 	img := &view.Image{
 		Type: view.ImageAsset,
@@ -221,18 +227,25 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		}
 		oldXP := player.XP
 		oldGold := player.Gold
-		player.XP = int(float64(player.XP) * 0.9)
-		player.Gold = int(float64(player.Gold) * 0.9)
+		nerf := float64(region.Nerf) / 100.0
+
+		xpReduction := math.Round(float64(player.XP) * nerf)
+		goldReduction := math.Round(float64(player.Gold) * nerf)
+
+		player.XP -= int(xpReduction)
+		player.Gold -= int(goldReduction)
 		player.HP = 1
 		player.Form = "Base"
 		msg = fmt.Sprintf(
 			"💀 Derrota! %s\n"+
-				"⚔️ -10%% de XP = %d\n"+
-				"💰 -10%% de Gold = %d\n"+
+				"⚔️ -%d%% de XP = %d\n"+
+				"💰 -%d%% de Gold = %d\n"+
 				"⚡️ Energia: %d/%d\n"+
 				"💪 Level: %d\n",
 			player.Name,
+			region.Nerf,
 			oldXP-player.XP,
+			region.Nerf,
 			oldGold-player.Gold,
 			player.Energy,
 			player.MaxEnergy,
