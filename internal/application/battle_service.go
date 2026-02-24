@@ -175,7 +175,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		googNews := ""
 
 		player.XP += xpReceived
-		player.Gold += moneyReceived
+		player.Gold += moneyReceived * 2
 
 		if player.XP >= player.Level*int(levelMulti) {
 			player.Level++
@@ -296,6 +296,14 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	if err != nil {
 		log.Fatal(err)
 	}
+	region, err := s.regionRepo.GetByID(player.RegionID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	result := "ESCAPE"
+	xpResult := 0
+	goldResult := 0
 
 	msg := fmt.Sprintf("💀 Você conseguiu fugir do %s!!!", monster.Name)
 	img := &view.Image{
@@ -312,8 +320,18 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		player.HP -= damage
 		if player.HP <= 0 {
 			player.HP = 1
-			player.XP -= int(float64(player.XP) * 0.9)
-			player.Gold -= int(float64(player.Gold) * 0.9)
+
+			nerf := float64(region.Nerf) / 100.0
+
+			xpReduction := math.Round(float64(player.XP) * nerf)
+			goldReduction := math.Round(float64(player.Gold) * nerf)
+
+			player.XP -= int(xpReduction)
+			player.Gold -= int(goldReduction)
+
+			xpResult = -int(xpReduction)
+			goldResult = -int(goldReduction)
+
 			menu = "ENERGY_MENU"
 			msg = fmt.Sprintf(
 				"💀 Você zerou seu HP!!! \n\n"+
@@ -323,6 +341,8 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 				player.Name,
 			)
 			img.Path = fmt.Sprintf("assets/npcs/mestre_kalunga.png")
+
+			result = "ESCAPE/LOSS"
 		} else {
 			menu = "BATTLE_MENU"
 			msg = fmt.Sprintf(
@@ -341,9 +361,9 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	battleLog := &domain.BattleLog{
 		PlayerID:           int64(player.ID),
 		MonsterID:          monster.MonsterID,
-		Result:             "ESCAPE",
-		XPGained:           0,
-		GoldGained:         0,
+		Result:             result,
+		XPGained:           xpResult,
+		GoldGained:         goldResult,
 		PlayerDamageTotal:  0,
 		MonsterDamageTotal: damage,
 		CreatedAt:          time.Now(),
