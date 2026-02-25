@@ -136,6 +136,10 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		log.Fatal(err)
 	}
 
+	if monster.Tag == "AURUM_KARUN" {
+		return s.AurumKarunLuck(monster, region, player, err)
+	}
+
 	msg := fmt.Sprintf("💀 Ocorreu um erro ao fim da batalha!!!")
 	img := &view.Image{
 		Type: view.ImageAsset,
@@ -292,6 +296,73 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 
 	return viewResponse, nil
 }
+
+func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.Region, player *domain.Player, err error) (view.GameResponse, error) {
+	txt := fmt.Sprintf("\n\n"+
+		"\n\n <b> %s foi mais rápido e escapou!!! </b>\n\n "+
+		"\n\n", monster.Name)
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/maps/%s.png", domain.ConvertLowCase(region.Tag)),
+	}
+
+	skin := ""
+
+	if player.Form == "Ki Awakened" {
+		skin = "_ki_awakened"
+	}
+	result := "AURUMKARUN/ESCAPE"
+
+	oldGold := player.Gold
+
+	escapePlayer := rand.Intn(10)
+	escapeAurumKarun := rand.Intn(15)
+
+	if escapePlayer >= escapeAurumKarun {
+		txt = fmt.Sprintf(
+			"🏆 Vitória! %s \n"+
+				"💰 +%d Gold\n",
+			player.Name,
+			monster.MaxMoney,
+		)
+		img.Path = fmt.Sprintf("assets/skins/%s%s_battle_win.png", domain.ConvertLowCase(player.Gender), skin)
+		result = "AURUMKARUN/WIN"
+		player.Gold += monster.MaxMoney
+	}
+
+	viewResponse := view.GameResponse{
+		Text:    txt,
+		Image:   img,
+		MenuKey: "MAIN_MENU",
+	}
+
+	battleLog := &domain.BattleLog{
+		PlayerID:           int64(player.ID),
+		MonsterID:          monster.MonsterID,
+		Result:             result,
+		OldXP:              player.XP,
+		XPGained:           0,
+		XPCurrent:          player.XP,
+		OldGold:            oldGold,
+		GoldGained:         player.Gold - oldGold,
+		GoldCurrent:        player.Gold,
+		PlayerDamageTotal:  0,
+		MonsterDamageTotal: 0,
+		CreatedAt:          time.Now(),
+	}
+
+	err = s.battleRepo.SaveBattleLog(battleLog)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+	err = s.playerRepo.Update(player)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+
+	return viewResponse, nil
+}
+
 func (s *BattleService) Escape(userID int64, params map[string]string) (view.GameResponse, *domain.Monster, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	if err != nil {
