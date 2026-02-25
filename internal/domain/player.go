@@ -25,6 +25,7 @@ type Player struct {
 	MaxHP int
 	ATK   int
 	DEF   int
+	Speed int `gorm:"default:2"`
 
 	Energy    int
 	MaxEnergy int
