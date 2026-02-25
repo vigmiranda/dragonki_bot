@@ -177,8 +177,8 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		atkTotalMonster += atkMonster
 	}
 
-	xpReceived := rand.Intn(monster.MaxXP) + 1
-	moneyReceived := rand.Intn(monster.MaxMoney) + 1
+	xpReceived := rand.Intn(monster.MaxXP-monster.MinXP) + monster.MinXP
+	moneyReceived := rand.Intn(monster.MaxMoney-monster.MinMoney) + monster.MinMoney
 
 	if player.HP > 0 {
 		googNews := ""
