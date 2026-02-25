@@ -184,7 +184,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		googNews := ""
 
 		player.XP += xpReceived
-		player.Gold += moneyReceived * 2
+		player.Gold += moneyReceived
 
 		if player.XP >= player.Level*int(levelMulti) {
 			player.Level++
@@ -212,7 +212,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 				"%s"+
 				"Você recebeu de dano: %d\n"+
 				"⚔️ +%d XP\n"+
-				"💰 +%d Gold - 🎉 Evento 2x 🎉\n"+
+				"💰 +%d Gold\n"+
 				"❤️ HP: %d/%d\n"+
 				"⚡️ Energia: %d/%d\n"+
 				"💪 Level: %d\n",
@@ -220,7 +220,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			googNews,
 			playerHp-player.HP,
 			xpReceived,
-			moneyReceived*2,
+			moneyReceived,
 			player.HP,
 			player.MaxHP,
 			player.Energy,
