@@ -1,0 +1,29 @@
+"⚔️ Caçar", "action_hunt"
+    "⚔️ Atacar ", "action_fight?monsterID"
+    "🏃🏻 Escapar ", "action_escape?monsterID"
+
+"🗺 Explorar", "list_map"
+    "%s - Lvl (%d)", "to_region?regionID=%d"
+
+"👤 Status", "action_status"
+
+"🔥 Transformar", "list_transform"
+    "🔥 Transformar -3⚡️", "action_transform"
+
+"🧳 Inventory", "open_inventory"
+    "🧪 Poções", "open_inventory_potions"
+    "📿 Equipamentos", "open_inventory_equipaments"
+
+"⛩ Câm. Ki Ancestral", "to_training"
+
+"🏪 Lojinha", "to_shop"
+    "🧪 Poções", "list_potions"
+    "📿 Equipamentos", "list_equipments"
+
+"🛏️ Pousada", "to_sleep"
+    "💤 -500💰 / +100%❤️", "action_sleep"
+    "🥱 -1⚡️/ +30%❤️", "action_rest"
+
+"🔄 Casa de Câmbio", "to_exchange"
+    "🔄 1💎 em %d de 💰","action_convert?amountConvert=1" ....
+    "Comprar %d 💎 por R$%d,00", "action_buy_ki"
