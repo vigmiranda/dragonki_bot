@@ -37,3 +37,15 @@ func (r *MonsterPostgresRepo) ListByRegion(regionId int64) ([]domain.Monster, er
 
 	return monsters, nil
 }
+func (r *MonsterPostgresRepo) GetMonsterDrops(monsterID int) ([]domain.MonsterDrop, error) {
+	var drops []domain.MonsterDrop
+	err := r.db.Model(&domain.MonsterDrop{}).
+		Where("monster_id = ?", monsterID).
+		Preload("Item").
+		Find(&drops).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return drops, nil
+}

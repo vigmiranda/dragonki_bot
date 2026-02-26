@@ -35,6 +35,7 @@ func main() {
 		&domain.InventoryItem{},
 		&domain.PlayerEquipment{},
 		&domain.BattleLog{},
+		&domain.MonsterDrop{},
 	)
 	if err != nil {
 		log.Fatal("❌ error ao rodar automigrate", err)
@@ -51,7 +52,7 @@ func main() {
 
 	// 🔹 Services (Application)
 	playerService := application.NewPlayerService(playerRepo, regionRepo)
-	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo, battleRepo)
+	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo, battleRepo, inventoryRepo)
 	onboardingService := application.NewOnboardingService(playerRepo)
 	transformService := application.NewTransformService(playerRepo)
 	menuService := application.NewMenuService(playerRepo, regionRepo)
