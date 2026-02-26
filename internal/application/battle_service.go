@@ -16,10 +16,11 @@ import (
 )
 
 type BattleService struct {
-	playerRepo  ports.PlayerRepository
-	monsterRepo ports.MonsterRepository
-	regionRepo  ports.RegionRepository
-	battleRepo  ports.BattleRepository
+	playerRepo          ports.PlayerRepository
+	monsterRepo         ports.MonsterRepository
+	regionRepo          ports.RegionRepository
+	battleRepo          ports.BattleRepository
+	inventoryRepository ports.InventoryRepository
 }
 
 func NewBattleService(
@@ -27,12 +28,14 @@ func NewBattleService(
 	monsterRepo *postgres.MonsterPostgresRepo,
 	regionRepo *postgres.RegionPostgres,
 	battleRepo ports.BattleRepository,
+	inventoryRepo ports.InventoryRepository,
 ) *BattleService {
 	return &BattleService{
-		playerRepo:  playerRepo,
-		monsterRepo: monsterRepo,
-		regionRepo:  regionRepo,
-		battleRepo:  battleRepo,
+		playerRepo:          playerRepo,
+		monsterRepo:         monsterRepo,
+		regionRepo:          regionRepo,
+		battleRepo:          battleRepo,
+		inventoryRepository: inventoryRepo,
 	}
 }
 
@@ -182,9 +185,13 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 
 	if player.HP > 0 {
 		googNews := ""
-
+		itemName, qty, _ := s.HandleDrops(monster.MonsterID, int64(player.ID))
 		player.XP += xpReceived
 		player.Gold += moneyReceived
+
+		if qty > 0 {
+			googNews += fmt.Sprintf("🥳 Dropou %dx %s \n", qty, itemName)
+		}
 
 		if player.XP >= player.Level*int(levelMulti) {
 			player.Level++
@@ -196,7 +203,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.FormBattlesLeft = 0
 			player.Form = "Base"
 			player.HP = player.MaxHP
-			googNews = "⬆️ <b>Subiu de nível!</b> \n"
+			googNews += "⬆️ <b>Subiu de nível!</b> \n"
 			if player.FormBattlesLeft > 0 {
 				player.FormBattlesLeft = 0
 				player.Form = "Base"
@@ -497,4 +504,35 @@ func pickMonsterByWeight(monsters []domain.Monster) *domain.Monster {
 	}
 
 	return nil
+}
+
+func (s *BattleService) HandleDrops(monsterID int, playerID int64) (string, int, error) {
+	var drops []domain.MonsterDrop
+	itemName := ""
+	itemQty := 0
+
+	drops, err := s.monsterRepo.GetMonsterDrops(monsterID)
+	if err != nil {
+		return "", 0, err
+	}
+
+	for _, drop := range drops {
+		roll := rand.Float64()
+
+		if roll <= drop.DropRate {
+			qty := drop.MinQty
+			if drop.MaxQty > drop.MaxQty {
+				qty = rand.Intn(drop.MaxQty-drop.MinQty+1) + drop.MinQty
+
+			}
+			err = s.inventoryRepository.CreateOrUpdateInventory(playerID, drop.ItemID, qty)
+			itemQty = qty
+			itemName = drop.Item.Name
+			if err != nil {
+				return "", 0, err
+			}
+		}
+
+	}
+	return itemName, itemQty, nil
 }
