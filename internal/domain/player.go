@@ -20,11 +20,12 @@ type Player struct {
 	Level   int
 	XP      int
 
-	HP    int
-	MaxHP int
-	ATK   int
-	DEF   int
-	Speed int `gorm:"default:2"`
+	HP               int
+	MaxHP            int
+	ATK              int
+	DEF              int
+	Speed            int `gorm:"default:2"`
+	DodgeAccumulator float64
 
 	Energy    int
 	MaxEnergy int
