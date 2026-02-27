@@ -102,10 +102,6 @@ func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (v
 	if err != nil {
 		log.Fatal(err)
 	}
-	region, err := s.RegionRepository.GetByID(player.RegionID)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	classIDStr, _ := params["classID"]
 	classID, err := strconv.ParseInt(classIDStr, 10, 64)
@@ -117,36 +113,20 @@ func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (v
 	player.ClassID = uint(classID)
 	s.PlayerRepository.Update(player)
 
-	msg := fmt.Sprintf("Agora voce é %s", class.Name)
-	//fmt.Sprintf(
-	//genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
-	//	"🗺️ <b>Local</b>: %s - (Lv %d+)\n"+
-	//	"💪 <b>Level</b>: %d   🧬 <b>XP</b>: %d/%d\n"+
-	//	"❤️ <b>HP</b>: %d/%d   ⚡️ <b>Energia</b>: %d/%d\n"+
-	//	"⚔️ <b>ATK</b>: %d     🛡️ <b>DEF</b>: %d \n"+
-	//	"💰 <b>Gold</b>: %d\n"+
-	//	"💎 <b>Ki Crystals</b>: %d\n"+
-	//	"<b>+1 de ⚡️ em </b>: %s\n",
-	//player.Name,
-	//player.ClassName,
-	//region.Name,
-	//region.MinLevel,
-	//player.Level,
-	//player.XP,
-	//player.Level*80,
-	//player.HP,
-	//player.MaxHP,
-	//player.Energy,
-	//player.MaxEnergy,
-	//player.ATK,
-	//player.DEF,
-	//player.Gold,
-	//player.KiCrystals,
-	//recoveryStr,
+	msg := fmt.Sprintf(
+		"<b>%s</b>\n\n"+
+			"🔥 Ótima escolha!\n"+
+			"Seu Ki agora segue um novo caminho.\n"+
+			"Seus poderes começaram a se alinhar com sua essência.\n"+
+			"Treine. Evolua. Supere seus limites.\n",
+		class.Name,
+	)
 
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/maps/%s.png", domain.ConvertLowCase(region.Tag)),
+		Path: fmt.Sprintf("assets/skins/%s_skin_%s.png",
+			domain.ConvertLowCase(player.Gender),
+			player.Class.Skin),
 	}
 	menu := "MAIN_MENU"
 
