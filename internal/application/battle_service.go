@@ -439,9 +439,15 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 			menu = "ENERGY_MENU"
 			msg = fmt.Sprintf(
 				"💀 Você zerou seu HP!!! \n\n"+
+					"⚔️ -%d%% de XP = %d\n"+
+					"💰 -%d%% de Gold = %d\n\n"+
 					"%s não é derrota, é aprendizado. \n"+
 					"Venha, guerreiro. \nO descanso do Sir Soneca curará suas feridas. \n\n"+
 					"O mundo ainda precisa da sua força. \n",
+				region.Nerf,
+				int(xpReduction),
+				region.Nerf,
+				int(goldReduction),
 				player.Name,
 			)
 			img.Path = fmt.Sprintf("assets/npcs/mestre_kalunga.png")
