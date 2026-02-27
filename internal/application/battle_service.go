@@ -552,8 +552,19 @@ func (s *BattleService) ChangeClass(player *domain.Player) (string, *view.Image,
 	}
 
 	menu := "CHOICE_CLASS"
+	msg := fmt.Sprintf(
+		"“Você chegou até aqui… e agora seu verdadeiro caminho começa.” \n\n" +
+			"No nível 15, todo guerreiro deve decidir como sua energia irá se manifestar. \n" +
+			"O Ki não é apenas poder… \n" +
+			"É direção. É propósito. É identidade.\n" +
+			"Você poderá trilhar um dos três caminhos: \n\n" +
+			"🌪️<b> Wind Striker </b>— Velocidade, esquiva e ataques cortantes como o vento.\n" +
+			"🔥<b> Ki Vanguarda </b>— Ofensiva intensa, explosões de energia e domínio do combate.\n" +
+			"🛡️<b> Earth Sentinel </b>— Resistência absoluta, defesa impenetrável e força inabalável.\n\n" +
+			"Escolha com sabedoria… \n" +
+			"Pois após esta decisão, seu Ki jamais será o mesmo.\n\n" +
+			"Qual será o seu legado em Aethoria?")
 
-	msg := "Escolha uma nova classe"
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/npcs/mestre_kalunga.png"),
