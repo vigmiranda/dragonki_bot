@@ -196,8 +196,8 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.Level++
 			player.ATK += int(float64(player.ATK) * player.Class.AtkBonus)
 			player.DEF += int(float64(player.DEF) * player.Class.DefBonus)
-			player.MaxHP += int(float64(player.ATK) * player.Class.HpBonus)
-			player.Speed += int(float64(player.ATK) * player.Class.SpeedBonus)
+			player.MaxHP += int(float64(player.MaxHP) * player.Class.HpBonus)
+			player.Speed += int(float64(player.Speed) * player.Class.SpeedBonus)
 			player.Energy = player.MaxEnergy
 			player.XP = 0
 			player.FormBattlesLeft = 0
