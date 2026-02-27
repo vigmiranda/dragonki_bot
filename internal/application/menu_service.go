@@ -23,7 +23,7 @@ func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var playersOnline, _ = s.PlayerRepository.CountOnlineLast15Min()
+	//var playersOnline, _ = s.PlayerRepository.CountOnlineLast15Min()
 	region, err := s.RegionRepository.GetByID(player.RegionID)
 	if err != nil {
 		log.Fatal(err)
@@ -41,14 +41,14 @@ func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 
 	msg := fmt.Sprintf(
 		"<b> %s </b> \n\n"+
-			"👥 <b>Online (últimos 15 min)</b>: %d\n"+
+			//"👥 <b>Online (últimos 15 min)</b>: %d\n"+
 			"🏰 <b>Local</b>:  %s - (Lv %d+)\n"+
 			"❤️ <b>HP</b>: %d/%d\n"+
 			"⚡️ <b>Energia</b>: %d/%d\n"+
 			"💪 <b>Level</b>: %d\n"+
 			"💰 <b>Gold</b>: %d\n",
 		player.Name,
-		playersOnline*2,
+		//playersOnline*2,
 		region.Name,
 		region.MinLevel,
 		player.HP,

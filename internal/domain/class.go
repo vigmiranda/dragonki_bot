@@ -10,12 +10,14 @@ const (
 )
 
 type Class struct {
-	ID          int64
-	Name        string
-	BaseClass   string // Blade Monk, Sword Disciple etc
-	Tier        ClassTier
-	MinLevel    int
-	AtkBonus    int
-	HpBonus     int
-	EnergyBonus int
+	ID         int64
+	Name       string
+	BaseClass  string
+	Tier       ClassTier
+	MinLevel   int
+	AtkBonus   float64 `gorm:"default:0.2"`
+	DefBonus   float64 `gorm:"default:0.2"`
+	SpeedBonus float64 `gorm:"default:0"`
+	HpBonus    float64 `gorm:"default:0.1"`
+	Skin       string  `gorm:"default:basic"`
 }

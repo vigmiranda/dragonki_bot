@@ -24,6 +24,7 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 
 	err := r.db.
 		Where("user_id = ?", userID).
+		Preload("Class").
 		First(&existing).
 		Error
 
@@ -43,7 +44,6 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 		Name:            "User_" + uuid.New().String()[:6],
 		Gender:          "MAN",
 		ClassID:         1,
-		ClassName:       "Blade Monk",
 		Level:           1,
 		XP:              0,
 		HP:              100,
@@ -75,7 +75,6 @@ func (r *PlayerPostgresRepo) Update(p *domain.Player) error {
 		"name":              p.Name,
 		"gender":            p.Gender,
 		"class_id":          p.ClassID,
-		"class_name":        p.ClassName,
 		"level":             p.Level,
 		"xp":                p.XP,
 		"hp":                p.HP,
@@ -113,4 +112,26 @@ func (r *PlayerPostgresRepo) CountOnlineLast15Min() (int, error) {
 		Error
 
 	return int(count), err
+}
+func (r *PlayerPostgresRepo) GetClassesByLvl(lvl int) ([]domain.Class, error) {
+	var classes []domain.Class
+	err := r.db.Model(&domain.Class{}).
+		Where("min_level = ?", lvl).
+		Scan(&classes).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return classes, nil
+}
+func (r *PlayerPostgresRepo) GetClassesByID(id int64) (*domain.Class, error) {
+	var classes *domain.Class
+	err := r.db.Model(&domain.Class{}).
+		Where("id = ?", id).
+		Scan(&classes).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return classes, nil
 }

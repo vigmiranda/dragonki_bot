@@ -153,7 +153,6 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	resultBattle := "LOSE"
 
 	monsterHP := monster.HP
-	playerHp := player.HP
 	player.Energy--
 	atkTransform := 0
 	defTransform := 0
@@ -195,9 +194,10 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 
 		if player.XP >= player.Level*int(levelMulti) {
 			player.Level++
-			player.ATK += int(float64(player.ATK) * 0.2)
-			player.DEF += int(float64(player.DEF) * 0.2)
-			player.MaxHP += int(float64(player.ATK) * 0.1)
+			player.ATK += int(float64(player.ATK) * player.Class.AtkBonus)
+			player.DEF += int(float64(player.DEF) * player.Class.DefBonus)
+			player.MaxHP += int(float64(player.ATK) * player.Class.HpBonus)
+			player.Speed += int(float64(player.ATK) * player.Class.SpeedBonus)
 			player.Energy = player.MaxEnergy
 			player.XP = 0
 			player.FormBattlesLeft = 0
@@ -208,7 +208,6 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 				player.FormBattlesLeft = 0
 				player.Form = "Base"
 			}
-
 		}
 		if player.FormBattlesLeft > 0 {
 			player.FormBattlesLeft--
@@ -225,7 +224,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 				"💪 Level: %d\n",
 			player.Name,
 			googNews,
-			playerHp-player.HP,
+			atkTotalMonster,
 			xpReceived,
 			moneyReceived,
 			player.HP,
@@ -295,10 +294,19 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		img.Path = fmt.Sprintf("assets/error.png")
 
 	}
+	menuParams := make(map[string]any)
+	if (player.Level == 15 || player.Level == 35 || player.Level == 50) && player.XP == 0 {
+		msg, img, menu, menuParams, err = s.ChangeClass(player)
+		if err != nil {
+			return view.GameResponse{}, err
+		}
+	}
+
 	viewResponse := view.GameResponse{
-		Text:    msg,
-		Image:   img,
-		MenuKey: menu,
+		Text:       msg,
+		Image:      img,
+		MenuKey:    menu,
+		MenuParams: menuParams,
 	}
 
 	return viewResponse, nil
@@ -395,7 +403,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	msg := fmt.Sprintf("💀 Você conseguiu fugir do %s!!!", monster.Name)
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
+		Path: fmt.Sprintf("assets/skins/%s_skin_%s.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
 	}
 	menu := "MAIN_MENU"
 
@@ -535,4 +543,23 @@ func (s *BattleService) HandleDrops(monsterID int, playerID int64) (string, int,
 
 	}
 	return itemName, itemQty, nil
+}
+
+func (s *BattleService) ChangeClass(player *domain.Player) (string, *view.Image, string, map[string]any, error) {
+	classes, err := s.playerRepo.GetClassesByLvl(player.Level)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	menu := "CHOICE_CLASS"
+
+	msg := "Escolha uma nova classe"
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/npcs/mestre_kalunga.png"),
+	}
+	menuParams := map[string]any{
+		"Classes": classes,
+	}
+	return msg, img, menu, menuParams, nil
 }

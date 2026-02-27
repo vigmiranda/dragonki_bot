@@ -158,7 +158,7 @@ func (s *InventoryService) UseItem(playerID int64, inventoryItemID uint) (view.G
 		Text: fmt.Sprintf("🧪 Você usou %s!", invItem.Item.Name),
 		Image: &view.Image{
 			Type: view.ImageAsset,
-			Path: fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
+			Path: fmt.Sprintf("assets/skins/%s_skin_%s.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
 		},
 		MenuKey: "MAIN_MENU",
 	}, nil

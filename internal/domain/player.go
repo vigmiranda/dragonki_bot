@@ -13,13 +13,12 @@ type Player struct {
 
 	UserID int64 `gorm:"uniqueIndex;not null"`
 
-	Name      string
-	Gender    string
-	ClassID   uint
-	ClassName string
-
-	Level int
-	XP    int
+	Name    string
+	Gender  string
+	ClassID uint
+	Class   Class `grom:"foreignkey:ClassID"`
+	Level   int
+	XP      int
 
 	HP    int
 	MaxHP int
