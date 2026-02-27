@@ -32,8 +32,8 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	case "list_map", "to_region":
 		inputTelegram = h.handleMap(action, userID, params)
 
-	case "action_status":
-		inputTelegram = h.handlePlayer(action, userID)
+	case "action_status", "to_class":
+		inputTelegram = h.handlePlayer(action, userID, params)
 
 	case "action_fight", "action_escape", "action_hunt":
 		inputTelegram = h.handleBattle(action, userID, params)

@@ -84,7 +84,7 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 	msg := fmt.Sprintf("❌ Transformação desbloqueia no nível 5")
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender)),
+		Path: fmt.Sprintf("assets/skins/%s_skin_%s.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
 	}
 	menu := "MAIN_MENU"
 

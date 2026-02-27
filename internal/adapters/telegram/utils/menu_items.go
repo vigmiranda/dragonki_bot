@@ -29,6 +29,36 @@ func BuildMenuItems(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	return &menu
 }
+func ChoiceClassMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
+	rawClasses, ok := params["Classes"].([]domain.Class)
+	if !ok {
+		fmt.Printf("ClassesMenu -> ", ok)
+	}
+
+	var rows [][]tgbotapi.InlineKeyboardButton
+
+	for _, class := range rawClasses {
+
+		label := fmt.Sprintf(
+			"%s",
+			class.Name,
+		)
+
+		callback := fmt.Sprintf(
+			"to_class?classID=%d",
+			class.ID,
+		)
+
+		rows = append(rows,
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(label, callback),
+			),
+		)
+	}
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	return &menu
+}
+
 func RegionsMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	rawRegions, ok := params["Regions"].([]domain.Region)
 	if !ok {

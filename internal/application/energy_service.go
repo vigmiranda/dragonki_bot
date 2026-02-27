@@ -101,7 +101,7 @@ func (s *EnergyService) Rest(userID int64) (view.GameResponse, error) {
 			player.HP,
 			player.MaxHP,
 		)
-		img.Path = fmt.Sprintf("assets/skins/%s_skin_basic.png", domain.ConvertLowCase(player.Gender))
+		img.Path = fmt.Sprintf("assets/skins/%s_skin_%s.png", domain.ConvertLowCase(player.Gender), player.Class.Skin)
 		err := s.PlayerRepository.Update(player)
 		if err != nil {
 			log.Fatal(err)
