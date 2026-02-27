@@ -24,12 +24,16 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 
 	err := r.db.
 		Where("user_id = ?", userID).
-		Preload("Class").
 		First(&existing).
 		Error
 
 	// ✅ Encontrou
 	if err == nil {
+		err = r.db.
+			Where("user_id = ?", userID).
+			Preload("Class").
+			First(&existing).
+			Error
 		return &existing, nil
 	}
 
@@ -63,10 +67,9 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 	}
 	newPlayer.ID = 0
 
-	if err := r.db.Create(&newPlayer).Error; err != nil {
+	if err = r.db.Create(&newPlayer).Error; err != nil {
 		return nil, err
 	}
-
 	return &newPlayer, nil
 }
 

@@ -60,7 +60,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 	msg := fmt.Sprintf("⚡ Energia esgotada. \n Aguarde %s para recarregar", recoveryStr)
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/skins/%s_tired.png", domain.ConvertLowCase(player.Gender)),
+		Path: fmt.Sprintf("assets/skins/%s/%s/tired.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
 	}
 	menu := "MAIN_MENU"
 	monsterID := 0
@@ -163,7 +163,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	if player.Form == "Ki Awakened" {
 		atkTransform = int(float64(player.ATK) * 0.2)
 		defTransform = int(float64(player.ATK) * 0.2)
-		skin = "_ki_awakened"
+		skin = "ki_awakened_"
 	}
 	atkTotalPlayer := 0
 	atkTotalMonster := 0
@@ -233,7 +233,10 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.MaxEnergy,
 			player.Level,
 		)
-		img.Path = fmt.Sprintf("assets/skins/%s%s_battle_win.png", domain.ConvertLowCase(player.Gender), skin)
+		img.Path = fmt.Sprintf("assets/skins/%s/%s/%sbattle_win.png",
+			domain.ConvertLowCase(player.Gender),
+			player.Class.Skin,
+			skin)
 
 	} else {
 		if player.FormBattlesLeft > 0 {
@@ -264,7 +267,10 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.MaxEnergy,
 			player.Level,
 		)
-		img.Path = fmt.Sprintf("assets/skins/%s_battle_loss.png", domain.ConvertLowCase(player.Gender))
+		img.Path = fmt.Sprintf("assets/skins/%s/%sbattle_loss.png",
+			domain.ConvertLowCase(player.Gender),
+			player.Class.Skin)
+
 		xpReceived = player.XP - oldXP
 		moneyReceived = player.Gold - oldGold
 	}
@@ -324,7 +330,7 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 	skin := ""
 
 	if player.Form == "Ki Awakened" {
-		skin = "_ki_awakened"
+		skin = "ki_awakened_"
 	}
 	result := "AURUMKARUN/ESCAPE"
 
@@ -340,7 +346,10 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 			player.Name,
 			monster.MaxMoney,
 		)
-		img.Path = fmt.Sprintf("assets/skins/%s%s_battle_win.png", domain.ConvertLowCase(player.Gender), skin)
+		img.Path = fmt.Sprintf("assets/skins/%s/%s/%sbattle_win.png",
+			domain.ConvertLowCase(player.Gender),
+			player.Class.Skin,
+			skin)
 		result = "AURUMKARUN/WIN"
 		player.Gold += monster.MaxMoney
 	}
@@ -403,7 +412,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	msg := fmt.Sprintf("💀 Você conseguiu fugir do %s!!!", monster.Name)
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/skins/%s_skin_%s.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
+		Path: fmt.Sprintf("assets/skins/%s/%splayer.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
 	}
 	menu := "MAIN_MENU"
 

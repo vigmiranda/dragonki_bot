@@ -65,9 +65,10 @@ func (s *OnboardingService) SetGender(userID int64, gender string) (view.GameRes
 	}
 
 	msg := fmt.Sprintf("✍️ Ótima escolha!\n\nAgora digite o nome do seu personagem:")
+
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/skins/%s_skin_%s.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
+		Path: fmt.Sprintf("assets/skins/%s/%splayer.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
 	}
 
 	viewResponse := view.GameResponse{
