@@ -104,6 +104,16 @@ func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (v
 		log.Fatal(err)
 	}
 
+	switch player.Level {
+	case 15:
+		player.ATK = 110
+		player.DEF = 50
+		player.Speed = 30
+		player.HP = 160
+		player.Energy = 23
+
+	}
+
 	classIDStr, _ := params["classID"]
 	classID, err := strconv.ParseInt(classIDStr, 10, 64)
 	if err != nil {
