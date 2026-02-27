@@ -97,6 +97,7 @@ func (r *PlayerPostgresRepo) Update(p *domain.Player) error {
 		"user_id_telegram":  p.UserIDTelegram,
 		"name_telegram":     p.NameTelegram,
 		"user_name":         p.UserName,
+		"dodge_accumulator": p.DodgeAccumulator,
 	}
 
 	return r.db.

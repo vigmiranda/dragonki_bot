@@ -167,8 +167,25 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	}
 	atkTotalPlayer := 0
 	atkTotalMonster := 0
+
+	baseChange := float64(player.Speed) / (float64(player.Speed) + 100) * 35
+	if baseChange > 35 {
+		baseChange = 35
+	}
+
+	player.DodgeAccumulator += baseChange
+
 	//logica de dano
 	for monsterHP > 0 && player.HP > 0 {
+
+		roll := rand.Float64() * 100
+
+		if roll < player.DodgeAccumulator {
+			player.DodgeAccumulator = 0
+			//esquivou
+			continue
+		}
+
 		monsterHP -= player.ATK + atkTransform
 		atkTotalPlayer += player.ATK + atkTransform
 		atkMonster := rand.Intn(monster.ATK+(monster.ATK/2)+1) - (player.DEF + defTransform)
