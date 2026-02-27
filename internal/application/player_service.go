@@ -125,7 +125,7 @@ func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (v
 
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/skins/%s/%s/tired.png",
+		Path: fmt.Sprintf("assets/skins/%s/%s/player.png",
 			domain.ConvertLowCase(player.Gender),
 			player.Class.Skin),
 	}
