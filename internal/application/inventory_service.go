@@ -154,12 +154,14 @@ func (s *InventoryService) UseItem(playerID int64, inventoryItemID uint) (view.G
 		return view.GameResponse{}, err
 	}
 
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/skins/%s/%splayer.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
+	}
+
 	return view.GameResponse{
-		Text: fmt.Sprintf("🧪 Você usou %s!", invItem.Item.Name),
-		Image: &view.Image{
-			Type: view.ImageAsset,
-			Path: fmt.Sprintf("assets/skins/%s_skin_%s.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
-		},
+		Text:    fmt.Sprintf("🧪 Você usou %s!", invItem.Item.Name),
+		Image:   img,
 		MenuKey: "MAIN_MENU",
 	}, nil
 }

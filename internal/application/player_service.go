@@ -43,14 +43,14 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		recoveryStr = "10m"
 	}
 
-	skin := fmt.Sprintf("skin_%s", player.Class.Skin)
+	transform := "player"
 	genderIcon := "🧝‍♂️"
 	if player.Gender == "WOMAN" {
 		genderIcon = "🧝‍♀️️"
 	}
 	if player.Form == "Ki Awakened" {
 		player = domain.KiAwakened(player)
-		skin = "ki_awakened"
+		transform = "ki_awakened"
 	}
 
 	msg := fmt.Sprintf(
@@ -82,9 +82,10 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 	)
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/skins/%s_%s.png",
+		Path: fmt.Sprintf("assets/skins/%s/%s%s.png",
 			domain.ConvertLowCase(player.Gender),
-			skin),
+			player.Class.Skin,
+			transform),
 	}
 	menu := "MAIN_MENU"
 
@@ -124,7 +125,7 @@ func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (v
 
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/skins/%s_skin_%s.png",
+		Path: fmt.Sprintf("assets/skins/%s/%s/tired.png",
 			domain.ConvertLowCase(player.Gender),
 			player.Class.Skin),
 	}
