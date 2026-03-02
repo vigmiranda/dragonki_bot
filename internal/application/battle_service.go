@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"os"
@@ -15,12 +14,32 @@ import (
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
 
+const (
+	menuMain      = "MAIN_MENU"
+	menuBattle    = "BATTLE_MENU"
+	menuEnergy    = "ENERGY_MENU"
+	menuChoiceCls = "CHOICE_CLASS"
+
+	formKiAwakened = "Ki Awakened"
+	formBase       = "Base"
+
+	monsterAurumKarunTag = "AURUM_KARUN"
+)
+
+type battleConfig struct {
+	LevelMult       int
+	EnergyRegenTime string
+}
+
 type BattleService struct {
 	playerRepo          ports.PlayerRepository
 	monsterRepo         ports.MonsterRepository
 	regionRepo          ports.RegionRepository
 	battleRepo          ports.BattleRepository
 	inventoryRepository ports.InventoryRepository
+
+	cfg battleConfig
+	rng *rand.Rand
 }
 
 func NewBattleService(
@@ -36,73 +55,95 @@ func NewBattleService(
 		regionRepo:          regionRepo,
 		battleRepo:          battleRepo,
 		inventoryRepository: inventoryRepo,
+		cfg:                 loadBattleConfigFromEnv(),
+		rng:                 rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
+}
+
+func loadBattleConfigFromEnv() battleConfig {
+	cfg := battleConfig{
+		LevelMult:       1,
+		EnergyRegenTime: os.Getenv("ENERGY_REGEN_TIME"),
+	}
+
+	if cfg.EnergyRegenTime == "" {
+		cfg.EnergyRegenTime = "alguns instantes"
+	}
+
+	if v := os.Getenv("LEVEL_MULT"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+			cfg.LevelMult = parsed
+		}
+	}
+
+	return cfg
 }
 
 func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
-	recoveryStr := os.Getenv("ENERGY_REGEN_TIME")
-	//todo tirar daqui
+
+	// todo: tirar daqui (mantive comportamento, mas sem derrubar o processo)
 	player.SetTransformBase()
-	err = s.playerRepo.Update(player)
-	if err != nil {
-		log.Fatal(err)
+	if err := s.playerRepo.Update(player); err != nil {
+		return view.GameResponse{}, err
 	}
 	// ------------
 
-	if player.Form == "Ki Awakened" {
+	if player.Form == formKiAwakened {
 		player = domain.KiAwakened(player)
 	}
 
-	msg := fmt.Sprintf("⚡ Energia esgotada. \n Aguarde %s para recarregar", recoveryStr)
+	msg := fmt.Sprintf("⚡ Energia esgotada. \n Aguarde %s para recarregar", s.cfg.EnergyRegenTime)
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/skins/%s/%s/tired.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
 	}
-	menu := "MAIN_MENU"
+	menu := menuMain
 	monsterID := 0
+
 	if player.Energy > 0 {
 		monsters, err := s.monsterRepo.ListByRegion(player.RegionID)
 		if err != nil || len(monsters) == 0 {
-			msg = fmt.Sprintf("Error ao encontra um monstro")
-			img.Path = fmt.Sprintf("assets/error.png")
+			msg = "Error ao encontra um monstro"
+			img.Path = "assets/error.png"
+		} else {
+			monster := pickMonsterByWeight(s.rng, monsters)
+			if monster == nil {
+				msg = "Error ao encontra um monstro"
+				img.Path = "assets/error.png"
+			} else {
+				msg = fmt.Sprintf(
+					"🐉<b> %s apareceu! </b>\n\n"+
+						"Você \n"+
+						"💪 <b>Lv:</b> %d\n"+
+						"❤️ <b>HP:</b> %d/%d\n"+
+						"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d \n\n\n"+
+						"%s \n"+
+						"💪 <b>Lv:</b> %d\n"+
+						"❤️ <b>HP:</b> %d\n"+
+						"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d\n",
+					monster.Name,
+					player.Level,
+					player.HP,
+					player.MaxHP,
+					player.ATK,
+					player.DEF,
+					monster.Name,
+					monster.Level,
+					monster.HP,
+					monster.ATK,
+					monster.DEF,
+				)
+				img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.RegionID, monster.Tag)
+				monsterID = monster.MonsterID
+				menu = menuBattle
+			}
 		}
-
-		monster := pickMonsterByWeight(monsters)
-		if monster == nil {
-			msg = fmt.Sprintf("Error ao encontra um monstro")
-			img.Path = fmt.Sprintf("assets/error.png")
-		}
-
-		msg = fmt.Sprintf(
-			"🐉<b> %s apareceu! </b>\n\n"+
-				"Você \n"+
-				"💪 <b>Lv:</b> %d\n"+
-				"❤️ <b>HP:</b> %d/%d\n"+
-				"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d \n\n\n"+
-				"%s \n"+
-				"💪 <b>Lv:</b> %d\n"+
-				"❤️ <b>HP:</b> %d\n"+
-				"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d\n",
-			monster.Name,
-			player.Level,
-			player.HP,
-			player.MaxHP,
-			player.ATK,
-			player.DEF,
-			monster.Name,
-			monster.Level,
-			monster.HP,
-			monster.ATK,
-			monster.DEF,
-		)
-		img.Path = fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.RegionID, monster.Tag)
-		monsterID = monster.MonsterID
-		menu = "BATTLE_MENU"
 	}
+
 	viewResponse := view.GameResponse{
 		Text:    msg,
 		Image:   img,
@@ -114,57 +155,62 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 
 	return viewResponse, nil
 }
+
 func (s *BattleService) Battle(userID int64, params map[string]string) (view.GameResponse, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	if err != nil {
-		log.Fatal(err)
-	}
-	levelMulti, err := strconv.ParseInt(os.Getenv("LEVEL_MULT"), 10, 64)
-	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
-	monsterIDStr, _ := params["monsterID"]
+	monsterIDStr, ok := params["monsterID"]
+	if !ok || monsterIDStr == "" {
+		return view.GameResponse{}, fmt.Errorf("missing param monsterID")
+	}
 	monsterId, err := strconv.ParseInt(monsterIDStr, 10, 64)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
+
 	monster, err := s.monsterRepo.GetByMonsterID(monsterId)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
 	region, err := s.regionRepo.GetByID(player.RegionID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
-	if monster.Tag == "AURUM_KARUN" {
-		return s.AurumKarunLuck(monster, region, player, err)
+	if monster.Tag == monsterAurumKarunTag {
+		return s.AurumKarunLuck(monster, region, player)
 	}
 
-	msg := fmt.Sprintf("💀 Ocorreu um erro ao fim da batalha!!!")
+	msg := "💀 Ocorreu um erro ao fim da batalha!!!"
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/error.png"),
+		Path: "assets/error.png",
 	}
-	menu := "MAIN_MENU"
+	menu := menuMain
 
 	resultBattle := "LOSE"
 
 	monsterHP := monster.HP
-	player.Energy--
+	if player.Energy > 0 {
+		player.Energy--
+	}
+
 	atkTransform := 0
 	defTransform := 0
 	skin := ""
 	oldXP := player.XP
 	oldGold := player.Gold
 
-	if player.Form == "Ki Awakened" {
+	if player.Form == formKiAwakened {
 		atkTransform = int(float64(player.ATK) * 0.2)
 		defTransform = int(float64(player.ATK) * 0.2)
 		skin = "ki_awakened_"
 	}
+
 	atkTotalPlayer := 0
 	atkTotalMonster := 0
 
@@ -172,44 +218,48 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	if baseChange > 35 {
 		baseChange = 35
 	}
-
 	player.DodgeAccumulator += baseChange
 
-	//logica de dano
+	// lógica de dano (mantive igual, só usando rng injetado)
 	for monsterHP > 0 && player.HP > 0 {
-
-		roll := rand.Float64() * 100
+		roll := s.rng.Float64() * 100
 
 		if roll < player.DodgeAccumulator {
 			player.DodgeAccumulator = 0
-			//esquivou
 			continue
 		}
 
 		monsterHP -= player.ATK + atkTransform
 		atkTotalPlayer += player.ATK + atkTransform
-		atkMonster := rand.Intn(monster.ATK+(monster.ATK/2)+1) - (player.DEF + defTransform)
+
+		atkMonster := s.rng.Intn(monster.ATK+(monster.ATK/2)+1) - (player.DEF + defTransform)
 		if atkMonster < 0 {
 			atkMonster = 1
 		}
+
 		player.HP -= atkMonster
 		atkTotalMonster += atkMonster
 	}
 
-	xpReceived := rand.Intn(monster.MaxXP-monster.MinXP) + monster.MinXP
-	moneyReceived := rand.Intn(monster.MaxMoney-monster.MinMoney) + monster.MinMoney
+	xpReceived := randBetweenInclusive(s.rng, monster.MinXP, monster.MaxXP)
+	moneyReceived := randBetweenInclusive(s.rng, monster.MinMoney, monster.MaxMoney)
 
 	if player.HP > 0 {
-		googNews := ""
-		itemName, qty, _ := s.HandleDrops(monster.MonsterID, int64(player.ID))
+		goodNews := ""
+
+		itemName, qty, dropErr := s.HandleDrops(monster.MonsterID, int64(player.ID))
+		if dropErr != nil {
+			return view.GameResponse{}, dropErr
+		}
+
 		player.XP += xpReceived
 		player.Gold += moneyReceived
 
 		if qty > 0 {
-			googNews += fmt.Sprintf("🥳 Dropou %dx %s \n", qty, itemName)
+			goodNews += fmt.Sprintf("🥳 Dropou %dx %s \n", qty, itemName)
 		}
 
-		if player.XP >= player.Level*int(levelMulti) {
+		if player.XP >= player.Level*s.cfg.LevelMult {
 			player.Level++
 			player.ATK += int(float64(player.ATK) * player.Class.AtkBonus)
 			player.DEF += int(float64(player.DEF) * player.Class.DefBonus)
@@ -218,17 +268,15 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.Energy = player.MaxEnergy
 			player.XP = 0
 			player.FormBattlesLeft = 0
-			player.Form = "Base"
+			player.Form = formBase
 			player.HP = player.MaxHP
-			googNews += "⬆️ <b>Subiu de nível!</b> \n"
-			if player.FormBattlesLeft > 0 {
-				player.FormBattlesLeft = 0
-				player.Form = "Base"
-			}
+			goodNews += "⬆️ <b>Subiu de nível!</b> \n"
 		}
+
 		if player.FormBattlesLeft > 0 {
 			player.FormBattlesLeft--
 		}
+
 		resultBattle = "WIN"
 		msg = fmt.Sprintf(
 			"🏆 Vitória! %s \n"+
@@ -240,7 +288,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 				"⚡️ Energia: %d/%d\n"+
 				"💪 Level: %d\n",
 			player.Name,
-			googNews,
+			goodNews,
 			atkTotalMonster,
 			xpReceived,
 			moneyReceived,
@@ -250,25 +298,28 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.MaxEnergy,
 			player.Level,
 		)
-		img.Path = fmt.Sprintf("assets/skins/%s/%s/%sbattle_win.png",
+
+		img.Path = fmt.Sprintf(
+			"assets/skins/%s/%s/%sbattle_win.png",
 			domain.ConvertLowCase(player.Gender),
 			player.Class.Skin,
-			skin)
-
+			skin,
+		)
 	} else {
 		if player.FormBattlesLeft > 0 {
 			player.FormBattlesLeft = 0
-			player.Form = "Base"
+			player.Form = formBase
 		}
-		nerf := float64(region.Nerf) / 100.0
 
+		nerf := float64(region.Nerf) / 100.0
 		xpReduction := math.Round(float64(player.XP) * nerf)
 		goldReduction := math.Round(float64(player.Gold) * nerf)
 
 		player.XP -= int(xpReduction)
 		player.Gold -= int(goldReduction)
 		player.HP = 1
-		player.Form = "Base"
+		player.Form = formBase
+
 		msg = fmt.Sprintf(
 			"💀 Derrota! %s\n"+
 				"⚔️ -%d%% de XP = %d\n"+
@@ -284,9 +335,12 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.MaxEnergy,
 			player.Level,
 		)
-		img.Path = fmt.Sprintf("assets/skins/%s/%sbattle_loss.png",
+
+		img.Path = fmt.Sprintf(
+			"assets/skins/%s/%sbattle_loss.png",
 			domain.ConvertLowCase(player.Gender),
-			player.Class.Skin)
+			player.Class.Skin,
+		)
 
 		xpReceived = player.XP - oldXP
 		moneyReceived = player.Gold - oldGold
@@ -307,16 +361,14 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		CreatedAt:          time.Now(),
 	}
 
-	err = s.battleRepo.SaveBattleLog(battleLog)
-	if err != nil {
+	if err := s.battleRepo.SaveBattleLog(battleLog); err != nil {
 		return view.GameResponse{}, err
 	}
 
 	if err := s.playerRepo.Update(player); err != nil {
-		msg = fmt.Sprintf("💀 Ocorreu um erro ao fim da batalha!!!")
-		img.Path = fmt.Sprintf("assets/error.png")
-
+		return view.GameResponse{}, err
 	}
+
 	menuParams := make(map[string]any)
 	if (player.Level == 15 || player.Level == 35 || player.Level == 50) && player.XP == 0 {
 		msg, img, menu, menuParams, err = s.ChangeClass(player)
@@ -335,26 +387,27 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	return viewResponse, nil
 }
 
-func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.Region, player *domain.Player, err error) (view.GameResponse, error) {
-	txt := fmt.Sprintf("\n\n"+
-		"\n\n <b> %s foi mais rápido e escapou!!! </b>\n\n "+
-		"\n\n", monster.Name)
+func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.Region, player *domain.Player) (view.GameResponse, error) {
+	txt := fmt.Sprintf(
+		"\n\n\n\n <b> %s foi mais rápido e escapou!!! </b>\n\n \n\n",
+		monster.Name,
+	)
+
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/maps/%s.png", domain.ConvertLowCase(region.Tag)),
 	}
 
 	skin := ""
-
-	if player.Form == "Ki Awakened" {
+	if player.Form == formKiAwakened {
 		skin = "ki_awakened_"
 	}
-	result := "AURUMKARUN/ESCAPE"
 
+	result := "AURUMKARUN/ESCAPE"
 	oldGold := player.Gold
 
-	escapePlayer := rand.Intn(10)
-	escapeAurumKarun := rand.Intn(15)
+	escapePlayer := s.rng.Intn(10)
+	escapeAurumKarun := s.rng.Intn(15)
 
 	if escapePlayer >= escapeAurumKarun {
 		txt = fmt.Sprintf(
@@ -363,10 +416,14 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 			player.Name,
 			monster.MaxMoney,
 		)
-		img.Path = fmt.Sprintf("assets/skins/%s/%s/%sbattle_win.png",
+
+		img.Path = fmt.Sprintf(
+			"assets/skins/%s/%s/%sbattle_win.png",
 			domain.ConvertLowCase(player.Gender),
 			player.Class.Skin,
-			skin)
+			skin,
+		)
+
 		result = "AURUMKARUN/WIN"
 		player.Gold += monster.MaxMoney
 	}
@@ -374,7 +431,7 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 	viewResponse := view.GameResponse{
 		Text:    txt,
 		Image:   img,
-		MenuKey: "MAIN_MENU",
+		MenuKey: menuMain,
 	}
 
 	battleLog := &domain.BattleLog{
@@ -392,12 +449,10 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 		CreatedAt:          time.Now(),
 	}
 
-	err = s.battleRepo.SaveBattleLog(battleLog)
-	if err != nil {
+	if err := s.battleRepo.SaveBattleLog(battleLog); err != nil {
 		return view.GameResponse{}, err
 	}
-	err = s.playerRepo.Update(player)
-	if err != nil {
+	if err := s.playerRepo.Update(player); err != nil {
 		return view.GameResponse{}, err
 	}
 
@@ -407,17 +462,27 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 func (s *BattleService) Escape(userID int64, params map[string]string) (view.GameResponse, *domain.Monster, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, nil, err
 	}
-	monsterIDStr, _ := params["monsterID"]
+
+	monsterIDStr, ok := params["monsterID"]
+	if !ok || monsterIDStr == "" {
+		return view.GameResponse{}, nil, fmt.Errorf("missing param monsterID")
+	}
+
 	monsterID, err := strconv.ParseInt(monsterIDStr, 10, 64)
+	if err != nil {
+		return view.GameResponse{}, nil, err
+	}
+
 	monster, err := s.monsterRepo.GetByMonsterID(monsterID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, nil, err
 	}
+
 	region, err := s.regionRepo.GetByID(player.RegionID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, monster, err
 	}
 
 	result := "ESCAPE"
@@ -431,19 +496,20 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/skins/%s/%splayer.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
 	}
-	menu := "MAIN_MENU"
+	menu := menuMain
 
-	escapePlayer := rand.Intn(10)
-	escapeMonster := rand.Intn(10)
+	escapePlayer := s.rng.Intn(10)
+	escapeMonster := s.rng.Intn(10)
 	damage := 0
+
 	if escapePlayer <= escapeMonster {
-		damage = rand.Intn(monster.ATK/2+1) + monster.ATK/2
+		damage = s.rng.Intn(monster.ATK/2+1) + monster.ATK/2
 		player.HP -= damage
+
 		if player.HP <= 0 {
 			player.HP = 1
 
 			nerf := float64(region.Nerf) / 100.0
-
 			xpReduction := math.Round(float64(player.XP) * nerf)
 			goldReduction := math.Round(float64(player.Gold) * nerf)
 
@@ -453,7 +519,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 			xpResult = -int(xpReduction)
 			goldResult = -int(goldReduction)
 
-			menu = "ENERGY_MENU"
+			menu = menuEnergy
 			msg = fmt.Sprintf(
 				"💀 Você zerou seu HP!!! \n\n"+
 					"⚔️ -%d%% de XP = %d\n"+
@@ -467,11 +533,11 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 				int(goldReduction),
 				player.Name,
 			)
-			img.Path = fmt.Sprintf("assets/npcs/mestre_kalunga.png")
+			img.Path = "assets/npcs/mestre_kalunga.png"
 
 			result = "ESCAPE/LOSS"
 		} else {
-			menu = "BATTLE_MENU"
+			menu = menuBattle
 			msg = fmt.Sprintf(
 				"💀 Você não conseguiu fugir!!! \n"+
 					"❤️ Seu HP agora é %d/%d \n"+
@@ -500,15 +566,14 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		CreatedAt:          time.Now(),
 	}
 
-	err = s.battleRepo.SaveBattleLog(battleLog)
-	if err != nil {
+	if err := s.battleRepo.SaveBattleLog(battleLog); err != nil {
 		return view.GameResponse{}, monster, err
 	}
 
-	err = s.playerRepo.Update(player)
-	if err != nil {
-		log.Fatal(err)
+	if err := s.playerRepo.Update(player); err != nil {
+		return view.GameResponse{}, monster, err
 	}
+
 	viewResponse := view.GameResponse{
 		Text:    msg,
 		Image:   img,
@@ -521,69 +586,78 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	return viewResponse, monster, nil
 }
 
-func pickMonsterByWeight(monsters []domain.Monster) *domain.Monster {
+func pickMonsterByWeight(rng *rand.Rand, monsters []domain.Monster) *domain.Monster {
 	totalWeight := 0
-	for _, m := range monsters {
-		if m.SpawnWeight > 0 {
-			totalWeight += m.SpawnWeight
+	for i := range monsters {
+		if monsters[i].SpawnWeight > 0 {
+			totalWeight += monsters[i].SpawnWeight
 		}
 	}
-
 	if totalWeight == 0 {
 		return nil
 	}
 
-	roll := rand.Intn(totalWeight)
+	roll := rng.Intn(totalWeight)
 	acc := 0
 
-	for _, m := range monsters {
-		acc += m.SpawnWeight
+	for i := range monsters {
+		acc += monsters[i].SpawnWeight
 		if roll < acc {
-			return &m
+			return &monsters[i]
 		}
 	}
 
 	return nil
 }
 
-func (s *BattleService) HandleDrops(monsterID int, playerID int64) (string, int, error) {
-	var drops []domain.MonsterDrop
-	itemName := ""
-	itemQty := 0
+func randBetweenInclusive(rng *rand.Rand, min, max int) int {
+	if max < min {
+		min, max = max, min
+	}
+	if max == min {
+		return min
+	}
+	return rng.Intn(max-min+1) + min
+}
 
+func (s *BattleService) HandleDrops(monsterID int, playerID int64) (string, int, error) {
 	drops, err := s.monsterRepo.GetMonsterDrops(monsterID)
 	if err != nil {
 		return "", 0, err
 	}
 
+	itemName := ""
+	itemQty := 0
+
 	for _, drop := range drops {
-		roll := rand.Float64()
+		roll := s.rng.Float64()
 
 		if roll <= drop.DropRate {
 			qty := drop.MinQty
-			if drop.MaxQty > drop.MaxQty {
-				qty = rand.Intn(drop.MaxQty-drop.MinQty+1) + drop.MinQty
-
+			if drop.MaxQty > drop.MinQty {
+				qty = s.rng.Intn(drop.MaxQty-drop.MinQty+1) + drop.MinQty
 			}
-			err = s.inventoryRepository.CreateOrUpdateInventory(playerID, drop.ItemID, qty)
-			itemQty = qty
-			itemName = drop.Item.Name
-			if err != nil {
+
+			if err := s.inventoryRepository.CreateOrUpdateInventory(playerID, drop.ItemID, qty); err != nil {
 				return "", 0, err
 			}
-		}
 
+			// Mantive o comportamento: se dropar mais de um item na mesma luta, devolve o "último" que caiu.
+			itemQty = qty
+			itemName = drop.Item.Name
+		}
 	}
+
 	return itemName, itemQty, nil
 }
 
 func (s *BattleService) ChangeClass(player *domain.Player) (string, *view.Image, string, map[string]any, error) {
 	classes, err := s.playerRepo.GetClassesByLvl(player.Level)
 	if err != nil {
-		log.Fatal(err)
+		return "", nil, "", nil, err
 	}
 
-	menu := "CHOICE_CLASS"
+	menu := menuChoiceCls
 	msg := fmt.Sprintf(
 		"“Você chegou até aqui… e agora seu verdadeiro caminho começa.” \n\n" +
 			"No nível 15, todo guerreiro deve decidir como sua energia irá se manifestar. \n" +
@@ -595,14 +669,16 @@ func (s *BattleService) ChangeClass(player *domain.Player) (string, *view.Image,
 			"🛡️<b> Earth Sentinel </b>— Resistência absoluta, defesa impenetrável e força inabalável.\n\n" +
 			"Escolha com sabedoria… \n" +
 			"Pois após esta decisão, seu Ki jamais será o mesmo.\n\n" +
-			"Qual será o seu legado em Aethoria?")
+			"Qual será o seu legado em Aethoria?",
+	)
 
 	img := &view.Image{
 		Type: view.ImageAsset,
-		Path: fmt.Sprintf("assets/npcs/mestre_kalunga.png"),
+		Path: "assets/npcs/mestre_kalunga.png",
 	}
 	menuParams := map[string]any{
 		"Classes": classes,
 	}
+
 	return msg, img, menu, menuParams, nil
 }
