@@ -21,7 +21,9 @@ func (h *Handler) sendInitialPanel(chatID int64) {
 		"Vamos?"
 	photo.ParseMode = "HTML"
 	photo.ReplyMarkup = onboardingMenu()
-	h.bot.Send(photo)
+	if _, err := h.bot.Send(photo); err != nil {
+		log.Println("❌ erro ao enviar painel inicial:", err)
+	}
 }
 
 func (h *Handler) handleNameInput(userID int64, name string) (InputTelegram, error) {
@@ -42,7 +44,9 @@ func (h *Handler) handleNameInput(userID int64, name string) (InputTelegram, err
 		response.Img = tgbotapi.FilePath(fmt.Sprintf("error.png"))
 	}
 
-	h.onboardingService.SetName(userID, name)
+	if err := h.onboardingService.SetName(userID, name); err != nil {
+		log.Println("❌ erro ao salvar nome do player:", err)
+	}
 
 	return response, nil
 }
@@ -74,9 +78,11 @@ func (h *Handler) newPanel(chatID int64, origin string) {
 	photo.ReplyMarkup = mainMenu()
 	_, err := h.bot.Send(photo)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("❌ erro ao enviar painel:", err)
 	}
 }
+
+// ... existing code ...
 func (h *Handler) editPanel(
 	chatID int64,
 	messageID int,
