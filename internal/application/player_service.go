@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 
@@ -22,19 +21,14 @@ func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionReposi
 func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 	region, err := s.RegionRepository.GetByID(player.RegionID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
-	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
-		player.RegenEnergy()
-	}
-	player.SetTransformBase()
-	err = s.PlayerRepository.Update(player)
-	if err != nil {
-		log.Fatal(err)
+	if err := applyPassivePlayerUpdates(s.PlayerRepository, player); err != nil {
+		return view.GameResponse{}, err
 	}
 
 	// 🔹 fallback seguro
@@ -101,7 +95,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(playerId)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
 	switch player.Level {
@@ -117,12 +111,17 @@ func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (v
 	classIDStr, _ := params["classID"]
 	classID, err := strconv.ParseInt(classIDStr, 10, 64)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 	class, err := s.PlayerRepository.GetClassesByID(classID)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
 
 	player.ClassID = uint(classID)
-	s.PlayerRepository.Update(player)
+	if err := s.PlayerRepository.Update(player); err != nil {
+		return view.GameResponse{}, err
+	}
 
 	msg := fmt.Sprintf(
 		"<b>%s</b>\n\n"+
