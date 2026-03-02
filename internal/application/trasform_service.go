@@ -103,7 +103,7 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 			player.Class.Skin)
 	}
 
-	if player.Level >= 5 && player.Level <= 15 && player.Energy >= 3 && player.FormBattlesLeft == 0 {
+	if player.Level >= 5 && player.Energy >= 3 && player.FormBattlesLeft == 0 {
 		player.Form = "Ki Awakened"
 		player.FormBattlesLeft = 3
 		player.Energy -= 3
