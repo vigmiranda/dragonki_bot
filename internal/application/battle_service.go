@@ -268,11 +268,12 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.MaxHP += int(float64(player.MaxHP) * player.Class.HpBonus)
 			player.Speed += int(float64(player.Speed) * player.Class.SpeedBonus)
 			player.Energy = player.MaxEnergy
-			player.XP = player.XP - int(XPLvlUp)
+			player.XP = 0
 			player.FormBattlesLeft = 0
 			player.Form = formBase
 			player.HP = player.MaxHP
 			goodNews += "⬆️ <b>Subiu de nível!</b> \n"
+			xpReceived = int(XPLvlUp) - oldXP
 		}
 
 		if player.FormBattlesLeft > 0 {
