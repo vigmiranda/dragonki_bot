@@ -102,10 +102,9 @@ func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (v
 	case 15:
 		player.ATK = 110
 		player.DEF = 50
-		player.Speed = 30
-		player.HP = 160
-		player.Energy = 23
-
+		player.Speed = 50
+		player.MaxHP = 160
+		player.MaxEnergy = 23
 	}
 
 	classIDStr, _ := params["classID"]
