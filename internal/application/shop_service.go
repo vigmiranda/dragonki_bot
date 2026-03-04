@@ -110,7 +110,7 @@ func (s *ShopService) ListEquipments() (view.GameResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Sprintf("->", equipments)
+
 	msg := fmt.Sprintf(
 		"🪙 Kiara, a Mercadora 🪙 \n\n" +
 			"Ainda não temos nenhum equipamento disponível aqui na lojinha!!   \n\n")

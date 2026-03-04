@@ -241,7 +241,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		atkTotalMonster += atkMonster
 	}
 
-	xpReceived := CalculateXPReward(player.Level, int(monster.Level)) //randBetweenInclusive(s.rng, monster.MinXP, monster.MaxXP)
+	xpReceived := randBetweenInclusive(s.rng, monster.MinXP, monster.MaxXP)
 	moneyReceived := randBetweenInclusive(s.rng, monster.MinMoney, monster.MaxMoney)
 
 	if player.HP > 0 {
