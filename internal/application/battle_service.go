@@ -268,7 +268,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			player.MaxHP += int(float64(player.MaxHP) * player.Class.HpBonus)
 			player.Speed += int(float64(player.Speed) * player.Class.SpeedBonus)
 			player.Energy = player.MaxEnergy
-			player.XP = 0
+			player.XP = player.XP - int(XPLvlUp)
 			player.FormBattlesLeft = 0
 			player.Form = formBase
 			player.HP = player.MaxHP
