@@ -259,7 +259,9 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 			goodNews += fmt.Sprintf("🥳 Dropou %dx %s \n", qty, itemName)
 		}
 
-		if player.XP >= player.Level*s.cfg.LevelMult {
+		XPLvlUp := 45 * math.Pow(float64(player.Level), 1.65)
+
+		if player.XP >= int(XPLvlUp) {
 			player.Level++
 			player.ATK += int(float64(player.ATK) * player.Class.AtkBonus)
 			player.DEF += int(float64(player.DEF) * player.Class.DefBonus)
