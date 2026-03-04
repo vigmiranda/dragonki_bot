@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 
@@ -46,7 +47,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		player = domain.KiAwakened(player)
 		transform = "ki_awakened"
 	}
-
+	XPLvlUp := 45 * math.Pow(float64(player.Level), 1.65)
 	msg := fmt.Sprintf(
 		genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
 			"🗺️ <b>Local</b>: %s - (Lv %d+)\n"+
@@ -62,7 +63,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		region.MinLevel,
 		player.Level,
 		player.XP,
-		player.Level*80,
+		int(XPLvlUp),
 		player.HP,
 		player.MaxHP,
 		player.Energy,
