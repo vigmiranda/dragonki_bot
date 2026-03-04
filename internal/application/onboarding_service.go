@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -33,9 +32,14 @@ func (s *OnboardingService) HasCompletedOnboarding(
 	player.UserIDTelegram = userIDTelegram
 	player.NameTelegram = nameTelegram
 	player.UserName = userName
-	s.PlayerRepository.Update(player)
+
+	if err := s.PlayerRepository.Update(player); err != nil {
+		return "", err
+	}
+
 	return player.OnboardingStep, nil
 }
+
 func (s *OnboardingService) HandleSelectGender() (view.GameResponse, error) {
 	msg := fmt.Sprintf("Selecione o genero do seu personagem")
 	img := &view.Image{
@@ -54,14 +58,14 @@ func (s *OnboardingService) HandleSelectGender() (view.GameResponse, error) {
 func (s *OnboardingService) SetGender(userID int64, gender string) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
 	player.Gender = gender
 	player.OnboardingStep = "CHOOSING_NAME"
-	err = s.PlayerRepository.Update(player)
-	if err != nil {
-		log.Fatal(err)
+
+	if err := s.PlayerRepository.Update(player); err != nil {
+		return view.GameResponse{}, err
 	}
 
 	msg := fmt.Sprintf("✍️ Ótima escolha!\n\nAgora digite o nome do seu personagem:")
@@ -82,8 +86,9 @@ func (s *OnboardingService) SetGender(userID int64, gender string) (view.GameRes
 func (s *OnboardingService) SetName(userID int64, name string) error {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
 	player.Name = name
 	player.OnboardingStep = "DONE"
 

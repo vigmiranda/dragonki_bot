@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 
@@ -45,16 +44,21 @@ func (s ExchangeService) Open() (view.GameResponse, error) {
 func (s ExchangeService) Convert(userID int64, params map[string]string) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
-	amountConvertStr, _ := params["amountConvert"]
+
+	amountConvertStr, ok := params["amountConvert"]
+	if !ok || amountConvertStr == "" {
+		return view.GameResponse{}, fmt.Errorf("missing param amountConvert")
+	}
 	amountConvert, err := strconv.Atoi(amountConvertStr)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
+
 	kiCrystalsConvert, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_CONVERT"))
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
 	msg := fmt.Sprintf(
@@ -65,7 +69,10 @@ func (s ExchangeService) Convert(userID int64, params map[string]string) (view.G
 	if player.KiCrystals >= amountConvert {
 		player.KiCrystals -= amountConvert
 		player.Gold += amountConvert * kiCrystalsConvert
-		err = s.PlayerRepository.Update(player)
+
+		if err := s.PlayerRepository.Update(player); err != nil {
+			return view.GameResponse{}, err
+		}
 
 		msg = fmt.Sprintf(
 			"💠 Casa de Câmbio de DragonKi 💠\n\n"+
@@ -75,8 +82,8 @@ func (s ExchangeService) Convert(userID int64, params map[string]string) (view.G
 			player.Gold,
 			player.KiCrystals,
 		)
-
 	}
+
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/npcs/mestre_trikan.png"),

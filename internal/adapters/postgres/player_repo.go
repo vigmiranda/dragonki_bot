@@ -42,7 +42,6 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 		return nil, err
 	}
 
-	// 🆕 NOVA struct (não reutilizar!)
 	newPlayer := domain.Player{
 		UserID:          userID,
 		Name:            "User_" + uuid.New().String()[:6],
@@ -54,6 +53,7 @@ func (r *PlayerPostgresRepo) GetOrCreate(userID int64) (*domain.Player, error) {
 		MaxHP:           100,
 		ATK:             10,
 		DEF:             5,
+		Speed:           5,
 		Energy:          20,
 		MaxEnergy:       20,
 		Gold:            0,
@@ -84,6 +84,7 @@ func (r *PlayerPostgresRepo) Update(p *domain.Player) error {
 		"max_hp":            p.MaxHP,
 		"atk":               p.ATK,
 		"def":               p.DEF,
+		"speed":             p.Speed,
 		"energy":            p.Energy,
 		"max_energy":        p.MaxEnergy,
 		"gold":              p.Gold,

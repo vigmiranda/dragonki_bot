@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 
@@ -134,18 +133,9 @@ func choiceClassMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup 
 }
 
 func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
-	kiCrystalsValue, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_VALUE"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	kiCrystalsConvert, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_CONVERT"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	kiCrystalsMult, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_MULT"))
-	if err != nil {
-		log.Fatal(err)
-	}
+	kiCrystalsValue := getenvIntDefault("KI_CRYSTALS_VALUE", 1)
+	kiCrystalsConvert := getenvIntDefault("KI_CRYSTALS_CONVERT", 1)
+	kiCrystalsMult := getenvIntDefault("KI_CRYSTALS_MULT", 1)
 
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -173,4 +163,16 @@ func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
 		),
 	)
 	return &menu
+}
+
+func getenvIntDefault(key string, def int) int {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return def
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil || v <= 0 {
+		return def
+	}
+	return v
 }

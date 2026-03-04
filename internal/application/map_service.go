@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
@@ -20,13 +19,14 @@ func NewMapService(repo ports.PlayerRepository, regionRepo ports.RegionRepositor
 }
 
 func (s MapService) ListMap(playerID int64) (view.GameResponse, error) {
-	var player, err = s.PlayerRepository.GetOrCreate(playerID)
+	player, err := s.PlayerRepository.GetOrCreate(playerID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
+
 	regions, err := s.RegionRepository.ListByLevel(int64(player.Level))
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
 	msg := fmt.Sprintf(
@@ -36,8 +36,7 @@ func (s MapService) ListMap(playerID int64) (view.GameResponse, error) {
 			"Volcano Lands lvl 35-50 \n" +
 			"Frozen Peaks lvl 50-70 \n" +
 			"Swamp of Shadows lvl 70+" +
-			"\n\n<b>Lugares que você pode explorar!!!</b> \n\n" +
-			"",
+			"\n\n<b>Lugares que você pode explorar!!!</b> \n\n",
 	)
 	img := &view.Image{
 		Type: view.ImageAsset,
@@ -58,27 +57,32 @@ func (s MapService) ListMap(playerID int64) (view.GameResponse, error) {
 }
 
 func (s MapService) ToRegion(playerID int64, params map[string]string) (view.GameResponse, error) {
-	var player, err = s.PlayerRepository.GetOrCreate(playerID)
+	player, err := s.PlayerRepository.GetOrCreate(playerID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
-	regionIDStr, _ := params["regionID"]
+
+	regionIDStr, ok := params["regionID"]
+	if !ok || regionIDStr == "" {
+		return view.GameResponse{}, fmt.Errorf("missing param regionID")
+	}
+
 	regionId, err := strconv.ParseInt(regionIDStr, 10, 64)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
 	player.RegionID = regionId
-	err = s.PlayerRepository.Update(player)
+	if err := s.PlayerRepository.Update(player); err != nil {
+		return view.GameResponse{}, err
+	}
 
-	var region, _ = s.RegionRepository.GetByID(regionId)
-
+	region, err := s.RegionRepository.GetByID(regionId)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
 
 	msg, img := getMsgAndImgByRegion(region)
-
 	menu := "MAIN_MENU"
 
 	viewResponse := view.GameResponse{

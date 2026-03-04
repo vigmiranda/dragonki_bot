@@ -241,7 +241,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		atkTotalMonster += atkMonster
 	}
 
-	xpReceived := randBetweenInclusive(s.rng, monster.MinXP, monster.MaxXP)
+	xpReceived := CalculateXPReward(player.Level, int(monster.Level)) //randBetweenInclusive(s.rng, monster.MinXP, monster.MaxXP)
 	moneyReceived := randBetweenInclusive(s.rng, monster.MinMoney, monster.MaxMoney)
 
 	if player.HP > 0 {
@@ -385,6 +385,39 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	}
 
 	return viewResponse, nil
+}
+
+func CalculateXPReward(playerLevel, monsterLevel int) int {
+	xpBase := 25 * math.Pow(float64(monsterLevel), 1.12)
+
+	levelDiff := monsterLevel - playerLevel
+
+	multiplier := 1.0
+
+	switch {
+	case levelDiff <= -5:
+		multiplier = 0.25
+	case levelDiff <= -3:
+		multiplier = 0.5
+	case levelDiff <= -1:
+		multiplier = 0.8
+	case levelDiff == 0:
+		multiplier = 1.0
+	case levelDiff <= 2:
+		multiplier = 1.15
+	case levelDiff <= 4:
+		multiplier = 1.3
+	default:
+		multiplier = 1.5
+
+	}
+	xpReward := int(xpBase * multiplier)
+
+	if xpReward < 5 {
+		xpReward = 5
+	}
+
+	return xpReward
 }
 
 func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.Region, player *domain.Player) (view.GameResponse, error) {

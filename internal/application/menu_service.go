@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -21,20 +20,16 @@ func NewMenuService(repo ports.PlayerRepository, regionRepo ports.RegionReposito
 func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 	var player, err = s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 	//var playersOnline, _ = s.PlayerRepository.CountOnlineLast15Min()
 	region, err := s.RegionRepository.GetByID(player.RegionID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
-	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
-		player.RegenEnergy()
-	}
-	player.SetTransformBase()
-	err = s.PlayerRepository.Update(player)
-	if err != nil {
-		log.Fatal(err)
+
+	if err := applyPassivePlayerUpdates(s.PlayerRepository, player); err != nil {
+		return view.GameResponse{}, err
 	}
 	//multiPlayersOnlineDB := os.Getenv("MULT_PLAYERS")
 	//multiPlayersOnline, _ := strconv.Atoi(multiPlayersOnlineDB)

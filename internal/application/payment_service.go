@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 
@@ -40,21 +39,22 @@ func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Paym
 }
 
 func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
-
 	amount := 1
 
-	amountEnv, err := strconv.ParseInt(os.Getenv("KI_CRYSTALS_VALUE"), 10, 64)
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		amount = int(amountEnv)
+	if raw := os.Getenv("KI_CRYSTALS_VALUE"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			amount = parsed
+		} else if err != nil {
+			return view.GameResponse{}, err
+		}
 	}
-	log.Println(fmt.Sprintf("Valor do KiDragons: %d Atual: %d", amountEnv, amount))
+
 	payment, qrCode, err := s.CreatePix(userID, float64(amount))
-	msg := fmt.Sprintf(
-		"%s",
-		payment.QRCode,
-	)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+
+	msg := fmt.Sprintf("%s", payment.QRCode)
 
 	viewResponse := view.GameResponse{
 		Text: msg,
@@ -69,21 +69,28 @@ func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
 }
 
 func (s *PaymentService) ConfirmPayment(paymentID int64) error {
-	kiCrystalsMult, err := strconv.Atoi(os.Getenv("KI_CRYSTALS_MULT"))
-	if err != nil {
-		log.Fatal(err)
+	kiCrystalsMult := 1
+
+	if raw := os.Getenv("KI_CRYSTALS_MULT"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			return err
+		}
+		if parsed > 0 {
+			kiCrystalsMult = parsed
+		}
 	}
+
 	payment, err := s.paymentRepository.FindByPartnerID(paymentID)
 	if err != nil {
 		return err
 	}
-	log.Println("kiCrystalsMult -> ", kiCrystalsMult)
+
 	if payment.Status == domain.PaymentApproved {
 		return nil
 	}
 
 	payment.Status = domain.PaymentApproved
-	log.Println("UpdateStatus -- Atualizando ki crystals -> ", paymentID)
 	if err := s.paymentRepository.UpdateStatus(payment.ID, payment.Status); err != nil {
 		return err
 	}
@@ -94,6 +101,5 @@ func (s *PaymentService) ConfirmPayment(paymentID int64) error {
 	}
 
 	player.KiCrystals += int(payment.Amount) * kiCrystalsMult
-	log.Println("------ Player name: ", player.Name, "Update(player) -- Atualizando ki crystals => ", int(payment.Amount)*kiCrystalsMult, player.KiCrystals)
 	return s.playersRepository.Update(player)
 }

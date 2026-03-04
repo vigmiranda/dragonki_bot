@@ -68,7 +68,7 @@ func (s *TransformService) ListTransform(playerID int64) (view.GameResponse, err
 func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
 	//todo retirar daqui
@@ -77,7 +77,7 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 	}
 	err = s.PlayerRepository.Update(player)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 	// ---------------------
 
