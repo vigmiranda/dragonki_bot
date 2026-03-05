@@ -7,14 +7,14 @@ func (h *Handler) handleTraining(action string, userID int64) InputTelegram {
 	case "to_training":
 		gameResp, err := h.transformService.Training()
 		if err != nil {
-			fmt.Printf("to_training -> ", err)
+			fmt.Printf("to_training -> %v\\n", err)
 			break
 		}
 		return ToTelegramResponse(gameResp, true, "action_transform")
 	case "list_transform":
 		gameResp, err := h.transformService.ListTransform(userID)
 		if err != nil {
-			fmt.Printf("list_transform -> ", err)
+			fmt.Printf("list_transform -> %v\\n", err)
 			break
 		}
 		return ToTelegramResponse(gameResp, true, "action_transform")
@@ -22,7 +22,7 @@ func (h *Handler) handleTraining(action string, userID int64) InputTelegram {
 	case "action_transform":
 		gameResp, err := h.transformService.Transform(userID)
 		if err != nil {
-			fmt.Printf("action_transform -> ", err)
+			fmt.Printf("action_transform -> %v\\n", err)
 			break
 		}
 		return ToTelegramResponse(gameResp, true, "action_transform")

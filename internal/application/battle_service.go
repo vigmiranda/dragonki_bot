@@ -162,16 +162,12 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		return view.GameResponse{}, err
 	}
 
-	monsterIDStr, ok := params["monsterID"]
-	if !ok || monsterIDStr == "" {
-		return view.GameResponse{}, fmt.Errorf("missing param monsterID")
-	}
-	monsterId, err := strconv.ParseInt(monsterIDStr, 10, 64)
+	monsterID, err := parseMonsterIDParam(params)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
 
-	monster, err := s.monsterRepo.GetByMonsterID(monsterId)
+	monster, err := s.monsterRepo.GetByMonsterID(monsterID)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
@@ -185,182 +181,29 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		return s.AurumKarunLuck(monster, region, player)
 	}
 
-	msg := "💀 Ocorreu um erro ao fim da batalha!!!"
-	img := &view.Image{
-		Type: view.ImageAsset,
-		Path: "assets/error.png",
-	}
-	menu := menuMain
+	state := initBattleState(player, monster)
+	s.executeCombat(player, monster, state)
 
-	resultBattle := "LOSE"
-
-	monsterHP := monster.HP
-	if player.Energy > 0 {
-		player.Energy--
-	}
-
-	atkTransform := 0
-	defTransform := 0
-	skin := ""
-	oldXP := player.XP
-	oldGold := player.Gold
-
-	if player.Form == formKiAwakened {
-		atkTransform = int(float64(player.ATK) * 0.2)
-		defTransform = int(float64(player.ATK) * 0.2)
-		skin = "ki_awakened_"
-	}
-
-	atkTotalPlayer := 0
-	atkTotalMonster := 0
-
-	baseChange := float64(player.Speed) / (float64(player.Speed) + 100) * 35
-	if baseChange > 35 {
-		baseChange = 35
-	}
-	player.DodgeAccumulator += baseChange
-
-	// lógica de dano (mantive igual, só usando rng injetado)
-	for monsterHP > 0 && player.HP > 0 {
-		roll := s.rng.Float64() * 100
-
-		if roll < player.DodgeAccumulator {
-			player.DodgeAccumulator = 0
-			continue
-		}
-
-		monsterHP -= player.ATK + atkTransform
-		atkTotalPlayer += player.ATK + atkTransform
-
-		atkMonster := s.rng.Intn(monster.ATK+(monster.ATK/2)+1) - (player.DEF + defTransform)
-		if atkMonster < 0 {
-			atkMonster = 1
-		}
-
-		player.HP -= atkMonster
-		atkTotalMonster += atkMonster
-	}
-
-	xpReceived := clamp(CalculateXPReward(player.Level, int(monster.Level)), monster.MinXP, monster.MaxXP) //randBetweenInclusive(s.rng, monster.MinXP, monster.MaxXP)
+	xpReceived := clamp(CalculateXPReward(player.Level, int(monster.Level)), monster.MinXP, monster.MaxXP)
 	moneyReceived := randBetweenInclusive(s.rng, monster.MinMoney, monster.MaxMoney)
 
-	if player.HP > 0 {
-		goodNews := ""
-
-		itemName, qty, dropErr := s.HandleDrops(monster.MonsterID, int64(player.ID))
-		if dropErr != nil {
-			return view.GameResponse{}, dropErr
-		}
-
-		player.XP += xpReceived
-		player.Gold += moneyReceived
-
-		if qty > 0 {
-			goodNews += fmt.Sprintf("🥳 Dropou %dx %s \n", qty, itemName)
-		}
-
-		XPLvlUp := 45 * math.Pow(float64(player.Level), 1.65)
-
-		if player.XP >= int(XPLvlUp) {
-			player.Level++
-			player.ATK += int(float64(player.ATK) * player.Class.AtkBonus)
-			player.DEF += int(float64(player.DEF) * player.Class.DefBonus)
-			player.MaxHP += int(float64(player.MaxHP) * player.Class.HpBonus)
-			player.Speed += int(float64(player.Speed) * player.Class.SpeedBonus)
-			player.Energy = player.MaxEnergy
-			player.XP = 0
-			player.FormBattlesLeft = 0
-			player.Form = formBase
-			player.HP = player.MaxHP
-			goodNews += "⬆️ <b>Subiu de nível!</b> \n"
-			xpReceived = int(XPLvlUp) - oldXP
-		}
-
-		if player.FormBattlesLeft > 0 {
-			player.FormBattlesLeft--
-		}
-
-		resultBattle = "WIN"
-		msg = fmt.Sprintf(
-			"🏆 Vitória! %s \n"+
-				"%s"+
-				"Você recebeu de dano: %d\n"+
-				"⚔️ +%d XP\n"+
-				"💰 +%d Gold\n"+
-				"❤️ HP: %d/%d\n"+
-				"⚡️ Energia: %d/%d\n"+
-				"💪 Level: %d\n",
-			player.Name,
-			goodNews,
-			atkTotalMonster,
-			xpReceived,
-			moneyReceived,
-			player.HP,
-			player.MaxHP,
-			player.Energy,
-			player.MaxEnergy,
-			player.Level,
-		)
-
-		img.Path = fmt.Sprintf(
-			"assets/skins/%s/%s/%sbattle_win.png",
-			domain.ConvertLowCase(player.Gender),
-			player.Class.Skin,
-			skin,
-		)
-	} else {
-		if player.FormBattlesLeft > 0 {
-			player.FormBattlesLeft = 0
-			player.Form = formBase
-		}
-
-		nerf := float64(region.Nerf) / 100.0
-		xpReduction := math.Round(float64(player.XP) * nerf)
-		goldReduction := math.Round(float64(player.Gold) * nerf)
-
-		player.XP -= int(xpReduction)
-		player.Gold -= int(goldReduction)
-		player.HP = 1
-		player.Form = formBase
-
-		msg = fmt.Sprintf(
-			"💀 Derrota! %s\n"+
-				"⚔️ -%d%% de XP = %d\n"+
-				"💰 -%d%% de Gold = %d\n"+
-				"⚡️ Energia: %d/%d\n"+
-				"💪 Level: %d\n",
-			player.Name,
-			region.Nerf,
-			oldXP-player.XP,
-			region.Nerf,
-			oldGold-player.Gold,
-			player.Energy,
-			player.MaxEnergy,
-			player.Level,
-		)
-
-		img.Path = fmt.Sprintf(
-			"assets/skins/%s/%sbattle_loss.png",
-			domain.ConvertLowCase(player.Gender),
-			player.Class.Skin,
-		)
-
-		xpReceived = player.XP - oldXP
-		moneyReceived = player.Gold - oldGold
+	outcome, err := s.resolveBattleOutcome(player, monster, region, state, xpReceived, moneyReceived)
+	if err != nil {
+		return view.GameResponse{}, err
 	}
 
 	battleLog := &domain.BattleLog{
 		PlayerID:           int64(player.ID),
 		MonsterID:          monster.MonsterID,
-		Result:             resultBattle,
-		OldXP:              oldXP,
-		XPGained:           xpReceived,
+		Result:             outcome.resultBattle,
+		OldXP:              state.oldXP,
+		XPGained:           outcome.xpReceived,
 		XPCurrent:          player.XP,
-		OldGold:            oldGold,
-		GoldGained:         moneyReceived,
+		OldGold:            state.oldGold,
+		GoldGained:         outcome.moneyReceived,
 		GoldCurrent:        player.Gold,
-		PlayerDamageTotal:  atkTotalPlayer,
-		MonsterDamageTotal: atkTotalMonster,
+		PlayerDamageTotal:  state.atkTotalPlayer,
+		MonsterDamageTotal: state.atkTotalMonster,
 		CreatedAt:          time.Now(),
 	}
 
@@ -372,6 +215,9 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		return view.GameResponse{}, err
 	}
 
+	msg := outcome.msg
+	img := outcome.img
+	menu := outcome.menu
 	menuParams := make(map[string]any)
 	if (player.Level == 15 || player.Level == 35 || player.Level == 50) && player.XP == 0 {
 		msg, img, menu, menuParams, err = s.ChangeClass(player)
@@ -390,6 +236,224 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	return viewResponse, nil
 }
 
+type battleState struct {
+	oldXP           int
+	oldGold         int
+	monsterHP       int
+	atkTransform    int
+	defTransform    int
+	skin            string
+	atkTotalPlayer  int
+	atkTotalMonster int
+}
+
+type battleOutcome struct {
+	msg           string
+	img           *view.Image
+	menu          string
+	resultBattle  string
+	xpReceived    int
+	moneyReceived int
+}
+
+func parseMonsterIDParam(params map[string]string) (int64, error) {
+	monsterIDStr, ok := params["monsterID"]
+	if !ok || monsterIDStr == "" {
+		return 0, fmt.Errorf("missing param monsterID")
+	}
+	return strconv.ParseInt(monsterIDStr, 10, 64)
+}
+
+func initBattleState(player *domain.Player, monster *domain.Monster) *battleState {
+	state := &battleState{
+		oldXP:     player.XP,
+		oldGold:   player.Gold,
+		monsterHP: monster.HP,
+	}
+
+	if player.Energy > 0 {
+		player.Energy--
+	}
+
+	if player.Form == formKiAwakened {
+		state.atkTransform = int(float64(player.ATK) * 0.2)
+		state.defTransform = int(float64(player.ATK) * 0.2)
+		state.skin = "ki_awakened_"
+	}
+
+	baseChange := float64(player.Speed) / (float64(player.Speed) + 100) * 35
+	if baseChange > 35 {
+		baseChange = 35
+	}
+	player.DodgeAccumulator += baseChange
+
+	return state
+}
+
+func (s *BattleService) executeCombat(player *domain.Player, monster *domain.Monster, state *battleState) {
+	for state.monsterHP > 0 && player.HP > 0 {
+		roll := s.rng.Float64() * 100
+
+		if roll < player.DodgeAccumulator {
+			player.DodgeAccumulator = 0
+			continue
+		}
+
+		damageToMonster := player.ATK + state.atkTransform
+		state.monsterHP -= damageToMonster
+		state.atkTotalPlayer += damageToMonster
+
+		atkMonster := s.rng.Intn(monster.ATK+(monster.ATK/2)+1) - (player.DEF + state.defTransform)
+		if atkMonster < 0 {
+			atkMonster = 1
+		}
+
+		player.HP -= atkMonster
+		state.atkTotalMonster += atkMonster
+	}
+}
+
+func (s *BattleService) resolveBattleOutcome(
+	player *domain.Player,
+	monster *domain.Monster,
+	region *domain.Region,
+	state *battleState,
+	xpReceived int,
+	moneyReceived int,
+) (*battleOutcome, error) {
+	if player.HP > 0 {
+		return s.resolveWinOutcome(player, monster, state, xpReceived, moneyReceived)
+	}
+	return s.resolveLoseOutcome(player, region, state), nil
+}
+
+func (s *BattleService) resolveWinOutcome(
+	player *domain.Player,
+	monster *domain.Monster,
+	state *battleState,
+	xpReceived int,
+	moneyReceived int,
+) (*battleOutcome, error) {
+	goodNews := ""
+
+	itemName, qty, dropErr := s.HandleDrops(monster.MonsterID, int64(player.ID))
+	if dropErr != nil {
+		return nil, dropErr
+	}
+
+	player.XP += xpReceived
+	player.Gold += moneyReceived
+
+	if qty > 0 {
+		goodNews += fmt.Sprintf("🥳 Dropou %dx %s \n", qty, itemName)
+	}
+
+	XPLvlUp := 45 * math.Pow(float64(player.Level), 1.65)
+	if player.XP >= int(XPLvlUp) {
+		player.Level++
+		player.ATK += int(float64(player.ATK) * player.Class.AtkBonus)
+		player.DEF += int(float64(player.DEF) * player.Class.DefBonus)
+		player.MaxHP += int(float64(player.MaxHP) * player.Class.HpBonus)
+		player.Speed += int(float64(player.Speed) * player.Class.SpeedBonus)
+		player.Energy = player.MaxEnergy
+		player.XP = 0
+		player.FormBattlesLeft = 0
+		player.Form = formBase
+		player.HP = player.MaxHP
+		goodNews += "⬆️ <b>Subiu de nível!</b> \n"
+		xpReceived = int(XPLvlUp) - state.oldXP
+	}
+
+	if player.FormBattlesLeft > 0 {
+		player.FormBattlesLeft--
+	}
+
+	msg := fmt.Sprintf(
+		"🏆 Vitória! %s \n"+
+			"%s"+
+			"Você recebeu de dano: %d\n"+
+			"⚔️ +%d XP\n"+
+			"💰 +%d Gold\n"+
+			"❤️ HP: %d/%d\n"+
+			"⚡️ Energia: %d/%d\n"+
+			"💪 Level: %d\n",
+		player.Name,
+		goodNews,
+		state.atkTotalMonster,
+		xpReceived,
+		moneyReceived,
+		player.HP,
+		player.MaxHP,
+		player.Energy,
+		player.MaxEnergy,
+		player.Level,
+	)
+
+	return &battleOutcome{
+		msg: msg,
+		img: &view.Image{
+			Type: view.ImageAsset,
+			Path: fmt.Sprintf(
+				"assets/skins/%s/%s/%sbattle_win.png",
+				domain.ConvertLowCase(player.Gender),
+				player.Class.Skin,
+				state.skin,
+			),
+		},
+		menu:          menuMain,
+		resultBattle:  "WIN",
+		xpReceived:    xpReceived,
+		moneyReceived: moneyReceived,
+	}, nil
+}
+
+func (s *BattleService) resolveLoseOutcome(player *domain.Player, region *domain.Region, state *battleState) *battleOutcome {
+	if player.FormBattlesLeft > 0 {
+		player.FormBattlesLeft = 0
+		player.Form = formBase
+	}
+
+	nerf := float64(region.Nerf) / 100.0
+	xpReduction := math.Round(float64(player.XP) * nerf)
+	goldReduction := math.Round(float64(player.Gold) * nerf)
+
+	player.XP -= int(xpReduction)
+	player.Gold -= int(goldReduction)
+	player.HP = 1
+	player.Form = formBase
+
+	msg := fmt.Sprintf(
+		"💀 Derrota! %s\n"+
+			"⚔️ -%d%% de XP = %d\n"+
+			"💰 -%d%% de Gold = %d\n"+
+			"⚡️ Energia: %d/%d\n"+
+			"💪 Level: %d\n",
+		player.Name,
+		region.Nerf,
+		state.oldXP-player.XP,
+		region.Nerf,
+		state.oldGold-player.Gold,
+		player.Energy,
+		player.MaxEnergy,
+		player.Level,
+	)
+
+	return &battleOutcome{
+		msg: msg,
+		img: &view.Image{
+			Type: view.ImageAsset,
+			Path: fmt.Sprintf(
+				"assets/skins/%s/%sbattle_loss.png",
+				domain.ConvertLowCase(player.Gender),
+				player.Class.Skin,
+			),
+		},
+		menu:          menuMain,
+		resultBattle:  "LOSE",
+		xpReceived:    player.XP - state.oldXP,
+		moneyReceived: player.Gold - state.oldGold,
+	}
+}
 func CalculateXPReward(playerLevel, monsterLevel int) int {
 	xpBase := 25 * math.Pow(float64(monsterLevel), 1.12)
 
@@ -687,7 +751,7 @@ func (s *BattleService) HandleDrops(monsterID int, playerID int64) (string, int,
 				return "", 0, err
 			}
 
-			// Mantive o comportamento: se dropar mais de um item na mesma luta, devolve o "último" que caiu.
+			// Mantive o comportamento: se dropar mais de um item na mesma luta, devolve o "Ãºltimo" que caiu.
 			itemQty = qty
 			itemName = drop.Item.Name
 		}

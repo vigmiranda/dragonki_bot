@@ -54,3 +54,7 @@ go.work.sum
 /.idea/dataSources/b24712b4-63d2-4d5e-88e5-55a816bf14e4/storage_v2/_src_/schema/main.uQUzAA.meta
 /.idea/workspace.xml
 /.idea/
+/$out
+/coverage
+/tmp
+/docs/gorm
