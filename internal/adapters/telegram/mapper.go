@@ -2,6 +2,7 @@ package telegram
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
 	"github.com/vigmiranda/dragonki/internal/application/view"
 )
 
@@ -21,6 +22,12 @@ func ToTelegramResponse(
 			photo = tgbotapi.FileBytes{
 				Name:  resp.Image.Name,
 				Bytes: resp.Image.Data,
+			}
+
+		case view.ImageBase64:
+			photo = tgbotapi.FileBytes{
+				Name:  resp.Image.Name,
+				Bytes: utils.DecodeBase64(resp.Image.Base64),
 			}
 		}
 	}

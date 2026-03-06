@@ -1,9 +1,6 @@
 package domain
 
 import (
-	"log"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -83,24 +80,11 @@ func ConvertLowCase(text string) string {
 	return strings.ToLower(text)
 }
 
-func (p *Player) RegenEnergy() {
+func (p *Player) RegenEnergy(timeRecovery time.Duration) {
 	now := time.Now().UTC()
 
-	// 🔹 fallback seguro
-	recoveryStr := os.Getenv("ENERGY_REGEN_TIME")
-	if recoveryStr == "" {
-		recoveryStr = "10m"
-	}
-
-	// 🔹 se vier "10", assume minutos
-	if _, err := strconv.Atoi(recoveryStr); err == nil {
-		recoveryStr = recoveryStr + "m"
-	}
-
-	timeRecovery, err := time.ParseDuration(recoveryStr)
-	if err != nil {
-		log.Println("⚠️ ENERGY_REGEN_TIME inválido, usando default 10m:", err)
-		timeRecovery = 10 * time.Minute
+	if timeRecovery <= 0 {
+		return
 	}
 
 	elapsed := now.Sub(p.LastEnergyAt)

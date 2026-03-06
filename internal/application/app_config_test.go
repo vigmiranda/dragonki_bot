@@ -3,6 +3,7 @@ package application
 import (
 	"sync"
 	"testing"
+	"time"
 )
 
 func resetAppConfigForTest() {
@@ -18,6 +19,9 @@ func TestGetAppConfig_Default(t *testing.T) {
 	if got.EnergyRegenTime != "10m" {
 		t.Fatalf("expected default 10m, got %q", got.EnergyRegenTime)
 	}
+	if got.EnergyRegenDuration != 10*time.Minute {
+		t.Fatalf("expected default duration 10m, got %s", got.EnergyRegenDuration)
+	}
 }
 
 func TestGetAppConfig_FromEnv(t *testing.T) {
@@ -27,6 +31,9 @@ func TestGetAppConfig_FromEnv(t *testing.T) {
 	got := getAppConfig()
 	if got.EnergyRegenTime != "7m" {
 		t.Fatalf("expected 7m, got %q", got.EnergyRegenTime)
+	}
+	if got.EnergyRegenDuration != 7*time.Minute {
+		t.Fatalf("expected duration 7m, got %s", got.EnergyRegenDuration)
 	}
 }
 
@@ -40,5 +47,24 @@ func TestGetAppConfig_OnceBehavior(t *testing.T) {
 
 	if first.EnergyRegenTime != "9m" || second.EnergyRegenTime != "9m" {
 		t.Fatalf("expected once-cached 9m, got first=%q second=%q", first.EnergyRegenTime, second.EnergyRegenTime)
+	}
+	if first.EnergyRegenDuration != 9*time.Minute || second.EnergyRegenDuration != 9*time.Minute {
+		t.Fatalf("expected once-cached duration 9m")
+	}
+}
+
+func TestGetAppConfig_NumericMinutesAndInvalidFallback(t *testing.T) {
+	resetAppConfigForTest()
+	t.Setenv("ENERGY_REGEN_TIME", "5")
+	got := getAppConfig()
+	if got.EnergyRegenTime != "5m" || got.EnergyRegenDuration != 5*time.Minute {
+		t.Fatalf("expected 5m/5m, got %q/%s", got.EnergyRegenTime, got.EnergyRegenDuration)
+	}
+
+	resetAppConfigForTest()
+	t.Setenv("ENERGY_REGEN_TIME", "invalid")
+	got = getAppConfig()
+	if got.EnergyRegenTime != "10m" || got.EnergyRegenDuration != 10*time.Minute {
+		t.Fatalf("expected fallback 10m/10m, got %q/%s", got.EnergyRegenTime, got.EnergyRegenDuration)
 	}
 }

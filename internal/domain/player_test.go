@@ -88,7 +88,6 @@ func TestConvertLowCase(t *testing.T) {
 }
 
 func TestPlayer_RegenEnergy_NoRecoveryWhenElapsedTooSmall(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "10m")
 	last := time.Now().UTC().Add(-1 * time.Minute)
 	p := &Player{
 		Energy:       1,
@@ -98,7 +97,7 @@ func TestPlayer_RegenEnergy_NoRecoveryWhenElapsedTooSmall(t *testing.T) {
 		LastEnergyAt: last,
 	}
 
-	p.RegenEnergy()
+	p.RegenEnergy(10 * time.Minute)
 	if p.Energy != 1 || p.HP != 5 {
 		t.Fatalf("expected no changes, got energy=%d hp=%d", p.Energy, p.HP)
 	}
@@ -108,7 +107,6 @@ func TestPlayer_RegenEnergy_NoRecoveryWhenElapsedTooSmall(t *testing.T) {
 }
 
 func TestPlayer_RegenEnergy_DefaultEnvAndTimeAdvance(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "")
 	last := time.Now().UTC().Add(-25 * time.Minute)
 	p := &Player{
 		Energy:       1,
@@ -118,7 +116,7 @@ func TestPlayer_RegenEnergy_DefaultEnvAndTimeAdvance(t *testing.T) {
 		LastEnergyAt: last,
 	}
 
-	p.RegenEnergy()
+	p.RegenEnergy(10 * time.Minute)
 	if p.Energy != 3 {
 		t.Fatalf("expected energy 3, got %d", p.Energy)
 	}
@@ -128,8 +126,7 @@ func TestPlayer_RegenEnergy_DefaultEnvAndTimeAdvance(t *testing.T) {
 	}
 }
 
-func TestPlayer_RegenEnergy_ParsesNumericEnvAsMinutes(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "5")
+func TestPlayer_RegenEnergy_UsesConfiguredDuration(t *testing.T) {
 	last := time.Now().UTC().Add(-11 * time.Minute)
 	p := &Player{
 		Energy:       0,
@@ -137,14 +134,13 @@ func TestPlayer_RegenEnergy_ParsesNumericEnvAsMinutes(t *testing.T) {
 		LastEnergyAt: last,
 	}
 
-	p.RegenEnergy()
+	p.RegenEnergy(5 * time.Minute)
 	if p.Energy != 2 {
 		t.Fatalf("expected energy 2, got %d", p.Energy)
 	}
 }
 
-func TestPlayer_RegenEnergy_InvalidEnvFallsBackTo10m(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "invalid")
+func TestPlayer_RegenEnergy_IgnoreInvalidDuration(t *testing.T) {
 	last := time.Now().UTC().Add(-21 * time.Minute)
 	p := &Player{
 		Energy:       0,
@@ -152,29 +148,26 @@ func TestPlayer_RegenEnergy_InvalidEnvFallsBackTo10m(t *testing.T) {
 		LastEnergyAt: last,
 	}
 
-	p.RegenEnergy()
-	if p.Energy != 2 {
-		t.Fatalf("expected energy 2 with fallback 10m, got %d", p.Energy)
+	p.RegenEnergy(0)
+	if p.Energy != 0 {
+		t.Fatalf("expected no energy change for invalid duration, got %d", p.Energy)
 	}
 }
 
 func TestPlayer_RegenEnergy_CapsEnergyAtMax(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "10m")
 	p := &Player{
 		Energy:       9,
 		MaxEnergy:    10,
 		LastEnergyAt: time.Now().UTC().Add(-30 * time.Minute),
 	}
 
-	p.RegenEnergy()
+	p.RegenEnergy(10 * time.Minute)
 	if p.Energy != 10 {
 		t.Fatalf("expected capped energy 10, got %d", p.Energy)
 	}
 }
 
 func TestPlayer_RegenEnergy_RegensHPOnlyWhenOldEnergyWasFull(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "10m")
-
 	pFull := &Player{
 		Energy:       10,
 		MaxEnergy:    10,
@@ -182,7 +175,7 @@ func TestPlayer_RegenEnergy_RegensHPOnlyWhenOldEnergyWasFull(t *testing.T) {
 		MaxHP:        10,
 		LastEnergyAt: time.Now().UTC().Add(-20 * time.Minute),
 	}
-	pFull.RegenEnergy()
+	pFull.RegenEnergy(10 * time.Minute)
 	if pFull.HP != 7 {
 		t.Fatalf("expected hp regen to 7, got %d", pFull.HP)
 	}
@@ -194,7 +187,7 @@ func TestPlayer_RegenEnergy_RegensHPOnlyWhenOldEnergyWasFull(t *testing.T) {
 		MaxHP:        10,
 		LastEnergyAt: time.Now().UTC().Add(-20 * time.Minute),
 	}
-	pNotFull.RegenEnergy()
+	pNotFull.RegenEnergy(10 * time.Minute)
 	if pNotFull.HP != 5 {
 		t.Fatalf("expected no hp regen when energy was not full, got %d", pNotFull.HP)
 	}

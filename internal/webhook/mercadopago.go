@@ -5,15 +5,17 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/vigmiranda/dragonki/internal/application"
 )
 
-type MercadoPagoWebhook struct {
-	paymentService *application.PaymentService
+type paymentConfirmer interface {
+	ConfirmPayment(paymentID int64) error
 }
 
-func NewMercadoPagoWebhook(paymentService *application.PaymentService) *MercadoPagoWebhook {
+type MercadoPagoWebhook struct {
+	paymentService paymentConfirmer
+}
+
+func NewMercadoPagoWebhook(paymentService paymentConfirmer) *MercadoPagoWebhook {
 	return &MercadoPagoWebhook{paymentService: paymentService}
 }
 

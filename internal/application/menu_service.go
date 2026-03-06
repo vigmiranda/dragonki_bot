@@ -11,13 +11,16 @@ import (
 type MenuService struct {
 	PlayerRepository ports.PlayerRepository
 	RegionRepository ports.RegionRepository
+	cfg              appConfig
 }
 
 func NewMenuService(repo ports.PlayerRepository, regionRepo ports.RegionRepository) *MenuService {
-	return &MenuService{PlayerRepository: repo, RegionRepository: regionRepo}
+	return &MenuService{PlayerRepository: repo, RegionRepository: regionRepo, cfg: getAppConfig()}
 }
 
 func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
+	cfg := resolveAppConfig(s.cfg)
+
 	var player, err = s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		return view.GameResponse{}, err
@@ -28,7 +31,7 @@ func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 		return view.GameResponse{}, err
 	}
 
-	if err := applyPassivePlayerUpdates(s.PlayerRepository, player); err != nil {
+	if err := applyPassivePlayerUpdates(s.PlayerRepository, player, cfg.EnergyRegenDuration); err != nil {
 		return view.GameResponse{}, err
 	}
 	//multiPlayersOnlineDB := os.Getenv("MULT_PLAYERS")

@@ -21,13 +21,15 @@ func NewEnergyService(repo ports.PlayerRepository) *EnergyService {
 }
 
 func (s *EnergyService) Energy(userID int64) (view.GameResponse, error) {
+	cfg := resolveAppConfig(s.cfg)
+
 	var player, err = s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
 
 	//todo remover daqui
-	if err := applyPassivePlayerUpdates(s.PlayerRepository, player); err != nil {
+	if err := applyPassivePlayerUpdates(s.PlayerRepository, player, cfg.EnergyRegenDuration); err != nil {
 		return view.GameResponse{}, err
 	}
 	// --------
@@ -57,13 +59,15 @@ func (s *EnergyService) Energy(userID int64) (view.GameResponse, error) {
 	return viewResponse, nil
 }
 func (s *EnergyService) Rest(userID int64) (view.GameResponse, error) {
+	cfg := resolveAppConfig(s.cfg)
+
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
 
 	//todo remover daqui
-	if err := applyPassivePlayerUpdates(s.PlayerRepository, player); err != nil {
+	if err := applyPassivePlayerUpdates(s.PlayerRepository, player, cfg.EnergyRegenDuration); err != nil {
 		return view.GameResponse{}, err
 	}
 	// --------
@@ -71,7 +75,7 @@ func (s *EnergyService) Rest(userID int64) (view.GameResponse, error) {
 	msg := fmt.Sprintf(
 		"Você nao tem energia\n"+
 			"Aguarde %s!! e volte aqui para descansar!!\n",
-		s.cfg.EnergyRegenTime)
+		cfg.EnergyRegenTime)
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/npcs/sir_soneca.png"),
@@ -112,13 +116,15 @@ func (s *EnergyService) Rest(userID int64) (view.GameResponse, error) {
 
 }
 func (s *EnergyService) Sleep(userID int64) (view.GameResponse, error) {
+	cfg := resolveAppConfig(s.cfg)
+
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
 
 	//todo remover daqui
-	if err := applyPassivePlayerUpdates(s.PlayerRepository, player); err != nil {
+	if err := applyPassivePlayerUpdates(s.PlayerRepository, player, cfg.EnergyRegenDuration); err != nil {
 		return view.GameResponse{}, err
 	}
 	// --------

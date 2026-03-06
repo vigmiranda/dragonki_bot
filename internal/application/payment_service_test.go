@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
@@ -26,14 +27,11 @@ func (f *fakePaymentGateway) CreatePix(playerID int64, amount float64) (*domain.
 
 type fakePaymentRepo struct {
 	saveFn            func(payment *domain.Payment) error
-	findByPartnerIDFn func(id int64) (*domain.Payment, error)
-	updateStatusFn    func(id string, status domain.PaymentStatus) error
-
-	savedPayments      []*domain.Payment
-	findByPartnerCalls int
-	updateStatusCalls  int
-	lastUpdateID       string
-	lastUpdateStatus   domain.PaymentStatus
+	settlePendingFn   func(partnerID int64, kiCrystalsMult int) (bool, error)
+	savedPayments     []*domain.Payment
+	settleCalls       int
+	lastPartnerID     int64
+	lastKiCrystalsMul int
 }
 
 func (f *fakePaymentRepo) Save(payment *domain.Payment) error {
@@ -44,22 +42,14 @@ func (f *fakePaymentRepo) Save(payment *domain.Payment) error {
 	return f.saveFn(payment)
 }
 
-func (f *fakePaymentRepo) FindByPartnerID(id int64) (*domain.Payment, error) {
-	f.findByPartnerCalls++
-	if f.findByPartnerIDFn == nil {
-		return nil, nil
+func (f *fakePaymentRepo) SettlePendingByPartnerID(partnerID int64, kiCrystalsMult int) (bool, error) {
+	f.settleCalls++
+	f.lastPartnerID = partnerID
+	f.lastKiCrystalsMul = kiCrystalsMult
+	if f.settlePendingFn == nil {
+		return false, nil
 	}
-	return f.findByPartnerIDFn(id)
-}
-
-func (f *fakePaymentRepo) UpdateStatus(id string, status domain.PaymentStatus) error {
-	f.updateStatusCalls++
-	f.lastUpdateID = id
-	f.lastUpdateStatus = status
-	if f.updateStatusFn == nil {
-		return nil
-	}
-	return f.updateStatusFn(id, status)
+	return f.settlePendingFn(partnerID, kiCrystalsMult)
 }
 
 func TestNewPaymentService(t *testing.T) {
@@ -151,7 +141,6 @@ func TestPaymentService_HandleBuyKi_DefaultAmount(t *testing.T) {
 	svc := &PaymentService{
 		gateway:           gateway,
 		paymentRepository: repo,
-		playersRepository: &fakePlayerRepo{},
 	}
 
 	resp, err := svc.HandleBuyKi(77)
@@ -164,7 +153,10 @@ func TestPaymentService_HandleBuyKi_DefaultAmount(t *testing.T) {
 	if resp.MenuKey != "EXCHANGE_MENU" {
 		t.Fatalf("expected EXCHANGE_MENU, got %q", resp.MenuKey)
 	}
-	if resp.Image == nil || resp.Image.Name != "pix.png" || len(resp.Image.Data) == 0 {
+	if resp.Image == nil ||
+		resp.Image.Name != "pix.png" ||
+		resp.Image.Type != view.ImageBase64 ||
+		resp.Image.Base64 == "" {
 		t.Fatalf("unexpected image payload: %+v", resp.Image)
 	}
 }
@@ -174,7 +166,6 @@ func TestPaymentService_HandleBuyKi_InvalidEnv(t *testing.T) {
 	svc := &PaymentService{
 		gateway:           &fakePaymentGateway{},
 		paymentRepository: &fakePaymentRepo{},
-		playersRepository: &fakePlayerRepo{},
 	}
 
 	_, err := svc.HandleBuyKi(1)
@@ -197,7 +188,6 @@ func TestPaymentService_HandleBuyKi_ValidEnvAmount(t *testing.T) {
 	svc := &PaymentService{
 		gateway:           gateway,
 		paymentRepository: &fakePaymentRepo{},
-		playersRepository: &fakePlayerRepo{},
 	}
 
 	_, err := svc.HandleBuyKi(9)
@@ -213,7 +203,6 @@ func TestPaymentService_ConfirmPayment_InvalidMultEnv(t *testing.T) {
 	t.Setenv("KI_CRYSTALS_MULT", "abc")
 	svc := &PaymentService{
 		paymentRepository: &fakePaymentRepo{},
-		playersRepository: &fakePlayerRepo{},
 	}
 	err := svc.ConfirmPayment(1)
 	if err == nil {
@@ -221,172 +210,66 @@ func TestPaymentService_ConfirmPayment_InvalidMultEnv(t *testing.T) {
 	}
 }
 
-func TestPaymentService_ConfirmPayment_FindByPartnerError(t *testing.T) {
+func TestPaymentService_ConfirmPayment_SettleError(t *testing.T) {
 	t.Setenv("KI_CRYSTALS_MULT", "2")
+	expectedErr := errors.New("settle fail")
 	svc := &PaymentService{
 		paymentRepository: &fakePaymentRepo{
-			findByPartnerIDFn: func(id int64) (*domain.Payment, error) {
-				return nil, errors.New("not found")
+			settlePendingFn: func(partnerID int64, kiCrystalsMult int) (bool, error) {
+				return false, expectedErr
 			},
 		},
-		playersRepository: &fakePlayerRepo{},
 	}
 	err := svc.ConfirmPayment(9)
-	if err == nil {
-		t.Fatalf("expected error")
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("expected settle error, got %v", err)
 	}
 }
 
-func TestPaymentService_ConfirmPayment_AlreadyApproved(t *testing.T) {
+func TestPaymentService_ConfirmPayment_AlreadySettled_IsIdempotent(t *testing.T) {
 	repo := &fakePaymentRepo{
-		findByPartnerIDFn: func(id int64) (*domain.Payment, error) {
-			return &domain.Payment{
-				ID:       "px",
-				PlayerID: 1,
-				Amount:   10,
-				Status:   domain.PaymentApproved,
-			}, nil
+		settlePendingFn: func(partnerID int64, kiCrystalsMult int) (bool, error) {
+			return false, nil
 		},
 	}
-	playerRepo := &fakePlayerRepo{}
 	svc := &PaymentService{
 		paymentRepository: repo,
-		playersRepository: playerRepo,
 	}
 
 	err := svc.ConfirmPayment(5)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if repo.updateStatusCalls != 0 {
-		t.Fatalf("expected no update status call, got %d", repo.updateStatusCalls)
-	}
-	if playerRepo.getOrCreateCallCount != 0 {
-		t.Fatalf("expected no player fetch for approved payment")
-	}
-}
-
-func TestPaymentService_ConfirmPayment_UpdateStatusError(t *testing.T) {
-	repo := &fakePaymentRepo{
-		findByPartnerIDFn: func(id int64) (*domain.Payment, error) {
-			return &domain.Payment{
-				ID:       "px",
-				PlayerID: 1,
-				Amount:   10,
-				Status:   domain.PaymentPending,
-			}, nil
-		},
-		updateStatusFn: func(id string, status domain.PaymentStatus) error {
-			return errors.New("update fail")
-		},
-	}
-	svc := &PaymentService{
-		paymentRepository: repo,
-		playersRepository: &fakePlayerRepo{},
-	}
-
-	err := svc.ConfirmPayment(5)
-	if err == nil {
-		t.Fatalf("expected error")
-	}
-}
-
-func TestPaymentService_ConfirmPayment_GetPlayerError(t *testing.T) {
-	repo := &fakePaymentRepo{
-		findByPartnerIDFn: func(id int64) (*domain.Payment, error) {
-			return &domain.Payment{
-				ID:       "px",
-				PlayerID: 1,
-				Amount:   10,
-				Status:   domain.PaymentPending,
-			}, nil
-		},
-	}
-	playerRepo := &fakePlayerRepo{
-		getOrCreateFn: func(userID int64) (*domain.Player, error) {
-			return nil, errors.New("player fail")
-		},
-	}
-	svc := &PaymentService{
-		paymentRepository: repo,
-		playersRepository: playerRepo,
-	}
-
-	err := svc.ConfirmPayment(5)
-	if err == nil {
-		t.Fatalf("expected error")
-	}
-}
-
-func TestPaymentService_ConfirmPayment_UpdatePlayerError(t *testing.T) {
-	t.Setenv("KI_CRYSTALS_MULT", "3")
-	repo := &fakePaymentRepo{
-		findByPartnerIDFn: func(id int64) (*domain.Payment, error) {
-			return &domain.Payment{
-				ID:       "px",
-				PlayerID: 1,
-				Amount:   2.9,
-				Status:   domain.PaymentPending,
-			}, nil
-		},
-	}
-	player := basePlayer()
-	player.KiCrystals = 0
-	playerRepo := &fakePlayerRepo{
-		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
-		updateFn: func(player *domain.Player) error {
-			return errors.New("save fail")
-		},
-	}
-	svc := &PaymentService{
-		paymentRepository: repo,
-		playersRepository: playerRepo,
-	}
-
-	err := svc.ConfirmPayment(5)
-	if err == nil {
-		t.Fatalf("expected error")
+	if repo.settleCalls != 1 {
+		t.Fatalf("expected one settle call, got %d", repo.settleCalls)
 	}
 }
 
 func TestPaymentService_ConfirmPayment_Success(t *testing.T) {
 	t.Setenv("KI_CRYSTALS_MULT", "3")
 	repo := &fakePaymentRepo{
-		findByPartnerIDFn: func(id int64) (*domain.Payment, error) {
-			return &domain.Payment{
-				ID:       "pay-1",
-				PlayerID: 42,
-				Amount:   2.9,
-				Status:   domain.PaymentPending,
-			}, nil
+		settlePendingFn: func(partnerID int64, kiCrystalsMult int) (bool, error) {
+			if partnerID != 99 {
+				t.Fatalf("expected partnerID=99, got %d", partnerID)
+			}
+			if kiCrystalsMult != 3 {
+				t.Fatalf("expected mult=3, got %d", kiCrystalsMult)
+			}
+			return true, nil
 		},
-	}
-	player := basePlayer()
-	player.UserID = 42
-	player.KiCrystals = 10
-	playerRepo := &fakePlayerRepo{
-		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
 	}
 	svc := &PaymentService{
 		paymentRepository: repo,
-		playersRepository: playerRepo,
 	}
 
 	err := svc.ConfirmPayment(99)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if repo.updateStatusCalls != 1 {
-		t.Fatalf("expected one update status call, got %d", repo.updateStatusCalls)
+	if repo.settleCalls != 1 {
+		t.Fatalf("expected one settle call, got %d", repo.settleCalls)
 	}
-	if repo.lastUpdateID != "pay-1" || repo.lastUpdateStatus != domain.PaymentApproved {
-		t.Fatalf("unexpected status update payload: id=%s status=%s", repo.lastUpdateID, repo.lastUpdateStatus)
-	}
-	// int(2.9) * 3 = 6
-	if player.KiCrystals != 16 {
-		t.Fatalf("expected ki crystals 16, got %d", player.KiCrystals)
-	}
-	if len(playerRepo.updatedPlayers) != 1 {
-		t.Fatalf("expected one player update call, got %d", len(playerRepo.updatedPlayers))
+	if repo.lastPartnerID != 99 || repo.lastKiCrystalsMul != 3 {
+		t.Fatalf("unexpected settle payload: partnerID=%d mult=%d", repo.lastPartnerID, repo.lastKiCrystalsMul)
 	}
 }

@@ -175,9 +175,12 @@ func (f *fakeRegionRepo) ListByLevel(level int64) ([]domain.Region, error) {
 }
 
 type fakeBattleRepo struct {
-	saveFn   func(battleLog *domain.BattleLog) error
-	logs     []*domain.BattleLog
-	saveCall int
+	saveFn       func(battleLog *domain.BattleLog) error
+	saveWithFn   func(battleLog *domain.BattleLog, player *domain.Player) error
+	logs         []*domain.BattleLog
+	players      []*domain.Player
+	saveCall     int
+	saveWithCall int
 }
 
 func (f *fakeBattleRepo) SaveBattleLog(battleLog *domain.BattleLog) error {
@@ -187,6 +190,16 @@ func (f *fakeBattleRepo) SaveBattleLog(battleLog *domain.BattleLog) error {
 		return nil
 	}
 	return f.saveFn(battleLog)
+}
+
+func (f *fakeBattleRepo) SaveBattleLogAndPlayer(battleLog *domain.BattleLog, player *domain.Player) error {
+	f.saveWithCall++
+	f.logs = append(f.logs, battleLog)
+	f.players = append(f.players, player)
+	if f.saveWithFn == nil {
+		return nil
+	}
+	return f.saveWithFn(battleLog, player)
 }
 
 func basePlayer() *domain.Player {
@@ -502,14 +515,14 @@ func TestBattle_Win_PersistsPlayerAndBattleLog(t *testing.T) {
 	if player.Energy != 4 {
 		t.Fatalf("expected energy decremented to 4, got %d", player.Energy)
 	}
-	if battleRepo.saveCall != 1 {
-		t.Fatalf("expected one battle log save, got %d", battleRepo.saveCall)
+	if battleRepo.saveWithCall != 1 {
+		t.Fatalf("expected one transactional battle save, got %d", battleRepo.saveWithCall)
 	}
 	if battleRepo.logs[0].Result != "WIN" {
 		t.Fatalf("expected WIN log, got %q", battleRepo.logs[0].Result)
 	}
-	if len(playerRepo.updatedPlayers) != 1 {
-		t.Fatalf("expected player update call, got %d", len(playerRepo.updatedPlayers))
+	if len(battleRepo.players) != 1 {
+		t.Fatalf("expected one player persisted with battle log, got %d", len(battleRepo.players))
 	}
 }
 
@@ -631,7 +644,11 @@ func TestBattle_SaveBattleLogError_ReturnsError(t *testing.T) {
 	regionRepo := &fakeRegionRepo{getByIDFn: func(regionID int64) (*domain.Region, error) {
 		return &domain.Region{RegionID: 1, Nerf: 10}, nil
 	}}
-	battleRepo := &fakeBattleRepo{saveFn: func(battleLog *domain.BattleLog) error { return errors.New("log fail") }}
+	battleRepo := &fakeBattleRepo{
+		saveWithFn: func(battleLog *domain.BattleLog, player *domain.Player) error {
+			return errors.New("log fail")
+		},
+	}
 
 	svc := &BattleService{
 		playerRepo:          playerRepo,
