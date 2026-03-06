@@ -238,8 +238,8 @@ func TestEquipmentTypesMenu(t *testing.T) {
 	if menu == nil {
 		t.Fatalf("expected non-nil menu")
 	}
-	if len(menu.InlineKeyboard) != 8 {
-		t.Fatalf("expected 8 rows, got %d", len(menu.InlineKeyboard))
+	if len(menu.InlineKeyboard) != 9 {
+		t.Fatalf("expected 9 rows, got %d", len(menu.InlineKeyboard))
 	}
 	if menu.InlineKeyboard[0][0].Text != "Armas (2)" {
 		t.Fatalf("unexpected label: %q", menu.InlineKeyboard[0][0].Text)
@@ -247,6 +247,10 @@ func TestEquipmentTypesMenu(t *testing.T) {
 	firstCb := menu.InlineKeyboard[0][0].CallbackData
 	if firstCb == nil || *firstCb != "open_inventory_equipaments_type?slot=WEAPON&page=1" {
 		t.Fatalf("unexpected first callback: %+v", firstCb)
+	}
+	equippedCb := menu.InlineKeyboard[7][0].CallbackData
+	if equippedCb == nil || *equippedCb != "open_inventory_equipped" {
+		t.Fatalf("unexpected equipped callback: %+v", equippedCb)
 	}
 }
 

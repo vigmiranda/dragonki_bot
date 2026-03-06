@@ -195,27 +195,8 @@ func (s InventoryService) ViewEquippedItems(playerID int64) (view.GameResponse, 
 	if (ringID == nil || *ringID == 0) && pe.AccessoryInventoryItemID != nil && *pe.AccessoryInventoryItemID > 0 {
 		ringID = pe.AccessoryInventoryItemID
 	}
-	slotAction := func(inventoryItemID *uint, slot string) string {
-		if inventoryItemID == nil || *inventoryItemID == 0 {
-			return ""
-		}
+	slotAction := func(slot string) string {
 		return fmt.Sprintf("unequip_item?slot=%s", slot)
-	}
-	hasAnyEquipped := func() bool {
-		for _, ptr := range []*uint{
-			pe.WeaponInventoryItemID,
-			pe.HelmetInventoryItemID,
-			pe.BootsInventoryItemID,
-			pe.ArmorInventoryItemID,
-			pe.GlovesInventoryItemID,
-			ringID,
-			pe.AmuletInventoryItemID,
-		} {
-			if ptr != nil && *ptr > 0 {
-				return true
-			}
-		}
-		return false
 	}
 
 	msg := strings.Join([]string{
@@ -239,19 +220,14 @@ func (s InventoryService) ViewEquippedItems(playerID int64) (view.GameResponse, 
 		},
 		MenuKey: "INVENTORY_EQUIPPED_MENU",
 		MenuParams: map[string]any{
-			"weaponAction": slotAction(pe.WeaponInventoryItemID, "WEAPON"),
-			"helmetAction": slotAction(pe.HelmetInventoryItemID, "HELMET"),
-			"bootsAction":  slotAction(pe.BootsInventoryItemID, "BOOTS"),
-			"armorAction":  slotAction(pe.ArmorInventoryItemID, "ARMOR"),
-			"glovesAction": slotAction(pe.GlovesInventoryItemID, "GLOVES"),
-			"ringAction":   slotAction(ringID, "RING"),
-			"amuletAction": slotAction(pe.AmuletInventoryItemID, "AMULET"),
-			"unequipAllAction": func() string {
-				if hasAnyEquipped() {
-					return "unequip_all"
-				}
-				return ""
-			}(),
+			"weaponAction":     slotAction("WEAPON"),
+			"helmetAction":     slotAction("HELMET"),
+			"bootsAction":      slotAction("BOOTS"),
+			"armorAction":      slotAction("ARMOR"),
+			"glovesAction":     slotAction("GLOVES"),
+			"ringAction":       slotAction("RING"),
+			"amuletAction":     slotAction("AMULET"),
+			"unequipAllAction": "unequip_all",
 		},
 	}, nil
 }

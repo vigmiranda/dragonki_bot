@@ -218,6 +218,9 @@ func EquipmentTypesMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("Amuletos (%d)", amuletCount), "open_inventory_equipaments_type?slot=AMULET&page=1"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Itens Equipados", "open_inventory_equipped"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Voltar", "open_inventory"),
 		),
 	)
