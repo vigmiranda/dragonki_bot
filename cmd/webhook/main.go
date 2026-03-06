@@ -11,6 +11,10 @@ import (
 	"github.com/vigmiranda/dragonki/internal/webhook"
 )
 
+func registerMercadoPagoWebhook(mux *http.ServeMux, handleFunc http.HandlerFunc) {
+	mux.HandleFunc("/webhook/mercadopago", handleFunc)
+}
+
 func main() {
 	// 🔹 Abre conexão com o banco
 	db := postgres.OpenDB()
@@ -30,8 +34,9 @@ func main() {
 	// Webhook
 	mpWebhook := webhook.NewMercadoPagoWebhook(paymentService)
 
-	http.HandleFunc("/webhook/mercadopago", mpWebhook.Handle)
+	mux := http.NewServeMux()
+	registerMercadoPagoWebhook(mux, mpWebhook.Handle)
 
 	log.Println("🚀 Mercado Pago Webhook rodando")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }

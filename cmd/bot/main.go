@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +17,33 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
+type telegramUpdateHandler interface {
+	HandleUpdate(update tgbotapi.Update)
+}
+
+func decodeTelegramUpdate(r io.Reader, update *tgbotapi.Update) error {
+	return json.NewDecoder(r).Decode(update)
+}
+
+func registerTelegramWebhook(
+	mux *http.ServeMux,
+	handler telegramUpdateHandler,
+	decodeFn func(r io.Reader, update *tgbotapi.Update) error,
+) {
+	mux.HandleFunc("/webhook/telegram", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		var update tgbotapi.Update
+		if err := decodeFn(r.Body, &update); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		handler.HandleUpdate(update)
+		w.WriteHeader(http.StatusOK)
+	})
+}
 
 func main() {
 
@@ -96,19 +124,9 @@ func main() {
 	)
 
 	// 🔹 Telegram Webhook HTTP
-	http.HandleFunc("/webhook/telegram", func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
-		var update tgbotapi.Update
-		if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		handler.HandleUpdate(update)
-		w.WriteHeader(http.StatusOK)
-	})
+	mux := http.NewServeMux()
+	registerTelegramWebhook(mux, handler, decodeTelegramUpdate)
 
 	log.Println("🌐 Telegram Webhook escutando na porta 8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
