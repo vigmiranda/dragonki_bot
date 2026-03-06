@@ -3,7 +3,6 @@ package application
 import (
 	"fmt"
 	"math"
-	"os"
 	"strconv"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
@@ -14,12 +13,15 @@ import (
 type PlayerService struct {
 	PlayerRepository ports.PlayerRepository
 	RegionRepository ports.RegionRepository
+	cfg              appConfig
 }
 
 func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionRepository) *PlayerService {
-	return &PlayerService{PlayerRepository: repo, RegionRepository: regionRepo}
+	return &PlayerService{PlayerRepository: repo, RegionRepository: regionRepo, cfg: getAppConfig()}
 }
 func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
+	cfg := resolveAppConfig(s.cfg)
+
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		return view.GameResponse{}, err
@@ -28,14 +30,8 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 	if err != nil {
 		return view.GameResponse{}, err
 	}
-	if err := applyPassivePlayerUpdates(s.PlayerRepository, player); err != nil {
+	if err := applyPassivePlayerUpdates(s.PlayerRepository, player, cfg.EnergyRegenDuration); err != nil {
 		return view.GameResponse{}, err
-	}
-
-	// 🔹 fallback seguro
-	recoveryStr := os.Getenv("ENERGY_REGEN_TIME")
-	if recoveryStr == "" {
-		recoveryStr = "10m"
 	}
 
 	transform := "player"
@@ -73,7 +69,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		player.Speed,
 		player.Gold,
 		player.KiCrystals,
-		recoveryStr,
+		cfg.EnergyRegenTime,
 	)
 	img := &view.Image{
 		Type: view.ImageAsset,

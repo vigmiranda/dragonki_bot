@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -11,10 +10,11 @@ import (
 
 type TransformService struct {
 	PlayerRepository ports.PlayerRepository
+	cfg              appConfig
 }
 
 func NewTransformService(repo ports.PlayerRepository) *TransformService {
-	return &TransformService{PlayerRepository: repo}
+	return &TransformService{PlayerRepository: repo, cfg: getAppConfig()}
 }
 func (s *TransformService) Training() (view.GameResponse, error) {
 	msg := fmt.Sprintf(
@@ -66,20 +66,16 @@ func (s *TransformService) ListTransform(playerID int64) (view.GameResponse, err
 }
 
 func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
+	cfg := resolveAppConfig(s.cfg)
+
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
 
-	//todo retirar daqui
-	if player.Energy < player.MaxEnergy || player.HP < player.MaxHP {
-		player.RegenEnergy()
-	}
-	err = s.PlayerRepository.Update(player)
-	if err != nil {
+	if err := applyPassivePlayerUpdates(s.PlayerRepository, player, cfg.EnergyRegenDuration); err != nil {
 		return view.GameResponse{}, err
 	}
-	// ---------------------
 
 	msg := fmt.Sprintf("❌ Transformação desbloqueia no nível 5")
 	img := &view.Image{
@@ -121,7 +117,7 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 
 	err = s.PlayerRepository.Update(player)
 	if err != nil {
-		log.Fatal(err)
+		return view.GameResponse{}, err
 	}
 
 	viewResponse := view.GameResponse{

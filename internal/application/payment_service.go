@@ -13,15 +13,14 @@ import (
 type PaymentService struct {
 	gateway           ports.PaymentGateway
 	paymentRepository ports.PaymentRepository
-	playersRepository ports.PlayerRepository
 }
 
 func NewPaymentService(
 	gateway ports.PaymentGateway,
 	paymentRepository ports.PaymentRepository,
-	playerRepository ports.PlayerRepository,
+	_ ports.PlayerRepository,
 ) *PaymentService {
-	return &PaymentService{gateway, paymentRepository, playerRepository}
+	return &PaymentService{gateway, paymentRepository}
 }
 
 func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Payment, string, error) {
@@ -80,25 +79,12 @@ func (s *PaymentService) ConfirmPayment(paymentID int64) error {
 		}
 	}
 
-	payment, err := s.paymentRepository.FindByPartnerID(paymentID)
+	settledNow, err := s.paymentRepository.SettlePendingByPartnerID(paymentID, kiCrystalsMult)
 	if err != nil {
 		return err
 	}
-
-	if payment.Status == domain.PaymentApproved {
+	if !settledNow {
 		return nil
 	}
-
-	payment.Status = domain.PaymentApproved
-	if err := s.paymentRepository.UpdateStatus(payment.ID, payment.Status); err != nil {
-		return err
-	}
-
-	player, err := s.playersRepository.GetOrCreate(payment.PlayerID)
-	if err != nil {
-		return err
-	}
-
-	player.KiCrystals += int(payment.Amount) * kiCrystalsMult
-	return s.playersRepository.Update(player)
+	return nil
 }

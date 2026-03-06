@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -12,6 +13,8 @@ const (
 	PaymentApproved PaymentStatus = "approved"
 	PaymentFailed   PaymentStatus = "failed"
 )
+
+var ErrPaymentNotFound = errors.New("payment not found")
 
 type Payment struct {
 	ID           string

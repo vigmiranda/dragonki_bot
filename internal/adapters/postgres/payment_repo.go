@@ -5,6 +5,7 @@ import (
 
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type PaymentRepo struct {
@@ -16,32 +17,62 @@ func NewPaymentRepo(db *gorm.DB) *PaymentRepo {
 }
 
 func (r *PaymentRepo) Save(p *domain.Payment) error {
-	err := r.db.Create(&p).Error
-	if err != nil {
-		return err
-	}
-	return err
+	return r.db.Create(&p).Error
 }
 
-func (r *PaymentRepo) FindByPartnerID(id int64) (*domain.Payment, error) {
+func (r *PaymentRepo) SettlePendingByPartnerID(partnerID int64, kiCrystalsMult int) (bool, error) {
 	var p domain.Payment
+	settledNow := false
 
-	err := r.db.Model(&domain.Payment{}).Where("partner_id = ? and status = 'pending'", id).Scan(&p).Error
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("partner_id = ?", partnerID).
+			First(&p).
+			Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return domain.ErrPaymentNotFound
+			}
+			return err
+		}
+
+		if p.Status != domain.PaymentPending {
+			return nil
+		}
+
+		updates := map[string]any{
+			"status":      domain.PaymentApproved,
+			"last_update": time.Now().UTC(),
+		}
+
+		if err := tx.
+			Model(&domain.Payment{}).
+			Where("id = ? AND status = ?", p.ID, domain.PaymentPending).
+			Updates(updates).
+			Error; err != nil {
+			return err
+		}
+
+		crystalsToAdd := int(p.Amount) * kiCrystalsMult
+		result := tx.
+			Model(&domain.Player{}).
+			Where("user_id = ?", p.PlayerID).
+			Update("ki_crystals", gorm.Expr("ki_crystals + ?", crystalsToAdd))
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return domain.ErrPaymentNotFound
+		}
+
+		p.Status = domain.PaymentApproved
+		settledNow = true
+		return nil
+	})
 	if err != nil {
-		return nil, err
-	}
-	return &p, err
-}
-
-func (r *PaymentRepo) UpdateStatus(id string, status domain.PaymentStatus) error {
-	updates := map[string]interface{}{
-		"status":      status,
-		"last_update": time.Now(),
+		return false, err
 	}
 
-	return r.db.
-		Model(&domain.Payment{}).
-		Where("id = ?", id).
-		Updates(updates).
-		Error
+	return settledNow, nil
 }

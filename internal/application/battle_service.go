@@ -206,11 +206,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		CreatedAt:          time.Now(),
 	}
 
-	if err := s.battleRepo.SaveBattleLog(battleLog); err != nil {
-		return view.GameResponse{}, err
-	}
-
-	if err := s.playerRepo.Update(player); err != nil {
+	if err := s.battleRepo.SaveBattleLogAndPlayer(battleLog, player); err != nil {
 		return view.GameResponse{}, err
 	}
 
@@ -557,10 +553,7 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 		CreatedAt:          time.Now(),
 	}
 
-	if err := s.battleRepo.SaveBattleLog(battleLog); err != nil {
-		return view.GameResponse{}, err
-	}
-	if err := s.playerRepo.Update(player); err != nil {
+	if err := s.battleRepo.SaveBattleLogAndPlayer(battleLog, player); err != nil {
 		return view.GameResponse{}, err
 	}
 
@@ -674,11 +667,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		CreatedAt:          time.Now(),
 	}
 
-	if err := s.battleRepo.SaveBattleLog(battleLog); err != nil {
-		return view.GameResponse{}, monster, err
-	}
-
-	if err := s.playerRepo.Update(player); err != nil {
+	if err := s.battleRepo.SaveBattleLogAndPlayer(battleLog, player); err != nil {
 		return view.GameResponse{}, monster, err
 	}
 

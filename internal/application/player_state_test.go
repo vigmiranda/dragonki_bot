@@ -16,14 +16,13 @@ func TestApplyPassivePlayerUpdates_ErrorOnUpdate(t *testing.T) {
 		},
 	}
 
-	err := applyPassivePlayerUpdates(repo, player)
+	err := applyPassivePlayerUpdates(repo, player, 10*time.Minute)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
 }
 
 func TestApplyPassivePlayerUpdates_NoRegenWhenFullButResetForm(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "10m")
 	last := time.Now().UTC().Add(-30 * time.Minute)
 	player := basePlayer()
 	player.Energy = player.MaxEnergy
@@ -33,7 +32,7 @@ func TestApplyPassivePlayerUpdates_NoRegenWhenFullButResetForm(t *testing.T) {
 	player.LastEnergyAt = last
 
 	repo := &fakePlayerRepo{}
-	err := applyPassivePlayerUpdates(repo, player)
+	err := applyPassivePlayerUpdates(repo, player, 10*time.Minute)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -52,7 +51,6 @@ func TestApplyPassivePlayerUpdates_NoRegenWhenFullButResetForm(t *testing.T) {
 }
 
 func TestApplyPassivePlayerUpdates_RegenWhenNeeded(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "10m")
 	player := basePlayer()
 	player.Energy = 1
 	player.MaxEnergy = 10
@@ -62,7 +60,7 @@ func TestApplyPassivePlayerUpdates_RegenWhenNeeded(t *testing.T) {
 	player.FormBattlesLeft = 2
 
 	repo := &fakePlayerRepo{}
-	err := applyPassivePlayerUpdates(repo, player)
+	err := applyPassivePlayerUpdates(repo, player, 10*time.Minute)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
