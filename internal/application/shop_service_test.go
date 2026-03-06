@@ -89,36 +89,61 @@ func TestShopService_ListPotions_Success(t *testing.T) {
 }
 
 func TestShopService_ListEquipments_Success(t *testing.T) {
+	svc := &ShopService{}
+
+	resp, err := svc.ListEquipments()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.MenuKey != "SHOP_EQUIPMENT_TYPES_MENU" {
+		t.Fatalf("expected SHOP_EQUIPMENT_TYPES_MENU, got %q", resp.MenuKey)
+	}
+	if resp.Image == nil || resp.Image.Path != "assets/npcs/kiara_mercadora.png" {
+		t.Fatalf("unexpected image: %+v", resp.Image)
+	}
+	if !strings.Contains(strings.ToLower(resp.Text), "tipo") {
+		t.Fatalf("unexpected text: %q", resp.Text)
+	}
+}
+
+func TestShopService_ListEquipmentsByType_Success(t *testing.T) {
 	items := []domain.Item{
-		{ID: 3, Name: "Espada", Amount: 1, Price: 700},
+		{ID: 3, Name: "Espada A", Amount: 1, Price: 700, Type: domain.ItemEquipment},
+		{ID: 4, Name: "Espada B", Amount: 1, Price: 1900, Type: domain.ItemEquipment},
 	}
 
 	svc := &ShopService{
 		ItemRepository: &fakeItemsRepo{
-			getRandomListFn: func(itemType domain.ItemType, rarity domain.ItemRarity) ([]domain.Item, error) {
-				if itemType != domain.ItemEquipment {
-					t.Fatalf("expected EQUIPMENT, got %s", itemType)
+			getRandomBySlotAndLimitFn: func(slot domain.EquipmentSlot, limit int) ([]domain.Item, error) {
+				if slot != domain.SlotWeapon {
+					t.Fatalf("expected WEAPON, got %s", slot)
 				}
-				if rarity != domain.Common {
-					t.Fatalf("expected COMMON, got %s", rarity)
+				if limit != 3 {
+					t.Fatalf("expected limit 3, got %d", limit)
 				}
 				return items, nil
 			},
 		},
 	}
 
-	resp, err := svc.ListEquipments()
+	resp, err := svc.ListEquipmentsByType("WEAPON")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if resp.MenuKey != "SHOP_ITEMS_MENU" {
 		t.Fatalf("expected SHOP_ITEMS_MENU, got %q", resp.MenuKey)
 	}
-	if resp.Image == nil || resp.Image.Path != "assets/npcs/kiara_mercadora.png" {
-		t.Fatalf("unexpected image: %+v", resp.Image)
+	if len(resp.MenuParams) != 3 { // 2 itens + _backAction
+		t.Fatalf("expected 3 params, got %d", len(resp.MenuParams))
 	}
-	if !strings.Contains(resp.Text, "equipamento") && !strings.Contains(resp.Text, "equip") {
-		t.Fatalf("unexpected text: %q", resp.Text)
+	foundMinPrice := false
+	for label := range resp.MenuParams {
+		if strings.Contains(label, "Espada A - 1500 Gold") {
+			foundMinPrice = true
+		}
+	}
+	if !foundMinPrice {
+		t.Fatalf("expected min equipment price in label, params=%+v", resp.MenuParams)
 	}
 }
 
@@ -199,6 +224,35 @@ func TestShopService_BuyItem_Success(t *testing.T) {
 	}
 	if !strings.Contains(resp.Text, "Obrigada") {
 		t.Fatalf("expected success message, got %q", resp.Text)
+	}
+}
+
+func TestShopService_BuyItem_EquipmentMinPrice1500(t *testing.T) {
+	player := basePlayer()
+	player.ID = 30
+	player.Gold = 1600
+
+	invRepo := &fakeInventoryRepo{}
+	playerRepo := &fakePlayerRepo{
+		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+	}
+	itemRepo := &fakeItemsRepo{
+		getItemByIDFn: func(id int) (*domain.Item, error) {
+			return &domain.Item{ID: 7, Name: "Arma", Price: 300, Amount: 1, Type: domain.ItemEquipment}, nil
+		},
+	}
+	svc := &ShopService{
+		PlayerRepository:    playerRepo,
+		ItemRepository:      itemRepo,
+		InventoryRepository: invRepo,
+	}
+
+	_, err := svc.BuyItem(1, map[string]string{"itemID": "7"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if player.Gold != 100 {
+		t.Fatalf("expected gold 100 (1600-1500), got %d", player.Gold)
 	}
 }
 

@@ -114,3 +114,39 @@ func (p *Player) RegenEnergy(timeRecovery time.Duration) {
 		time.Duration(energyRecovered) * timeRecovery,
 	)
 }
+
+func (p *Player) ApplyEquipmentBonus(item *Item) {
+	p.ATK += item.AtkBonus
+	p.DEF += item.DefBonus
+	p.Speed += item.SpeedBonus
+	p.MaxHP += item.HPBonus
+	p.MaxEnergy += item.EnergyBonus
+
+	if p.HP > p.MaxHP {
+		p.HP = p.MaxHP
+	}
+	if p.Energy > p.MaxEnergy {
+		p.Energy = p.MaxEnergy
+	}
+}
+
+func (p *Player) RemoveEquipmentBonus(item *Item) {
+	p.ATK -= item.AtkBonus
+	p.DEF -= item.DefBonus
+	p.Speed -= item.SpeedBonus
+	p.MaxHP -= item.HPBonus
+	p.MaxEnergy -= item.EnergyBonus
+
+	if p.MaxHP < 1 {
+		p.MaxHP = 1
+	}
+	if p.MaxEnergy < 1 {
+		p.MaxEnergy = 1
+	}
+	if p.HP > p.MaxHP {
+		p.HP = p.MaxHP
+	}
+	if p.Energy > p.MaxEnergy {
+		p.Energy = p.MaxEnergy
+	}
+}

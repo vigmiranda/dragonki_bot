@@ -12,8 +12,9 @@ import (
 func TestNewPlayerService(t *testing.T) {
 	playerRepo := &fakePlayerRepo{}
 	regionRepo := &fakeRegionRepo{}
+	invRepo := &fakeInventoryRepo{}
 
-	svc := NewPlayerService(playerRepo, regionRepo)
+	svc := NewPlayerService(playerRepo, regionRepo, invRepo)
 	if svc == nil {
 		t.Fatalf("expected non-nil service")
 	}
@@ -22,6 +23,9 @@ func TestNewPlayerService(t *testing.T) {
 	}
 	if svc.RegionRepository != regionRepo {
 		t.Fatalf("expected region repo to be set")
+	}
+	if svc.InventoryRepository != invRepo {
+		t.Fatalf("expected inventory repo to be set")
 	}
 }
 
@@ -152,8 +156,8 @@ func TestPlayerService_Status_WomanIconAndKiAwakenedImage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(resp.Text, "🧝‍♀️") {
-		t.Fatalf("expected woman icon in text, got %q", resp.Text)
+	if !strings.Contains(resp.Text, "<b>Bonus Equip</b>") {
+		t.Fatalf("expected equipment bonus line in text, got %q", resp.Text)
 	}
 	if resp.Image == nil || !strings.Contains(resp.Image.Path, "ki_awakened.png") {
 		t.Fatalf("expected awakened image, got %+v", resp.Image)

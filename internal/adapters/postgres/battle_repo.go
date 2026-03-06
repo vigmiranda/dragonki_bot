@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"gorm.io/gorm"
@@ -60,4 +61,45 @@ func (r *BattlePostgresRepo) SaveBattleLogAndPlayer(ctx context.Context, battleL
 			Updates(updates).
 			Error
 	})
+}
+
+func (r *BattlePostgresRepo) GetWeeklyLeaderboard(metric string, limit int) ([]domain.WeeklyBattleRank, error) {
+	orderField := "total_battles"
+	switch metric {
+	case "total_battles":
+		orderField = "total_battles"
+	case "wins":
+		orderField = "wins"
+	case "losses":
+		orderField = "losses"
+	case "escape":
+		orderField = "escape"
+	default:
+		return nil, fmt.Errorf("invalid ranking metric: %s", metric)
+	}
+
+	if limit <= 0 {
+		limit = 5
+	}
+
+	query := fmt.Sprintf(`
+SELECT
+    p.name,
+    COUNT(*) as total_battles,
+    SUM(CASE WHEN result = 'WIN' THEN 1 ELSE 0 END) as wins,
+    SUM(CASE WHEN result in ('LOSE','ESCAPE/LOSS') THEN 1 ELSE 0 END) as losses,
+    SUM(CASE WHEN result = 'ESCAPE' THEN 1 ELSE 0 END) as escape
+FROM battle_logs bl
+JOIN players p on p.id = bl.player_id
+WHERE bl.created_at >= date_trunc('week', NOW())
+GROUP BY p.name
+ORDER BY %s DESC, total_battles DESC, p.name ASC
+LIMIT ?`, orderField)
+
+	var result []domain.WeeklyBattleRank
+	if err := r.db.Raw(query, limit).Scan(&result).Error; err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

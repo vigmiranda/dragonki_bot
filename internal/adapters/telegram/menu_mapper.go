@@ -28,14 +28,26 @@ func mapMenu(
 	case "EXCHANGE_MENU":
 		return exchangeMenu()
 
+	case "RANK_MENU":
+		return rankMenu()
+
 	case "SHOP_ITEMS_MENU":
 		return shopItemsMenu(params)
+
+	case "SHOP_EQUIPMENT_TYPES_MENU":
+		return shopEquipmentTypesMenu()
 
 	case "INVENTORY_MENU":
 		return inventoryMenu()
 
-	case "POTION_MENU":
+	case "INVENTORY_ITEMS_MENU":
 		return potionMenu(params)
+
+	case "INVENTORY_EQUIPMENT_TYPES_MENU":
+		return equipmentTypesMenu(params)
+
+	case "INVENTORY_EQUIPPED_MENU":
+		return inventoryEquippedMenu(params)
 
 	case "TRANSFORM_MENU":
 		return transformMenu()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -40,15 +41,14 @@ func (s *ShopService) OpenShop(userID int64) (view.GameResponse, error) {
 			"O que posso fazer por você hoje? 😄 \n\n",
 		player.Name)
 
-	viewResponse := view.GameResponse{
+	return view.GameResponse{
 		Text: msg,
 		Image: &view.Image{
 			Type: view.ImageAsset,
-			Path: fmt.Sprintf("assets/npcs/kiara_mercadora.png"),
+			Path: "assets/npcs/kiara_mercadora.png",
 		},
 		MenuKey: "SHOP_MENU",
-	}
-	return viewResponse, nil
+	}, nil
 }
 
 func (s *ShopService) ListPotions() (view.GameResponse, error) {
@@ -59,111 +59,154 @@ func (s *ShopService) ListPotions() (view.GameResponse, error) {
 
 	menuParams := make(map[string]any)
 	for _, potion := range potions {
-
-		label := fmt.Sprintf(
-			"%d x %s - %d 💰",
-			potion.Amount,
-			potion.Name,
-			potion.Price,
-		)
-
+		label := fmt.Sprintf("%d x %s - %d Gold", potion.Amount, potion.Name, potion.Price)
 		menuParams[label] = strconv.Itoa(int(potion.ID))
 	}
 
-	msg := fmt.Sprintf(
-		"🪙 Kiara, a Mercadora 🪙 \n\n" +
-			"Certo estas são as poções que tenho disponíveis hoje!!  \n\n" +
-			"Qual delas você vai querer?   \n\n",
-	)
+	msg := "Kiara, a Mercadora\n\nEssas sao as pocoes disponiveis hoje.\n\n"
 
-	viewResponse := view.GameResponse{
+	return view.GameResponse{
 		Text: msg,
 		Image: &view.Image{
 			Type: view.ImageAsset,
-			Path: fmt.Sprintf("assets/npcs/kiara_mercadora.png"),
+			Path: "assets/npcs/kiara_mercadora.png",
 		},
 		MenuKey:    "SHOP_ITEMS_MENU",
 		MenuParams: menuParams,
-	}
-
-	return viewResponse, nil
+	}, nil
 }
 
 func (s *ShopService) ListEquipments() (view.GameResponse, error) {
-	equipments, err := s.ItemRepository.GetRandomList(domain.ItemEquipment, domain.Common)
+	msg := "Kiara, a Mercadora\n\nEscolha o tipo de equipamento.\nMostro ate 3 opcoes sortidas por tipo.\n\n"
+
+	return view.GameResponse{
+		Text: msg,
+		Image: &view.Image{
+			Type: view.ImageAsset,
+			Path: "assets/npcs/kiara_mercadora.png",
+		},
+		MenuKey: "SHOP_EQUIPMENT_TYPES_MENU",
+	}, nil
+}
+
+func (s *ShopService) ListEquipmentsByType(rawSlot string) (view.GameResponse, error) {
+	slot, ok := normalizeShopEquipmentSlot(rawSlot)
+	if !ok {
+		return view.GameResponse{Text: "Tipo de equipamento invalido.", MenuKey: "SHOP_EQUIPMENT_TYPES_MENU"}, nil
+	}
+
+	equipments, err := s.ItemRepository.GetRandomEquipmentsBySlot(slot, 3)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	menuParams := make(map[string]any)
-	for _, equipament := range equipments {
-
-		label := fmt.Sprintf(
-			"%d x %s - %d Gold",
-			equipament.Amount,
-			equipament.Name,
-			equipament.Price,
-		)
-
-		menuParams[label] = strconv.Itoa(int(equipament.ID))
+	for _, equipment := range equipments {
+		label := fmt.Sprintf("%d x %s - %d Gold", equipment.Amount, equipment.Name, equipmentPurchasePrice(&equipment))
+		menuParams[label] = strconv.Itoa(int(equipment.ID))
 	}
-	if err != nil {
-		log.Fatal(err)
-	}
+	menuParams["_backAction"] = "list_equipments"
 
-	msg := fmt.Sprintf(
-		"🪙 Kiara, a Mercadora 🪙 \n\n" +
-			"Ainda não temos nenhum equipamento disponível aqui na lojinha!!   \n\n")
+	msg := fmt.Sprintf("Kiara, a Mercadora\n\nOpcoes de %s de hoje.\n\n", shopEquipmentTypeLabel(slot))
 
-	viewResponse := view.GameResponse{
+	return view.GameResponse{
 		Text: msg,
 		Image: &view.Image{
 			Type: view.ImageAsset,
-			Path: fmt.Sprintf("assets/npcs/kiara_mercadora.png"),
+			Path: "assets/npcs/kiara_mercadora.png",
 		},
-		MenuKey: "SHOP_ITEMS_MENU",
-	}
-	return viewResponse, nil
+		MenuKey:    "SHOP_ITEMS_MENU",
+		MenuParams: menuParams,
+	}, nil
 }
+
 func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.GameResponse, error) {
 	player, err := s.PlayerRepository.GetOrCreate(userID)
 	if err != nil {
 		log.Fatal(err)
 	}
-	itemIDStr, _ := params["itemID"]
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+
+	itemIDStr := params["itemID"]
+	itemID, _ := strconv.ParseInt(itemIDStr, 10, 64)
 	item, err := s.ItemRepository.GetItemById(int(itemID))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	msg := fmt.Sprintf(
-		"🪙 Kiara, a Mercadora 🪙 \n\n" +
-			"Você não tem gold suficiente para este item, junte mais um pouco e retorne quando tiver!!\n\n")
+	price := equipmentPurchasePrice(item)
+	msg := "Kiara, a Mercadora\n\nVoce nao tem gold suficiente para este item.\n\n"
 
-	if player.Gold >= item.Price {
-		err = s.InventoryRepository.CreateOrUpdateInventory(int64(player.ID), item.ID, item.Amount)
-		if err != nil {
+	if player.Gold >= price {
+		if err := s.InventoryRepository.CreateOrUpdateInventory(int64(player.ID), item.ID, item.Amount); err != nil {
 			return view.GameResponse{}, err
 		}
-		player.Gold -= item.Price
-		err = s.PlayerRepository.Update(player)
-		if err != nil {
+		player.Gold -= price
+		if err := s.PlayerRepository.Update(player); err != nil {
 			return view.GameResponse{}, err
 		}
-		msg = fmt.Sprintf(
-			"🪙 Kiara, a Mercadora 🪙 \n\n" +
-				"Obrigada por sua compra, caso precise pode retornar aqui!!   \n\n")
+		msg = "Kiara, a Mercadora\n\nObrigada pela compra. Volte sempre!\n\n"
 	}
 
-	viewResponse := view.GameResponse{
+	return view.GameResponse{
 		Text: msg,
 		Image: &view.Image{
 			Type: view.ImageAsset,
-			Path: fmt.Sprintf("assets/npcs/kiara_mercadora.png"),
+			Path: "assets/npcs/kiara_mercadora.png",
 		},
 		MenuKey: "SHOP_MENU",
-	}
+	}, nil
+}
 
-	return viewResponse, nil
+func equipmentPurchasePrice(item *domain.Item) int {
+	if item == nil {
+		return 0
+	}
+	if item.Type == domain.ItemEquipment && item.Price < 1500 {
+		return 1500
+	}
+	return item.Price
+}
+
+func normalizeShopEquipmentSlot(raw string) (domain.EquipmentSlot, bool) {
+	switch strings.ToUpper(strings.TrimSpace(raw)) {
+	case "WEAPON":
+		return domain.SlotWeapon, true
+	case "ARMOR":
+		return domain.SlotArmor, true
+	case "GLOVES":
+		return domain.SlotGloves, true
+	case "HELMET":
+		return domain.SlotHelmet, true
+	case "BOOTS":
+		return domain.SlotBoots, true
+	case "RING", "ACCESSORY":
+		return domain.SlotRing, true
+	case "AMULET":
+		return domain.SlotAmulet, true
+	default:
+		return "", false
+	}
+}
+
+func shopEquipmentTypeLabel(slot domain.EquipmentSlot) string {
+	switch slot {
+	case domain.SlotWeapon:
+		return "armas"
+	case domain.SlotArmor:
+		return "armaduras"
+	case domain.SlotGloves:
+		return "luvas"
+	case domain.SlotHelmet:
+		return "capacetes"
+	case domain.SlotBoots:
+		return "botas"
+	case domain.SlotRing:
+		return "aneis"
+	case domain.SlotAmulet:
+		return "amuletos"
+	case domain.SlotAccessory:
+		return "acessorios"
+	default:
+		return string(slot)
+	}
 }

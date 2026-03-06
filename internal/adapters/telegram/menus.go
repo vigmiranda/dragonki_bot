@@ -48,6 +48,7 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🔄 Casa de Câmbio", "to_exchange"),
+			tgbotapi.NewInlineKeyboardButtonData("🏆 Rank", "open_rank"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonURL(
@@ -122,8 +123,17 @@ func shopMenu() *tgbotapi.InlineKeyboardMarkup {
 func shopItemsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	return utils.BuildMenuItems(itemsParams)
 }
+func shopEquipmentTypesMenu() *tgbotapi.InlineKeyboardMarkup {
+	return utils.ShopEquipmentTypesMenu()
+}
 func potionMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	return utils.PotionMenu(itemsParams)
+}
+func equipmentTypesMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
+	return utils.EquipmentTypesMenu(itemsParams)
+}
+func inventoryEquippedMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
+	return utils.EquippedItemsMenu(itemsParams)
 }
 func regionsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	return utils.RegionsMenu(itemsParams)
@@ -165,6 +175,26 @@ func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
 	return &menu
 }
 
+func rankMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Top 5 Batalhas", "rank_top_battles"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Top 5 Vitorias", "rank_top_wins"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Top 5 Derrotas", "rank_top_losses"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Top 5 Escapes", "rank_top_escape"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Voltar", "action_menu"),
+		),
+	)
+	return &menu
+}
 func getenvIntDefault(key string, def int) int {
 	raw := os.Getenv(key)
 	if raw == "" {

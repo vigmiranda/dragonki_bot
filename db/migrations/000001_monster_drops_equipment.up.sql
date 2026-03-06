@@ -1,0 +1,22 @@
+DELETE FROM public.monster_drops WHERE id BETWEEN 11 AND 30;
+
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (11, 1, 40, 0.00015, 1, 1, 10);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (12, 2, 43, 0.00012, 1, 1, 10);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (13, 3, 46, 0.00012, 1, 1, 10);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (14, 4, 49, 0.00010, 1, 1, 10);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (15, 5, 52, 0.00010, 1, 1, 10);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (16, 6, 40, 0.00010, 1, 1, 10);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (17, 7, 43, 0.00010, 1, 1, 10);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (18, 8, 46, 0.00010, 1, 1, 10);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (19, 9, 41, 0.00008, 1, 1, 6);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (20, 10, 47, 0.00018, 1, 1, 6);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (21, 11, 50, 0.00012, 1, 1, 6);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (22, 12, 53, 0.00011, 1, 1, 6);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (23, 13, 41, 0.00011, 1, 1, 6);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (24, 14, 44, 0.00011, 1, 1, 6);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (25, 15, 47, 0.00011, 1, 1, 6);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (26, 16, 50, 0.00010, 1, 1, 6);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (27, 17, 42, 0.00005, 1, 1, 2);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (28, 18, 45, 0.00005, 1, 1, 2);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (29, 19, 48, 0.00005, 1, 1, 2);
+INSERT INTO public.monster_drops (id, monster_id, item_id, drop_rate, min_qty, max_qty, rarity_weight) VALUES (30, 20, 54, 0.00007, 1, 1, 2);

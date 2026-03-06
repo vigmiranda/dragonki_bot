@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 
@@ -11,14 +12,21 @@ import (
 )
 
 type PlayerService struct {
-	PlayerRepository ports.PlayerRepository
-	RegionRepository ports.RegionRepository
-	cfg              appConfig
+	PlayerRepository    ports.PlayerRepository
+	RegionRepository    ports.RegionRepository
+	InventoryRepository ports.InventoryRepository
+	cfg                 appConfig
 }
 
-func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionRepository) *PlayerService {
-	return &PlayerService{PlayerRepository: repo, RegionRepository: regionRepo, cfg: getAppConfig()}
+func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionRepository, inventoryRepo ports.InventoryRepository) *PlayerService {
+	return &PlayerService{
+		PlayerRepository:    repo,
+		RegionRepository:    regionRepo,
+		InventoryRepository: inventoryRepo,
+		cfg:                 getAppConfig(),
+	}
 }
+
 func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 	cfg := resolveAppConfig(s.cfg)
 
@@ -34,15 +42,53 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		return view.GameResponse{}, err
 	}
 
+	stats, statsErr := calculateEffectivePlayerStats(player, s.InventoryRepository)
+	if statsErr != nil {
+		log.Printf("status equipment bonus unavailable | playerID=%d | err=%v", player.ID, statsErr)
+		stats = effectivePlayerStats{
+			ATK:       player.ATK,
+			DEF:       player.DEF,
+			Speed:     player.Speed,
+			MaxHP:     player.MaxHP,
+			MaxEnergy: player.MaxEnergy,
+		}
+	}
+
+	currentHP := player.HP
+	if currentHP > stats.MaxHP {
+		currentHP = stats.MaxHP
+	}
+	currentEnergy := player.Energy
+	if currentEnergy > stats.MaxEnergy {
+		currentEnergy = stats.MaxEnergy
+	}
+
 	transform := "player"
 	genderIcon := "🧝‍♂️"
 	if player.Gender == "WOMAN" {
 		genderIcon = "🧝‍♀️️"
 	}
 	if player.Form == "Ki Awakened" {
-		player = domain.KiAwakened(player)
+		atkBoost := int(float64(stats.ATK) * 0.2)
+		defBoost := int(float64(stats.DEF) * 0.2)
+		if atkBoost < 1 {
+			atkBoost = 1
+		}
+		if defBoost < 1 {
+			defBoost = 1
+		}
+		stats.ATK += atkBoost
+		stats.DEF += defBoost
 		transform = "ki_awakened"
 	}
+
+	equipmentBonusLine := fmt.Sprintf(
+		"<b>Bonus Equip</b>: ATK %+d | DEF %+d | VEL %+d\n",
+		stats.Bonus.ATK,
+		stats.Bonus.DEF,
+		stats.Bonus.Speed,
+	)
+
 	XPLvlUp := 45 * math.Pow(float64(player.Level), 1.65)
 	msg := fmt.Sprintf(
 		genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
@@ -50,6 +96,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 			"💪 <b>Level</b>: %d   🧬 <b>XP</b>: %d/%d\n"+
 			"❤️ <b>HP</b>: %d/%d   ⚡️ <b>Energia</b>: %d/%d\n"+
 			"⚔️ <b>ATK</b>: %d   🛡️ <b>DEF</b>: %d   🏃🏻 <b>VEL</b>: %d \n"+
+			"%s"+
 			"💰 <b>Gold</b>: %d\n"+
 			"💎 <b>Ki Crystals</b>: %d\n"+
 			"<b>+1 de ⚡️ em </b>: %s\n",
@@ -60,13 +107,14 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		player.Level,
 		player.XP,
 		int(XPLvlUp),
-		player.HP,
-		player.MaxHP,
-		player.Energy,
-		player.MaxEnergy,
-		player.ATK,
-		player.DEF,
-		player.Speed,
+		currentHP,
+		stats.MaxHP,
+		currentEnergy,
+		stats.MaxEnergy,
+		stats.ATK,
+		stats.DEF,
+		stats.Speed,
+		equipmentBonusLine,
 		player.Gold,
 		player.KiCrystals,
 		cfg.EnergyRegenTime,
@@ -121,9 +169,9 @@ func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (v
 
 	msg := fmt.Sprintf(
 		"<b>%s</b>\n\n"+
-			"🔥 Ótima escolha!\n"+
+			"Otima escolha!\n"+
 			"Seu Ki agora segue um novo caminho.\n"+
-			"Seus poderes começaram a se alinhar com sua essência.\n"+
+			"Seus poderes comecaram a se alinhar com sua essencia.\n"+
 			"Treine. Evolua. Supere seus limites.\n",
 		class.Name,
 	)

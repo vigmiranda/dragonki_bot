@@ -25,6 +25,13 @@ func (h *Handler) handleShop(action string, userID int64, params map[string]stri
 			break
 		}
 		return ToTelegramResponse(gameResp, true, "list_equipments")
+	case "list_equipments_type":
+		gameResp, err := h.shopService.ListEquipmentsByType(params["slot"])
+		if err != nil {
+			fmt.Printf("list_equipments_type -> %v\\n", err)
+			break
+		}
+		return ToTelegramResponse(gameResp, true, "list_equipments_type")
 	case "buy_item":
 		gameResp, err := h.shopService.BuyItem(userID, params)
 		if err != nil {
