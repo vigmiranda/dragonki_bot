@@ -1,10 +1,10 @@
 package application
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"math/rand"
-	"os"
 	"strconv"
 	"time"
 
@@ -54,27 +54,16 @@ func NewBattleService(
 		regionRepo:          regionRepo,
 		battleRepo:          battleRepo,
 		inventoryRepository: inventoryRepo,
-		cfg:                 loadBattleConfigFromEnv(),
+		cfg:                 loadBattleConfig(resolveAppConfig(getAppConfig())),
 		rng:                 rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
-func loadBattleConfigFromEnv() battleConfig {
+func loadBattleConfig(appCfg appConfig) battleConfig {
 	cfg := battleConfig{
-		LevelMult:       1,
-		EnergyRegenTime: os.Getenv("ENERGY_REGEN_TIME"),
+		LevelMult:       appCfg.LevelMult,
+		EnergyRegenTime: appCfg.EnergyRegenTime,
 	}
-
-	if cfg.EnergyRegenTime == "" {
-		cfg.EnergyRegenTime = "alguns instantes"
-	}
-
-	if v := os.Getenv("LEVEL_MULT"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			cfg.LevelMult = parsed
-		}
-	}
-
 	return cfg
 }
 
@@ -206,7 +195,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		CreatedAt:          time.Now(),
 	}
 
-	if err := s.battleRepo.SaveBattleLogAndPlayer(battleLog, player); err != nil {
+	if err := s.battleRepo.SaveBattleLogAndPlayer(context.Background(), battleLog, player); err != nil {
 		return view.GameResponse{}, err
 	}
 
@@ -293,7 +282,7 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 		CreatedAt:          time.Now(),
 	}
 
-	if err := s.battleRepo.SaveBattleLogAndPlayer(battleLog, player); err != nil {
+	if err := s.battleRepo.SaveBattleLogAndPlayer(context.Background(), battleLog, player); err != nil {
 		return view.GameResponse{}, err
 	}
 
@@ -407,7 +396,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		CreatedAt:          time.Now(),
 	}
 
-	if err := s.battleRepo.SaveBattleLogAndPlayer(battleLog, player); err != nil {
+	if err := s.battleRepo.SaveBattleLogAndPlayer(context.Background(), battleLog, player); err != nil {
 		return view.GameResponse{}, monster, err
 	}
 

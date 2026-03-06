@@ -22,6 +22,7 @@ func NewGateway(client *Client) *Gateway {
 }
 
 func (g *Gateway) CreatePix(
+	ctx context.Context,
 	playerID int64,
 	amount float64,
 ) (*domain.Payment, string, error) {
@@ -55,14 +56,17 @@ func (g *Gateway) CreatePix(
 		Payer: payer,
 	}
 
-	ctx := context.WithValue(
-		g.client.Ctx,
+	if ctx == nil {
+		ctx = g.client.Ctx
+	}
+	requestCtx := context.WithValue(
+		ctx,
 		"X-Device-Id",
 		fmt.Sprintf("telegram_%d_%d", playerID, time.Now().Unix()),
 	)
 
 	resp, err := g.client.Payment.Create(
-		ctx,
+		requestCtx,
 		req,
 	)
 	if err != nil {

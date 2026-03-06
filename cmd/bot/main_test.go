@@ -79,3 +79,32 @@ func TestRegisterTelegramWebhook_UnregisteredRoute(t *testing.T) {
 		t.Fatalf("expected no handler call, got %d", h.callCount)
 	}
 }
+
+func TestRegisterTelegramWebhook_MethodNotAllowed(t *testing.T) {
+	mux := http.NewServeMux()
+	h := &fakeTelegramUpdateHandler{}
+	registerTelegramWebhook(mux, h, decodeTelegramUpdate)
+
+	req := httptest.NewRequest(http.MethodGet, "/webhook/telegram", strings.NewReader("{}"))
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected 405, got %d", rec.Code)
+	}
+	if h.callCount != 0 {
+		t.Fatalf("expected no handler call, got %d", h.callCount)
+	}
+}
+
+func TestShouldRunMigrations(t *testing.T) {
+	t.Setenv("RUN_MIGRATIONS", "true")
+	if !shouldRunMigrations() {
+		t.Fatalf("expected true when env is true")
+	}
+
+	t.Setenv("RUN_MIGRATIONS", "false")
+	if shouldRunMigrations() {
+		t.Fatalf("expected false when env is false")
+	}
+}

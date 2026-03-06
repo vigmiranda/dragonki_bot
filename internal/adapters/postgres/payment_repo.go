@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"time"
 
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -16,15 +17,15 @@ func NewPaymentRepo(db *gorm.DB) *PaymentRepo {
 	return &PaymentRepo{db: db}
 }
 
-func (r *PaymentRepo) Save(p *domain.Payment) error {
-	return r.db.Create(&p).Error
+func (r *PaymentRepo) Save(ctx context.Context, p *domain.Payment) error {
+	return r.db.WithContext(ctx).Create(&p).Error
 }
 
-func (r *PaymentRepo) SettlePendingByPartnerID(partnerID int64, kiCrystalsMult int) (bool, error) {
+func (r *PaymentRepo) SettlePendingByPartnerID(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error) {
 	var p domain.Payment
 	settledNow := false
 
-	err := r.db.Transaction(func(tx *gorm.DB) error {
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.
 			Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("partner_id = ?", partnerID).

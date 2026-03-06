@@ -1,8 +1,9 @@
 package ports
 
+import "context"
 import "github.com/vigmiranda/dragonki/internal/domain"
 
 type PaymentRepository interface {
-	Save(payment *domain.Payment) error
-	SettlePendingByPartnerID(partnerID int64, kiCrystalsMult int) (bool, error)
+	Save(ctx context.Context, payment *domain.Payment) error
+	SettlePendingByPartnerID(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error)
 }

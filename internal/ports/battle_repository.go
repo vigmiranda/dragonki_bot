@@ -1,8 +1,9 @@
 package ports
 
+import "context"
 import "github.com/vigmiranda/dragonki/internal/domain"
 
 type BattleRepository interface {
-	SaveBattleLog(battleLog *domain.BattleLog) error
-	SaveBattleLogAndPlayer(battleLog *domain.BattleLog, player *domain.Player) error
+	SaveBattleLog(ctx context.Context, battleLog *domain.BattleLog) error
+	SaveBattleLogAndPlayer(ctx context.Context, battleLog *domain.BattleLog, player *domain.Player) error
 }

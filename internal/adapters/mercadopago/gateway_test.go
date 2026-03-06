@@ -74,7 +74,7 @@ func TestGateway_CreatePix_CreateError(t *testing.T) {
 		client: &Client{Payment: fakeClient, Ctx: context.Background()},
 	}
 
-	_, _, err := g.CreatePix(10, 5)
+	_, _, err := g.CreatePix(context.Background(), 10, 5)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -98,7 +98,7 @@ func TestGateway_CreatePix_MissingQRCodeBase64(t *testing.T) {
 		client: &Client{Payment: fakeClient, Ctx: context.Background()},
 	}
 
-	_, _, err := g.CreatePix(10, 5)
+	_, _, err := g.CreatePix(context.Background(), 10, 5)
 	if err == nil || !strings.Contains(err.Error(), "qrBase64") {
 		t.Fatalf("expected qrBase64 error, got %v", err)
 	}
@@ -122,7 +122,7 @@ func TestGateway_CreatePix_MissingQRCode(t *testing.T) {
 		client: &Client{Payment: fakeClient, Ctx: context.Background()},
 	}
 
-	_, _, err := g.CreatePix(10, 5)
+	_, _, err := g.CreatePix(context.Background(), 10, 5)
 	if err == nil || !strings.Contains(err.Error(), "qrCode") {
 		t.Fatalf("expected qrCode error, got %v", err)
 	}
@@ -146,7 +146,7 @@ func TestGateway_CreatePix_ZeroID(t *testing.T) {
 		client: &Client{Payment: fakeClient, Ctx: context.Background()},
 	}
 
-	_, _, err := g.CreatePix(10, 5)
+	_, _, err := g.CreatePix(context.Background(), 10, 5)
 	if err == nil || !strings.Contains(err.Error(), "ID - PIX") {
 		t.Fatalf("expected ID error, got %v", err)
 	}
@@ -172,7 +172,7 @@ func TestGateway_CreatePix_Success(t *testing.T) {
 		client: &Client{Payment: fakeClient, Ctx: context.Background()},
 	}
 
-	pay, qr, err := g.CreatePix(99, 7)
+	pay, qr, err := g.CreatePix(context.Background(), 99, 7)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -10,6 +10,9 @@ import (
 type appConfig struct {
 	EnergyRegenTime     string
 	EnergyRegenDuration time.Duration
+	LevelMult           int
+	KiCrystalsValue     int
+	KiCrystalsMult      int
 }
 
 var (
@@ -21,6 +24,9 @@ func getAppConfig() appConfig {
 	cfgOnce.Do(func() {
 		cfg = appConfig{
 			EnergyRegenTime: os.Getenv("ENERGY_REGEN_TIME"),
+			LevelMult:       1,
+			KiCrystalsValue: 1,
+			KiCrystalsMult:  1,
 		}
 		if cfg.EnergyRegenTime == "" {
 			cfg.EnergyRegenTime = "10m"
@@ -32,6 +38,21 @@ func getAppConfig() appConfig {
 		if cfg.EnergyRegenDuration <= 0 {
 			cfg.EnergyRegenTime = "10m"
 			cfg.EnergyRegenDuration = 10 * time.Minute
+		}
+		if v := os.Getenv("LEVEL_MULT"); v != "" {
+			if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+				cfg.LevelMult = parsed
+			}
+		}
+		if v := os.Getenv("KI_CRYSTALS_VALUE"); v != "" {
+			if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+				cfg.KiCrystalsValue = parsed
+			}
+		}
+		if v := os.Getenv("KI_CRYSTALS_MULT"); v != "" {
+			if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+				cfg.KiCrystalsMult = parsed
+			}
 		}
 	})
 	return cfg
@@ -51,5 +72,15 @@ func resolveAppConfig(cfg appConfig) appConfig {
 			return cfg
 		}
 	}
-	return getAppConfig()
+	base := getAppConfig()
+	if cfg.LevelMult > 0 {
+		base.LevelMult = cfg.LevelMult
+	}
+	if cfg.KiCrystalsValue > 0 {
+		base.KiCrystalsValue = cfg.KiCrystalsValue
+	}
+	if cfg.KiCrystalsMult > 0 {
+		base.KiCrystalsMult = cfg.KiCrystalsMult
+	}
+	return base
 }

@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -9,47 +10,47 @@ import (
 )
 
 type fakePaymentGateway struct {
-	createPixFn   func(playerID int64, amount float64) (*domain.Payment, string, error)
+	createPixFn   func(ctx context.Context, playerID int64, amount float64) (*domain.Payment, string, error)
 	lastPlayerID  int64
 	lastAmount    float64
 	createPixCall int
 }
 
-func (f *fakePaymentGateway) CreatePix(playerID int64, amount float64) (*domain.Payment, string, error) {
+func (f *fakePaymentGateway) CreatePix(ctx context.Context, playerID int64, amount float64) (*domain.Payment, string, error) {
 	f.createPixCall++
 	f.lastPlayerID = playerID
 	f.lastAmount = amount
 	if f.createPixFn == nil {
 		return nil, "", nil
 	}
-	return f.createPixFn(playerID, amount)
+	return f.createPixFn(ctx, playerID, amount)
 }
 
 type fakePaymentRepo struct {
-	saveFn            func(payment *domain.Payment) error
-	settlePendingFn   func(partnerID int64, kiCrystalsMult int) (bool, error)
+	saveFn            func(ctx context.Context, payment *domain.Payment) error
+	settlePendingFn   func(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error)
 	savedPayments     []*domain.Payment
 	settleCalls       int
 	lastPartnerID     int64
 	lastKiCrystalsMul int
 }
 
-func (f *fakePaymentRepo) Save(payment *domain.Payment) error {
+func (f *fakePaymentRepo) Save(ctx context.Context, payment *domain.Payment) error {
 	f.savedPayments = append(f.savedPayments, payment)
 	if f.saveFn == nil {
 		return nil
 	}
-	return f.saveFn(payment)
+	return f.saveFn(ctx, payment)
 }
 
-func (f *fakePaymentRepo) SettlePendingByPartnerID(partnerID int64, kiCrystalsMult int) (bool, error) {
+func (f *fakePaymentRepo) SettlePendingByPartnerID(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error) {
 	f.settleCalls++
 	f.lastPartnerID = partnerID
 	f.lastKiCrystalsMul = kiCrystalsMult
 	if f.settlePendingFn == nil {
 		return false, nil
 	}
-	return f.settlePendingFn(partnerID, kiCrystalsMult)
+	return f.settlePendingFn(ctx, partnerID, kiCrystalsMult)
 }
 
 func TestNewPaymentService(t *testing.T) {
@@ -66,14 +67,14 @@ func TestNewPaymentService(t *testing.T) {
 func TestPaymentService_CreatePix_GatewayError(t *testing.T) {
 	svc := &PaymentService{
 		gateway: &fakePaymentGateway{
-			createPixFn: func(playerID int64, amount float64) (*domain.Payment, string, error) {
+			createPixFn: func(ctx context.Context, playerID int64, amount float64) (*domain.Payment, string, error) {
 				return nil, "", errors.New("gateway fail")
 			},
 		},
 		paymentRepository: &fakePaymentRepo{},
 	}
 
-	_, _, err := svc.CreatePix(1, 10)
+	_, _, err := svc.CreatePix(context.Background(), 1, 10)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -83,16 +84,16 @@ func TestPaymentService_CreatePix_SaveError(t *testing.T) {
 	payment := &domain.Payment{ID: "p1", PlayerID: 1, Amount: 10, Status: domain.PaymentPending}
 	svc := &PaymentService{
 		gateway: &fakePaymentGateway{
-			createPixFn: func(playerID int64, amount float64) (*domain.Payment, string, error) {
+			createPixFn: func(ctx context.Context, playerID int64, amount float64) (*domain.Payment, string, error) {
 				return payment, "YWJj", nil
 			},
 		},
 		paymentRepository: &fakePaymentRepo{
-			saveFn: func(payment *domain.Payment) error { return errors.New("save fail") },
+			saveFn: func(ctx context.Context, payment *domain.Payment) error { return errors.New("save fail") },
 		},
 	}
 
-	_, _, err := svc.CreatePix(1, 10)
+	_, _, err := svc.CreatePix(context.Background(), 1, 10)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -103,14 +104,14 @@ func TestPaymentService_CreatePix_Success(t *testing.T) {
 	repo := &fakePaymentRepo{}
 	svc := &PaymentService{
 		gateway: &fakePaymentGateway{
-			createPixFn: func(playerID int64, amount float64) (*domain.Payment, string, error) {
+			createPixFn: func(ctx context.Context, playerID int64, amount float64) (*domain.Payment, string, error) {
 				return payment, "YWJj", nil
 			},
 		},
 		paymentRepository: repo,
 	}
 
-	got, qr, err := svc.CreatePix(1, 10)
+	got, qr, err := svc.CreatePix(context.Background(), 1, 10)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -126,10 +127,8 @@ func TestPaymentService_CreatePix_Success(t *testing.T) {
 }
 
 func TestPaymentService_HandleBuyKi_DefaultAmount(t *testing.T) {
-	t.Setenv("KI_CRYSTALS_VALUE", "")
-
 	gateway := &fakePaymentGateway{
-		createPixFn: func(playerID int64, amount float64) (*domain.Payment, string, error) {
+		createPixFn: func(ctx context.Context, playerID int64, amount float64) (*domain.Payment, string, error) {
 			return &domain.Payment{
 				ID:     "p1",
 				Amount: amount,
@@ -141,6 +140,7 @@ func TestPaymentService_HandleBuyKi_DefaultAmount(t *testing.T) {
 	svc := &PaymentService{
 		gateway:           gateway,
 		paymentRepository: repo,
+		cfg:               appConfig{KiCrystalsValue: 1, KiCrystalsMult: 1},
 	}
 
 	resp, err := svc.HandleBuyKi(77)
@@ -161,23 +161,9 @@ func TestPaymentService_HandleBuyKi_DefaultAmount(t *testing.T) {
 	}
 }
 
-func TestPaymentService_HandleBuyKi_InvalidEnv(t *testing.T) {
-	t.Setenv("KI_CRYSTALS_VALUE", "abc")
-	svc := &PaymentService{
-		gateway:           &fakePaymentGateway{},
-		paymentRepository: &fakePaymentRepo{},
-	}
-
-	_, err := svc.HandleBuyKi(1)
-	if err == nil {
-		t.Fatalf("expected env parse error")
-	}
-}
-
-func TestPaymentService_HandleBuyKi_ValidEnvAmount(t *testing.T) {
-	t.Setenv("KI_CRYSTALS_VALUE", "4")
+func TestPaymentService_HandleBuyKi_ConfigAmount(t *testing.T) {
 	gateway := &fakePaymentGateway{
-		createPixFn: func(playerID int64, amount float64) (*domain.Payment, string, error) {
+		createPixFn: func(ctx context.Context, playerID int64, amount float64) (*domain.Payment, string, error) {
 			return &domain.Payment{
 				ID:     "p2",
 				Amount: amount,
@@ -188,6 +174,7 @@ func TestPaymentService_HandleBuyKi_ValidEnvAmount(t *testing.T) {
 	svc := &PaymentService{
 		gateway:           gateway,
 		paymentRepository: &fakePaymentRepo{},
+		cfg:               appConfig{KiCrystalsValue: 4, KiCrystalsMult: 1},
 	}
 
 	_, err := svc.HandleBuyKi(9)
@@ -199,28 +186,17 @@ func TestPaymentService_HandleBuyKi_ValidEnvAmount(t *testing.T) {
 	}
 }
 
-func TestPaymentService_ConfirmPayment_InvalidMultEnv(t *testing.T) {
-	t.Setenv("KI_CRYSTALS_MULT", "abc")
-	svc := &PaymentService{
-		paymentRepository: &fakePaymentRepo{},
-	}
-	err := svc.ConfirmPayment(1)
-	if err == nil {
-		t.Fatalf("expected env parse error")
-	}
-}
-
 func TestPaymentService_ConfirmPayment_SettleError(t *testing.T) {
-	t.Setenv("KI_CRYSTALS_MULT", "2")
 	expectedErr := errors.New("settle fail")
 	svc := &PaymentService{
 		paymentRepository: &fakePaymentRepo{
-			settlePendingFn: func(partnerID int64, kiCrystalsMult int) (bool, error) {
+			settlePendingFn: func(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error) {
 				return false, expectedErr
 			},
 		},
+		cfg: appConfig{KiCrystalsMult: 2, KiCrystalsValue: 1},
 	}
-	err := svc.ConfirmPayment(9)
+	err := svc.ConfirmPayment(context.Background(), 9)
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("expected settle error, got %v", err)
 	}
@@ -228,15 +204,16 @@ func TestPaymentService_ConfirmPayment_SettleError(t *testing.T) {
 
 func TestPaymentService_ConfirmPayment_AlreadySettled_IsIdempotent(t *testing.T) {
 	repo := &fakePaymentRepo{
-		settlePendingFn: func(partnerID int64, kiCrystalsMult int) (bool, error) {
+		settlePendingFn: func(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error) {
 			return false, nil
 		},
 	}
 	svc := &PaymentService{
 		paymentRepository: repo,
+		cfg:               appConfig{KiCrystalsMult: 1, KiCrystalsValue: 1},
 	}
 
-	err := svc.ConfirmPayment(5)
+	err := svc.ConfirmPayment(context.Background(), 5)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -246,9 +223,8 @@ func TestPaymentService_ConfirmPayment_AlreadySettled_IsIdempotent(t *testing.T)
 }
 
 func TestPaymentService_ConfirmPayment_Success(t *testing.T) {
-	t.Setenv("KI_CRYSTALS_MULT", "3")
 	repo := &fakePaymentRepo{
-		settlePendingFn: func(partnerID int64, kiCrystalsMult int) (bool, error) {
+		settlePendingFn: func(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error) {
 			if partnerID != 99 {
 				t.Fatalf("expected partnerID=99, got %d", partnerID)
 			}
@@ -260,9 +236,10 @@ func TestPaymentService_ConfirmPayment_Success(t *testing.T) {
 	}
 	svc := &PaymentService{
 		paymentRepository: repo,
+		cfg:               appConfig{KiCrystalsMult: 3, KiCrystalsValue: 1},
 	}
 
-	err := svc.ConfirmPayment(99)
+	err := svc.ConfirmPayment(context.Background(), 99)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

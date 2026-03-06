@@ -1,9 +1,8 @@
 package application
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"strconv"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -13,6 +12,7 @@ import (
 type PaymentService struct {
 	gateway           ports.PaymentGateway
 	paymentRepository ports.PaymentRepository
+	cfg               appConfig
 }
 
 func NewPaymentService(
@@ -20,16 +20,16 @@ func NewPaymentService(
 	paymentRepository ports.PaymentRepository,
 	_ ports.PlayerRepository,
 ) *PaymentService {
-	return &PaymentService{gateway, paymentRepository}
+	return &PaymentService{gateway: gateway, paymentRepository: paymentRepository, cfg: getAppConfig()}
 }
 
-func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Payment, string, error) {
-	payment, qrCode, err := s.gateway.CreatePix(playerID, amount)
+func (s *PaymentService) CreatePix(ctx context.Context, playerID int64, amount float64) (*domain.Payment, string, error) {
+	payment, qrCode, err := s.gateway.CreatePix(ctx, playerID, amount)
 	if err != nil {
 		return nil, "", err
 	}
 
-	if err := s.paymentRepository.Save(payment); err != nil {
+	if err := s.paymentRepository.Save(ctx, payment); err != nil {
 		return nil, "", err
 	}
 
@@ -37,17 +37,10 @@ func (s *PaymentService) CreatePix(playerID int64, amount float64) (*domain.Paym
 }
 
 func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
-	amount := 1
+	cfg := resolveAppConfig(s.cfg)
+	amount := cfg.KiCrystalsValue
 
-	if raw := os.Getenv("KI_CRYSTALS_VALUE"); raw != "" {
-		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
-			amount = parsed
-		} else if err != nil {
-			return view.GameResponse{}, err
-		}
-	}
-
-	payment, qrCode, err := s.CreatePix(userID, float64(amount))
+	payment, qrCode, err := s.CreatePix(context.Background(), userID, float64(amount))
 	if err != nil {
 		return view.GameResponse{}, err
 	}
@@ -66,20 +59,11 @@ func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
 	return viewResponse, nil
 }
 
-func (s *PaymentService) ConfirmPayment(paymentID int64) error {
-	kiCrystalsMult := 1
+func (s *PaymentService) ConfirmPayment(ctx context.Context, paymentID int64) error {
+	cfg := resolveAppConfig(s.cfg)
+	kiCrystalsMult := cfg.KiCrystalsMult
 
-	if raw := os.Getenv("KI_CRYSTALS_MULT"); raw != "" {
-		parsed, err := strconv.Atoi(raw)
-		if err != nil {
-			return err
-		}
-		if parsed > 0 {
-			kiCrystalsMult = parsed
-		}
-	}
-
-	settledNow, err := s.paymentRepository.SettlePendingByPartnerID(paymentID, kiCrystalsMult)
+	settledNow, err := s.paymentRepository.SettlePendingByPartnerID(ctx, paymentID, kiCrystalsMult)
 	if err != nil {
 		return err
 	}
