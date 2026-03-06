@@ -20,6 +20,8 @@ COPY --from=builder /app/dragonki_game .
 
 # 🔥 COPIA OS ASSETS
 COPY --from=builder /app/assets ./assets
+# COPIA AS MIGRATIONS SQL (necessario para RUN_MIGRATIONS no boot)
+COPY --from=builder /app/db ./db
 
 EXPOSE 8080
 
