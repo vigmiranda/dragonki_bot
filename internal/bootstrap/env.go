@@ -18,7 +18,10 @@ func LoadEnvByEnvironment() (string, []string, error) {
 
 	rootDir, err := findProjectRoot()
 	if err != nil {
-		return "", nil, err
+		// In production containers we usually run only the compiled binary
+		// (without repository files such as go.mod/.env). In this case,
+		// keep running with env vars already provided by the platform.
+		return appEnv, nil, nil
 	}
 
 	alreadyDefined := map[string]bool{}
