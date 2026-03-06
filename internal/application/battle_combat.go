@@ -13,6 +13,9 @@ type battleState struct {
 	oldXP           int
 	oldGold         int
 	monsterHP       int
+	playerATK       int
+	playerDEF       int
+	playerSpeed     int
 	atkTransform    int
 	defTransform    int
 	skin            string
@@ -37,11 +40,14 @@ func parseMonsterIDParam(params map[string]string) (int64, error) {
 	return strconv.ParseInt(monsterIDStr, 10, 64)
 }
 
-func initBattleState(player *domain.Player, monster *domain.Monster) *battleState {
+func initBattleState(player *domain.Player, monster *domain.Monster, stats effectivePlayerStats) *battleState {
 	state := &battleState{
-		oldXP:     player.XP,
-		oldGold:   player.Gold,
-		monsterHP: monster.HP,
+		oldXP:       player.XP,
+		oldGold:     player.Gold,
+		monsterHP:   monster.HP,
+		playerATK:   stats.ATK,
+		playerDEF:   stats.DEF,
+		playerSpeed: stats.Speed,
 	}
 
 	if player.Energy > 0 {
@@ -49,12 +55,12 @@ func initBattleState(player *domain.Player, monster *domain.Monster) *battleStat
 	}
 
 	if player.Form == formKiAwakened {
-		state.atkTransform = int(float64(player.ATK) * 0.2)
-		state.defTransform = int(float64(player.ATK) * 0.2)
+		state.atkTransform = int(float64(state.playerATK) * 0.2)
+		state.defTransform = int(float64(state.playerDEF) * 0.2)
 		state.skin = "ki_awakened_"
 	}
 
-	baseChange := float64(player.Speed) / (float64(player.Speed) + 100) * 35
+	baseChange := float64(state.playerSpeed) / (float64(state.playerSpeed) + 100) * 35
 	if baseChange > 35 {
 		baseChange = 35
 	}
@@ -72,11 +78,11 @@ func (s *BattleService) executeCombat(player *domain.Player, monster *domain.Mon
 			continue
 		}
 
-		damageToMonster := player.ATK + state.atkTransform
+		damageToMonster := state.playerATK + state.atkTransform
 		state.monsterHP -= damageToMonster
 		state.atkTotalPlayer += damageToMonster
 
-		atkMonster := s.rng.Intn(monster.ATK+(monster.ATK/2)+1) - (player.DEF + state.defTransform)
+		atkMonster := s.rng.Intn(monster.ATK+(monster.ATK/2)+1) - (state.playerDEF + state.defTransform)
 		if atkMonster < 0 {
 			atkMonster = 1
 		}

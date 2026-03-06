@@ -117,6 +117,9 @@ Deploy seguro:
 - `RUN_MIGRATIONS=true` somente quando quiser executar migração automática.
 - Em `staging`/`production`, manter `RUN_MIGRATIONS=false` por padrão.
 - Defina `MP_WEBHOOK_TOKEN` para proteger o endpoint de webhook.
+- Para aplicar seeds SQL manualmente (ex.: atualizar `monster_drops`):
+  - `go run ./cmd/seed`
+  - Opcional: `SQL_SEED_FILE=internal/adapters/postgres/SQL/Inserts/monster_drops.sql go run ./cmd/seed`
 
 ---
 
@@ -128,3 +131,16 @@ dragonki/
 ├── go.mod
 ├── Dockerfile
 └── database.db (gerado automaticamente)
+
+## Database Migrations (golang-migrate)
+
+Variaveis:
+- RUN_MIGRATIONS: aplica migrations versionadas no boot do bot quando true.
+- RUN_AUTO_MIGRATE: controla AutoMigrate do GORM (recomendado true apenas em development).
+- MIGRATIONS_DIR: diretorio das migrations (padrao: db/migrations).
+
+Comandos:
+- go run ./cmd/migrate -action up
+- go run ./cmd/migrate -action version
+- go run ./cmd/migrate -action down -steps 1
+- go run ./cmd/migrate -action force -version 1

@@ -15,8 +15,17 @@ type InventoryRepository interface {
 		page int,
 		pageSize int,
 	) ([]domain.InventoryItem, int64, error)
+	ListEquipmentItemsByUserAndSlot(
+		playerID int64,
+		slot domain.EquipmentSlot,
+		page int,
+		pageSize int,
+	) ([]domain.InventoryItem, int64, error)
+	CountEquipmentItemsBySlot(playerID int64) (map[domain.EquipmentSlot]int64, error)
 	GetInventoryItemByUser(
 		playerID int64,
 		inventoryItemID uint,
 	) (*domain.InventoryItem, error)
+	GetOrCreatePlayerEquipment(playerID int64) (*domain.PlayerEquipment, error)
+	UpdatePlayerEquipment(equipment *domain.PlayerEquipment) error
 }

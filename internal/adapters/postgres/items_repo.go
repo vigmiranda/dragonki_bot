@@ -32,6 +32,28 @@ func (r *ItemsPostgresRepo) GetRandomList(itemType domain.ItemType, rarity domai
 	return items, nil
 
 }
+
+func (r *ItemsPostgresRepo) GetRandomEquipmentsBySlot(slot domain.EquipmentSlot, limit int) ([]domain.Item, error) {
+	if limit <= 0 {
+		limit = 3
+	}
+
+	var items []domain.Item
+	err := r.db.Model(&domain.Item{}).
+		Where("type = ?", domain.ItemEquipment).
+		Where("slot = ?", slot).
+		Order("RANDOM()").
+		Limit(limit).
+		Find(&items).
+		Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
 func (r *ItemsPostgresRepo) GetItemById(itemID int) (*domain.Item, error) {
 	var item *domain.Item
 	err := r.db.Model(&domain.Item{}).

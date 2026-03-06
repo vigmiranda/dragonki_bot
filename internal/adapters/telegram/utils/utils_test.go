@@ -75,8 +75,9 @@ func TestNewPhotoMedia(t *testing.T) {
 
 func TestBuildMenuItems(t *testing.T) {
 	menu := BuildMenuItems(map[string]any{
-		"Potion A": "10",
-		"Potion B": "20",
+		"Potion A":    "10",
+		"Potion B":    "20",
+		"_backAction": "list_equipments",
 	})
 	if menu == nil {
 		t.Fatalf("expected non-nil menu")
@@ -85,8 +86,22 @@ func TestBuildMenuItems(t *testing.T) {
 		t.Fatalf("expected 3 rows (2 items + back), got %d", len(menu.InlineKeyboard))
 	}
 	last := menu.InlineKeyboard[len(menu.InlineKeyboard)-1][0]
-	if last.Text == "" || last.CallbackData == nil || *last.CallbackData != "to_shop" {
-		t.Fatalf("expected back button to_shop, got %+v", last)
+	if last.Text == "" || last.CallbackData == nil || *last.CallbackData != "list_equipments" {
+		t.Fatalf("expected back button list_equipments, got %+v", last)
+	}
+}
+
+func TestShopEquipmentTypesMenu(t *testing.T) {
+	menu := ShopEquipmentTypesMenu()
+	if menu == nil {
+		t.Fatalf("expected non-nil menu")
+	}
+	if len(menu.InlineKeyboard) != 8 {
+		t.Fatalf("expected 8 rows, got %d", len(menu.InlineKeyboard))
+	}
+	firstCb := menu.InlineKeyboard[0][0].CallbackData
+	if firstCb == nil || *firstCb != "list_equipments_type?slot=WEAPON" {
+		t.Fatalf("unexpected first callback: %+v", firstCb)
 	}
 }
 
@@ -133,8 +148,9 @@ func TestPotionMenu(t *testing.T) {
 		"Items": []domain.InventoryItem{
 			{ID: 10, Quantity: 2, Item: domain.Item{Name: "HP"}},
 		},
-		"page":       2,
-		"totalPages": 3,
+		"page":             2,
+		"totalPages":       3,
+		"paginationAction": "open_inventory_potions",
 	})
 	if menu == nil {
 		t.Fatalf("expected non-nil menu")
@@ -147,9 +163,116 @@ func TestPotionMenu(t *testing.T) {
 	if itemCb == nil || *itemCb != "use_item?inventoryItemID=10" {
 		t.Fatalf("unexpected item callback: %+v", itemCb)
 	}
+	prevCb := menu.InlineKeyboard[1][0].CallbackData
+	if prevCb == nil || *prevCb != "open_inventory_potions?page=1" {
+		t.Fatalf("unexpected prev callback: %+v", prevCb)
+	}
+	nextCb := menu.InlineKeyboard[1][1].CallbackData
+	if nextCb == nil || *nextCb != "open_inventory_potions?page=3" {
+		t.Fatalf("unexpected next callback: %+v", nextCb)
+	}
 	backCb := menu.InlineKeyboard[2][0].CallbackData
 	if backCb == nil || *backCb != "open_inventory" {
 		t.Fatalf("expected open_inventory back callback")
+	}
+}
+
+func TestPotionMenu_EquipmentUsesEquipCallback(t *testing.T) {
+	menu := PotionMenu(map[string]any{
+		"Items": []domain.InventoryItem{
+			{ID: 77, Quantity: 1, Item: domain.Item{Name: "Sword"}},
+		},
+		"page":             1,
+		"totalPages":       1,
+		"itemType":         string(domain.ItemEquipment),
+		"paginationAction": "open_inventory_equipaments_type?slot=WEAPON",
+		"backAction":       "open_inventory_equipaments",
+	})
+	if menu == nil {
+		t.Fatalf("expected non-nil menu")
+	}
+	if len(menu.InlineKeyboard) != 2 {
+		t.Fatalf("expected 2 rows (item + back), got %d", len(menu.InlineKeyboard))
+	}
+	itemCb := menu.InlineKeyboard[0][0].CallbackData
+	if itemCb == nil || *itemCb != "equip_item?inventoryItemID=77" {
+		t.Fatalf("unexpected item callback: %+v", itemCb)
+	}
+	backCb := menu.InlineKeyboard[1][0].CallbackData
+	if backCb == nil || *backCb != "open_inventory_equipaments" {
+		t.Fatalf("unexpected back callback: %+v", backCb)
+	}
+}
+
+func TestPotionMenu_WithExistingQueryInPaginationAction(t *testing.T) {
+	menu := PotionMenu(map[string]any{
+		"Items": []domain.InventoryItem{
+			{ID: 77, Quantity: 1, Item: domain.Item{Name: "Sword"}},
+		},
+		"page":             2,
+		"totalPages":       3,
+		"itemType":         string(domain.ItemEquipment),
+		"paginationAction": "open_inventory_equipaments_type?slot=WEAPON",
+	})
+	nav := menu.InlineKeyboard[1]
+	prevCb := nav[0].CallbackData
+	nextCb := nav[1].CallbackData
+	if prevCb == nil || *prevCb != "open_inventory_equipaments_type?slot=WEAPON&page=1" {
+		t.Fatalf("unexpected prev callback: %+v", prevCb)
+	}
+	if nextCb == nil || *nextCb != "open_inventory_equipaments_type?slot=WEAPON&page=3" {
+		t.Fatalf("unexpected next callback: %+v", nextCb)
+	}
+}
+
+func TestEquipmentTypesMenu(t *testing.T) {
+	menu := EquipmentTypesMenu(map[string]any{
+		"weaponCount": int64(2),
+		"armorCount":  int64(1),
+		"glovesCount": int64(5),
+		"helmetCount": int64(0),
+		"bootsCount":  int64(3),
+		"ringCount":   int64(4),
+		"amuletCount": int64(6),
+	})
+	if menu == nil {
+		t.Fatalf("expected non-nil menu")
+	}
+	if len(menu.InlineKeyboard) != 8 {
+		t.Fatalf("expected 8 rows, got %d", len(menu.InlineKeyboard))
+	}
+	if menu.InlineKeyboard[0][0].Text != "Armas (2)" {
+		t.Fatalf("unexpected label: %q", menu.InlineKeyboard[0][0].Text)
+	}
+	firstCb := menu.InlineKeyboard[0][0].CallbackData
+	if firstCb == nil || *firstCb != "open_inventory_equipaments_type?slot=WEAPON&page=1" {
+		t.Fatalf("unexpected first callback: %+v", firstCb)
+	}
+}
+
+func TestEquippedItemsMenu(t *testing.T) {
+	menu := EquippedItemsMenu(map[string]any{
+		"weaponAction":     "unequip_item?slot=WEAPON",
+		"ringAction":       "unequip_item?slot=RING",
+		"unequipAllAction": "unequip_all",
+	})
+	if menu == nil {
+		t.Fatalf("expected non-nil menu")
+	}
+	if len(menu.InlineKeyboard) != 4 {
+		t.Fatalf("expected 4 rows (3 actions + back), got %d", len(menu.InlineKeyboard))
+	}
+	firstCb := menu.InlineKeyboard[0][0].CallbackData
+	if firstCb == nil || *firstCb != "unequip_item?slot=WEAPON" {
+		t.Fatalf("unexpected first callback: %+v", firstCb)
+	}
+	allCb := menu.InlineKeyboard[2][0].CallbackData
+	if allCb == nil || *allCb != "unequip_all" {
+		t.Fatalf("expected unequip_all callback, got %+v", allCb)
+	}
+	lastCb := menu.InlineKeyboard[3][0].CallbackData
+	if lastCb == nil || *lastCb != "open_inventory" {
+		t.Fatalf("expected open_inventory back callback, got %+v", lastCb)
 	}
 }
 

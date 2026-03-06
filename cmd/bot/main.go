@@ -9,16 +9,14 @@ import (
 	"strings"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/vigmiranda/dragonki/internal/domain"
-
 	"github.com/vigmiranda/dragonki/internal/adapters/mercadopago"
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram"
 	"github.com/vigmiranda/dragonki/internal/application"
 	"github.com/vigmiranda/dragonki/internal/bootstrap"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
 type telegramUpdateHandler interface {
@@ -57,6 +55,14 @@ func shouldRunMigrations() bool {
 	return strings.EqualFold(strings.TrimSpace(os.Getenv("RUN_MIGRATIONS")), "true")
 }
 
+func shouldRunAutoMigrate() bool {
+	raw := strings.TrimSpace(os.Getenv("RUN_AUTO_MIGRATE"))
+	if raw == "" {
+		return true
+	}
+	return strings.EqualFold(raw, "true")
+}
+
 func main() {
 	appEnv, loadedEnvFiles, err := bootstrap.LoadEnvByEnvironment()
 	if err != nil {
@@ -64,10 +70,9 @@ func main() {
 	}
 	log.Printf("env loaded | APP_ENV=%s | files=%v", appEnv, loadedEnvFiles)
 
-	// 🔹 Abre conexão com o banco
 	db := postgres.OpenDB()
 
-	if shouldRunMigrations() {
+	if shouldRunAutoMigrate() {
 		err = db.AutoMigrate(
 			&domain.Player{},
 			&domain.Class{},
@@ -83,11 +88,16 @@ func main() {
 			&domain.MonsterDrop{},
 		)
 		if err != nil {
-			log.Fatal("❌ error ao rodar automigrate", err)
+			log.Fatal("error ao rodar automigrate", err)
 		}
 	}
 
-	// 🔹 Repositórios
+	if shouldRunMigrations() {
+		if err := bootstrap.RunMigrationsUp(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_DIR")); err != nil {
+			log.Fatal("error ao rodar migrations", err)
+		}
+	}
+
 	playerRepo := postgres.NewPlayerPostgresRepo(db)
 	monsterRepo := postgres.NewMonsterPostgresRepo(db)
 	regionRepo := postgres.NewRegionPostgresRepo(db)
@@ -96,8 +106,7 @@ func main() {
 	inventoryRepo := postgres.NewInventoryPostgresRepo(db)
 	battleRepo := postgres.NewBattlePostgresRepo(db)
 
-	// 🔹 Services (Application)
-	playerService := application.NewPlayerService(playerRepo, regionRepo)
+	playerService := application.NewPlayerService(playerRepo, regionRepo, inventoryRepo)
 	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo, battleRepo, inventoryRepo)
 	onboardingService := application.NewOnboardingService(playerRepo)
 	transformService := application.NewTransformService(playerRepo)
@@ -107,8 +116,8 @@ func main() {
 	shopService := application.NewShopService(playerRepo, itemRepo, inventoryRepo)
 	exchangeService := application.NewExchangeService(playerRepo)
 	inventoryService := application.NewInventoryService(inventoryRepo, playerRepo, itemRepo)
+	rankService := application.NewRankService(battleRepo)
 
-	// 🔹 Mercado Pago (Gateway)
 	mpClient := mercadopago.NewClient()
 	mpGateway := mercadopago.NewGateway(mpClient)
 	paymentService := application.NewPaymentService(
@@ -117,15 +126,13 @@ func main() {
 		playerRepo,
 	)
 
-	// 🔹 Telegram Bot
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println("🐉 DragonKi bot iniciado:", bot.Self.UserName)
+	log.Println("DragonKi bot iniciado:", bot.Self.UserName)
 
-	// 🔹 Handler Telegram
 	handler := telegram.NewHandler(
 		bot,
 		playerService,
@@ -139,13 +146,13 @@ func main() {
 		shopService,
 		exchangeService,
 		inventoryService,
+		rankService,
 	)
 
-	// 🔹 Telegram Webhook HTTP
 	mux := http.NewServeMux()
 	registerTelegramWebhook(mux, handler, decodeTelegramUpdate)
 
-	log.Println("🌐 Telegram Webhook escutando na porta 8080")
+	log.Println("Telegram Webhook escutando na porta 8080")
 	server := &http.Server{
 		Addr:              ":8080",
 		Handler:           mux,

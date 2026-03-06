@@ -108,3 +108,20 @@ func TestShouldRunMigrations(t *testing.T) {
 		t.Fatalf("expected false when env is false")
 	}
 }
+
+func TestShouldRunAutoMigrate(t *testing.T) {
+	t.Setenv("RUN_AUTO_MIGRATE", "")
+	if !shouldRunAutoMigrate() {
+		t.Fatalf("expected true when env is empty")
+	}
+
+	t.Setenv("RUN_AUTO_MIGRATE", "true")
+	if !shouldRunAutoMigrate() {
+		t.Fatalf("expected true when env is true")
+	}
+
+	t.Setenv("RUN_AUTO_MIGRATE", "false")
+	if shouldRunAutoMigrate() {
+		t.Fatalf("expected false when env is false")
+	}
+}

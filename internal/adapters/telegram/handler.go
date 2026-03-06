@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"log"
+	"runtime/debug"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -9,7 +10,8 @@ import (
 func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("❌ Panic no handler:", r)
+			log.Println("Panic no handler:", r)
+			log.Println(string(debug.Stack()))
 		}
 	}()
 
@@ -28,7 +30,7 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 
 	status, err := h.onboardingService.HasCompletedOnboarding(update.Message.Chat.ID, userID, nameTelegram, userName)
 	if err != nil {
-		h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "❌ Erro interno"))
+		h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Erro interno"))
 		return
 	}
 	if update.Message.Text == "/start" {
@@ -44,7 +46,7 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 	if status == "CHOOSING_NAME" {
 		_, err := h.handleNameInput(update.Message.Chat.ID, update.Message.Text)
 		if err != nil {
-			h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "❌ Erro interno"))
+			h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Erro interno"))
 			return
 		}
 		h.newPanel(update.Message.Chat.ID, "NEW_PLAYER")

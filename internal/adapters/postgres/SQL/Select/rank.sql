@@ -2,7 +2,7 @@ SELECT
     p.name,
     COUNT(*) as total_battles,
     SUM(CASE WHEN result = 'WIN' THEN 1 ELSE 0 END) as wins,
-    SUM(CASE WHEN result = 'LOSE' THEN 1 ELSE 0 END) as losses,
+    SUM(CASE WHEN result in ('LOSE','ESCAPE/LOSS') THEN 1 ELSE 0 END) as losses,
     SUM(CASE WHEN result = 'ESCAPE' THEN 1 ELSE 0 END) as escape
 FROM battle_logs bl
          JOIN players p on p.id = bl.player_id

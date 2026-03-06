@@ -67,11 +67,16 @@ type fakeInventoryRepo struct {
 		itemID   uint
 		amount   int
 	}
-	updateInventoryCalls []*domain.InventoryItem
-	updateFn             func(item *domain.InventoryItem) error
-	listByTypeFn         func(playerID int64, itemType domain.ItemType, page int, pageSize int) ([]domain.InventoryItem, int64, error)
-	getByUserFn          func(playerID int64, inventoryItemID uint) (*domain.InventoryItem, error)
-	err                  error
+	updateInventoryCalls   []*domain.InventoryItem
+	updateFn               func(item *domain.InventoryItem) error
+	listByTypeFn           func(playerID int64, itemType domain.ItemType, page int, pageSize int) ([]domain.InventoryItem, int64, error)
+	listEquipmentBySlotFn  func(playerID int64, slot domain.EquipmentSlot, page int, pageSize int) ([]domain.InventoryItem, int64, error)
+	countEquipmentBySlotFn func(playerID int64) (map[domain.EquipmentSlot]int64, error)
+	getByUserFn            func(playerID int64, inventoryItemID uint) (*domain.InventoryItem, error)
+	getOrCreateEquipFn     func(playerID int64) (*domain.PlayerEquipment, error)
+	updateEquipFn          func(equipment *domain.PlayerEquipment) error
+	updateEquipCalls       []*domain.PlayerEquipment
+	err                    error
 }
 
 func (f *fakeInventoryRepo) UpdateInventoryItem(item *domain.InventoryItem) error {
@@ -98,11 +103,40 @@ func (f *fakeInventoryRepo) ListItemsByUserAndType(playerID int64, itemType doma
 	return nil, 0, nil
 }
 
+func (f *fakeInventoryRepo) ListEquipmentItemsByUserAndSlot(playerID int64, slot domain.EquipmentSlot, page int, pageSize int) ([]domain.InventoryItem, int64, error) {
+	if f.listEquipmentBySlotFn != nil {
+		return f.listEquipmentBySlotFn(playerID, slot, page, pageSize)
+	}
+	return nil, 0, nil
+}
+
+func (f *fakeInventoryRepo) CountEquipmentItemsBySlot(playerID int64) (map[domain.EquipmentSlot]int64, error) {
+	if f.countEquipmentBySlotFn != nil {
+		return f.countEquipmentBySlotFn(playerID)
+	}
+	return map[domain.EquipmentSlot]int64{}, nil
+}
+
 func (f *fakeInventoryRepo) GetInventoryItemByUser(playerID int64, inventoryItemID uint) (*domain.InventoryItem, error) {
 	if f.getByUserFn != nil {
 		return f.getByUserFn(playerID, inventoryItemID)
 	}
 	return nil, nil
+}
+
+func (f *fakeInventoryRepo) GetOrCreatePlayerEquipment(playerID int64) (*domain.PlayerEquipment, error) {
+	if f.getOrCreateEquipFn != nil {
+		return f.getOrCreateEquipFn(playerID)
+	}
+	return &domain.PlayerEquipment{PlayerID: playerID}, nil
+}
+
+func (f *fakeInventoryRepo) UpdatePlayerEquipment(equipment *domain.PlayerEquipment) error {
+	f.updateEquipCalls = append(f.updateEquipCalls, equipment)
+	if f.updateEquipFn != nil {
+		return f.updateEquipFn(equipment)
+	}
+	return nil
 }
 
 type fakePlayerRepo struct {
@@ -178,6 +212,7 @@ func (f *fakeRegionRepo) ListByLevel(level int64) ([]domain.Region, error) {
 type fakeBattleRepo struct {
 	saveFn       func(battleLog *domain.BattleLog) error
 	saveWithFn   func(battleLog *domain.BattleLog, player *domain.Player) error
+	weeklyRankFn func(metric string, limit int) ([]domain.WeeklyBattleRank, error)
 	logs         []*domain.BattleLog
 	players      []*domain.Player
 	saveCall     int
@@ -201,6 +236,13 @@ func (f *fakeBattleRepo) SaveBattleLogAndPlayer(ctx context.Context, battleLog *
 		return nil
 	}
 	return f.saveWithFn(battleLog, player)
+}
+
+func (f *fakeBattleRepo) GetWeeklyLeaderboard(metric string, limit int) ([]domain.WeeklyBattleRank, error) {
+	if f.weeklyRankFn == nil {
+		return nil, nil
+	}
+	return f.weeklyRankFn(metric, limit)
 }
 
 func basePlayer() *domain.Player {

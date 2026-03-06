@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"strconv"
@@ -84,7 +85,19 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 		player = domain.KiAwakened(player)
 	}
 
-	msg := fmt.Sprintf("⚡ Energia esgotada. \n Aguarde %s para recarregar", s.cfg.EnergyRegenTime)
+	stats, statsErr := calculateEffectivePlayerStats(player, s.inventoryRepository)
+	if statsErr != nil {
+		log.Printf("battle preview equipment bonus unavailable | playerID=%d | err=%v", player.ID, statsErr)
+		stats = effectivePlayerStats{
+			ATK:       player.ATK,
+			DEF:       player.DEF,
+			Speed:     player.Speed,
+			MaxHP:     player.MaxHP,
+			MaxEnergy: player.MaxEnergy,
+		}
+	}
+
+	msg := fmt.Sprintf("Energia esgotada.\nAguarde %s para recarregar.", s.cfg.EnergyRegenTime)
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/skins/%s/%s/tired.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
@@ -104,11 +117,12 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 				img.Path = "assets/error.png"
 			} else {
 				msg = fmt.Sprintf(
-					"🐉<b> %s apareceu! </b>\n\n"+
-						"Você \n"+
+					"🐉<b>%s apareceu!</b>\n\n"+
+						"Voce\n"+
 						"💪 <b>Lv:</b> %d\n"+
 						"❤️ <b>HP:</b> %d/%d\n"+
-						"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d \n\n\n"+
+						"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</b> %d  🏃🏻<b>VEL:</b> %d\n"+
+						"Bonus Equip: ATK %+d | DEF %+d | VEL %+d\n\n"+
 						"%s \n"+
 						"💪 <b>Lv:</b> %d\n"+
 						"❤️ <b>HP:</b> %d\n"+
@@ -117,8 +131,12 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 					player.Level,
 					player.HP,
 					player.MaxHP,
-					player.ATK,
-					player.DEF,
+					stats.ATK,
+					stats.DEF,
+					stats.Speed,
+					stats.Bonus.ATK,
+					stats.Bonus.DEF,
+					stats.Bonus.Speed,
 					monster.Name,
 					monster.Level,
 					monster.HP,
@@ -169,7 +187,19 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 		return s.AurumKarunLuck(monster, region, player)
 	}
 
-	state := initBattleState(player, monster)
+	stats, statsErr := calculateEffectivePlayerStats(player, s.inventoryRepository)
+	if statsErr != nil {
+		log.Printf("battle equipment bonus unavailable | playerID=%d | err=%v", player.ID, statsErr)
+		stats = effectivePlayerStats{
+			ATK:       player.ATK,
+			DEF:       player.DEF,
+			Speed:     player.Speed,
+			MaxHP:     player.MaxHP,
+			MaxEnergy: player.MaxEnergy,
+		}
+	}
+
+	state := initBattleState(player, monster, stats)
 	s.executeCombat(player, monster, state)
 
 	xpReceived := clamp(CalculateXPReward(player.Level, int(monster.Level)), monster.MinXP, monster.MaxXP)
@@ -222,7 +252,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 
 func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.Region, player *domain.Player) (view.GameResponse, error) {
 	txt := fmt.Sprintf(
-		"\n\n\n\n <b> %s foi mais rápido e escapou!!! </b>\n\n \n\n",
+		"\n\n\n\n <b>%s foi mais rapido e escapou!</b>\n\n",
 		monster.Name,
 	)
 
@@ -244,8 +274,8 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 
 	if escapePlayer >= escapeAurumKarun {
 		txt = fmt.Sprintf(
-			"🏆 Vitória! %s \n"+
-				"💰 +%d Gold\n",
+			"Vitoria! %s\n"+
+				"+%d Gold\n",
 			player.Name,
 			monster.MaxMoney,
 		)
@@ -321,7 +351,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	oldXP := player.XP
 	oldGold := player.Gold
 
-	msg := fmt.Sprintf("💀 Você conseguiu fugir do %s!!!", monster.Name)
+	msg := fmt.Sprintf("Voce conseguiu fugir do %s!", monster.Name)
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/skins/%s/%splayer.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
@@ -351,12 +381,12 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 
 			menu = menuEnergy
 			msg = fmt.Sprintf(
-				"💀 Você zerou seu HP!!! \n\n"+
-					"⚔️ -%d%% de XP = %d\n"+
-					"💰 -%d%% de Gold = %d\n\n"+
-					"%s não é derrota, é aprendizado. \n"+
-					"Venha, guerreiro. \nO descanso do Sir Soneca curará suas feridas. \n\n"+
-					"O mundo ainda precisa da sua força. \n",
+				"Voce zerou seu HP!\n\n"+
+					"-%d%% de XP = %d\n"+
+					"-%d%% de Gold = %d\n\n"+
+					"%s nao e derrota, e aprendizado.\n"+
+					"Venha, guerreiro.\nO descanso do Sir Soneca curara suas feridas.\n\n"+
+					"O mundo ainda precisa da sua forca.\n",
 				region.Nerf,
 				int(xpReduction),
 				region.Nerf,
@@ -369,9 +399,9 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 		} else {
 			menu = menuBattle
 			msg = fmt.Sprintf(
-				"💀 Você não conseguiu fugir!!! \n"+
-					"❤️ Seu HP agora é %d/%d \n"+
-					"⚡️ E sua Energia é %d/%d \n",
+				"Voce nao conseguiu fugir!\n"+
+					"Seu HP agora e %d/%d\n"+
+					"E sua Energia e %d/%d\n",
 				player.HP,
 				player.MaxHP,
 				player.Energy,
