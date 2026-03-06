@@ -42,8 +42,8 @@ func (g *Gateway) CreatePix(
 		AdditionalInfo: &payment.AdditionalInfoRequest{
 			Items: []payment.ItemRequest{
 				{
-					EventDate:   fmt.Sprintf("%d", time.Now().UTC()),
-					ID:          fmt.Sprintf("ki_%d", amount),
+					EventDate:   time.Now().UTC().Format(time.RFC3339),
+					ID:          fmt.Sprintf("ki_%d", int(amount)),
 					Title:       fmt.Sprintf("%d Ki Crystals - %d", int(amount), playerID),
 					Description: "Moeda premium DragonKi",
 					CategoryID:  "digital_goods",

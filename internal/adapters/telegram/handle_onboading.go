@@ -7,14 +7,14 @@ func (h *Handler) handleOnboarding(action string, userID int64) InputTelegram {
 	case "to_start":
 		gameResp, err := h.onboardingService.HandleSelectGender()
 		if err != nil {
-			fmt.Printf("action_menu -> ", err)
+			fmt.Printf("action_menu -> %v\\n", err)
 			break
 		}
 		return ToTelegramResponse(gameResp, true, "action_menu")
 	case "select_man":
 		gameResp, err := h.onboardingService.SetGender(userID, "MAN")
 		if err != nil {
-			fmt.Printf("select_man -> ", err)
+			fmt.Printf("select_man -> %v\\n", err)
 			break
 		}
 		return ToTelegramResponse(gameResp, false, "select_woman")
@@ -22,7 +22,7 @@ func (h *Handler) handleOnboarding(action string, userID int64) InputTelegram {
 	case "select_woman":
 		gameResp, err := h.onboardingService.SetGender(userID, "WOMAN")
 		if err != nil {
-			fmt.Printf("select_woman -> ", err)
+			fmt.Printf("select_woman -> %v\\n", err)
 			break
 		}
 		return ToTelegramResponse(gameResp, false, "select_woman")

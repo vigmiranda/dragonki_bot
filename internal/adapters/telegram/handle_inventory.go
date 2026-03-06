@@ -12,7 +12,7 @@ func (h *Handler) handleInventory(action string, userID int64, params map[string
 	case "open_inventory":
 		gameResp, err := h.inventoryService.Open(userID)
 		if err != nil {
-			fmt.Printf("to_exchange -> ", err)
+			fmt.Printf("to_exchange -> %v\\n", err)
 			break
 		}
 		return ToTelegramResponse(gameResp, true, "to_exchange")
@@ -20,7 +20,7 @@ func (h *Handler) handleInventory(action string, userID int64, params map[string
 	case "open_inventory_potions":
 		gameResp, err := h.inventoryService.ListItemsByUserAndType(userID, domain.ItemConsumable)
 		if err != nil {
-			fmt.Printf("open_inventory_potions -> ", err)
+			fmt.Printf("open_inventory_potions -> %v\\n", err)
 			break
 		}
 		return ToTelegramResponse(gameResp, true, "to_exchange")
@@ -28,7 +28,7 @@ func (h *Handler) handleInventory(action string, userID int64, params map[string
 	case "open_inventory_equipaments":
 		gameResp, err := h.inventoryService.ListItemsByUserAndType(userID, domain.ItemEquipment)
 		if err != nil {
-			fmt.Printf("open_inventory_equipaments -> ", err)
+			fmt.Printf("open_inventory_equipaments -> %v\\n", err)
 			break
 		}
 		return ToTelegramResponse(gameResp, true, "to_exchange")

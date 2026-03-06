@@ -32,7 +32,7 @@ func BuildMenuItems(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 func ChoiceClassMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	rawClasses, ok := params["Classes"].([]domain.Class)
 	if !ok {
-		fmt.Printf("ClassesMenu -> ", ok)
+		fmt.Printf("ClassesMenu -> %v\\n", ok)
 	}
 
 	var rows [][]tgbotapi.InlineKeyboardButton
@@ -62,7 +62,7 @@ func ChoiceClassMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 func RegionsMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	rawRegions, ok := params["Regions"].([]domain.Region)
 	if !ok {
-		fmt.Printf("RegionsMenu -> ", ok)
+		fmt.Printf("RegionsMenu -> %v\\n", ok)
 	}
 
 	var rows [][]tgbotapi.InlineKeyboardButton
@@ -101,7 +101,7 @@ func PotionMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 
 	rawItems, ok := params["Items"].([]domain.InventoryItem)
 	if !ok {
-		fmt.Printf("PotionMenu -> ", ok)
+		fmt.Printf("PotionMenu -> %v\\n", ok)
 	}
 
 	page := toInt(params["page"])
