@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -25,7 +26,11 @@ func ResolveMigrationsDir(raw string) (string, error) {
 
 	rootDir, err := findProjectRoot()
 	if err != nil {
-		return "", err
+		wd, wdErr := os.Getwd()
+		if wdErr != nil {
+			return "", err
+		}
+		return filepath.Join(wd, dir), nil
 	}
 	return filepath.Join(rootDir, dir), nil
 }
