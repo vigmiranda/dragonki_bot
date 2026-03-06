@@ -83,6 +83,7 @@ func TestPlayerService_Status_ApplyPassiveUpdateError(t *testing.T) {
 }
 
 func TestPlayerService_Status_SuccessDefaultRegenAndMainMenu(t *testing.T) {
+	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "")
 
 	player := basePlayer()
@@ -127,6 +128,7 @@ func TestPlayerService_Status_SuccessDefaultRegenAndMainMenu(t *testing.T) {
 }
 
 func TestPlayerService_Status_WomanIconAndKiAwakenedImage(t *testing.T) {
+	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "7m")
 
 	player := basePlayer()

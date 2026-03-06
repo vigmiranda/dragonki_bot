@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"errors"
 	"math"
 	"math/rand"
@@ -183,7 +184,7 @@ type fakeBattleRepo struct {
 	saveWithCall int
 }
 
-func (f *fakeBattleRepo) SaveBattleLog(battleLog *domain.BattleLog) error {
+func (f *fakeBattleRepo) SaveBattleLog(ctx context.Context, battleLog *domain.BattleLog) error {
 	f.saveCall++
 	f.logs = append(f.logs, battleLog)
 	if f.saveFn == nil {
@@ -192,7 +193,7 @@ func (f *fakeBattleRepo) SaveBattleLog(battleLog *domain.BattleLog) error {
 	return f.saveFn(battleLog)
 }
 
-func (f *fakeBattleRepo) SaveBattleLogAndPlayer(battleLog *domain.BattleLog, player *domain.Player) error {
+func (f *fakeBattleRepo) SaveBattleLogAndPlayer(ctx context.Context, battleLog *domain.BattleLog, player *domain.Player) error {
 	f.saveWithCall++
 	f.logs = append(f.logs, battleLog)
 	f.players = append(f.players, player)
@@ -227,6 +228,7 @@ func basePlayer() *domain.Player {
 // ---------- Tests ----------
 
 func TestNewBattleService_InitializesRNGAndConfig(t *testing.T) {
+	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "9m")
 	t.Setenv("LEVEL_MULT", "3")
 
@@ -242,26 +244,20 @@ func TestNewBattleService_InitializesRNGAndConfig(t *testing.T) {
 	}
 }
 
-func TestLoadBattleConfigFromEnv_Defaults(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "")
-	t.Setenv("LEVEL_MULT", "")
-
-	cfg := loadBattleConfigFromEnv()
+func TestLoadBattleConfig_Defaults(t *testing.T) {
+	cfg := loadBattleConfig(appConfig{EnergyRegenTime: "10m", LevelMult: 1})
 	if cfg.LevelMult != 1 {
 		t.Fatalf("expected LevelMult=1, got %d", cfg.LevelMult)
 	}
-	if cfg.EnergyRegenTime != "alguns instantes" {
-		t.Fatalf("expected fallback regen text, got %q", cfg.EnergyRegenTime)
+	if cfg.EnergyRegenTime != "10m" {
+		t.Fatalf("expected regen text 10m, got %q", cfg.EnergyRegenTime)
 	}
 }
 
-func TestLoadBattleConfigFromEnv_InvalidLevelMultFallback(t *testing.T) {
-	t.Setenv("ENERGY_REGEN_TIME", "10m")
-	t.Setenv("LEVEL_MULT", "0")
-
-	cfg := loadBattleConfigFromEnv()
-	if cfg.LevelMult != 1 {
-		t.Fatalf("expected invalid level mult fallback to 1, got %d", cfg.LevelMult)
+func TestLoadBattleConfig_UsesConfiguredLevelMult(t *testing.T) {
+	cfg := loadBattleConfig(appConfig{EnergyRegenTime: "10m", LevelMult: 3})
+	if cfg.LevelMult != 3 {
+		t.Fatalf("expected level mult 3, got %d", cfg.LevelMult)
 	}
 }
 

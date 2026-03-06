@@ -87,6 +87,38 @@ A recarga é calculada automaticamente com base no tempo, sem uso de cron jobs.
 - **Railway (Deploy) -> https://railway.app/** 
 
 ---
+## ⚙️ Configuração de Ambiente
+
+O projeto carrega variáveis nesta ordem:
+
+1. Variáveis já definidas no sistema (não são sobrescritas)
+2. `.env`
+3. `.env.<APP_ENV>`
+
+Se `APP_ENV` não for definido, o padrão é `development`.
+
+Arquivos de referência:
+
+- `.env.example`
+- `.env.development`
+- `.env.staging`
+- `.env.production`
+
+Variáveis críticas:
+
+- `DATABASE_URL`
+- `BOT_TOKEN`
+- `MP_ACCESS_TOKEN`
+- `MP_NOTIFICATION_URL`
+- `MP_WEBHOOK_TOKEN`
+
+Deploy seguro:
+
+- `RUN_MIGRATIONS=true` somente quando quiser executar migração automática.
+- Em `staging`/`production`, manter `RUN_MIGRATIONS=false` por padrão.
+- Defina `MP_WEBHOOK_TOKEN` para proteger o endpoint de webhook.
+
+---
 
 ## 📁 Estrutura do Projeto
 

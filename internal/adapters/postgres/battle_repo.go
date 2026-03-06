@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"context"
+
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"gorm.io/gorm"
 )
@@ -15,12 +17,12 @@ func NewBattlePostgresRepo(db *gorm.DB) *BattlePostgresRepo {
 	}
 }
 
-func (r *BattlePostgresRepo) SaveBattleLog(battleLog *domain.BattleLog) error {
-	return r.db.Save(battleLog).Error
+func (r *BattlePostgresRepo) SaveBattleLog(ctx context.Context, battleLog *domain.BattleLog) error {
+	return r.db.WithContext(ctx).Save(battleLog).Error
 }
 
-func (r *BattlePostgresRepo) SaveBattleLogAndPlayer(battleLog *domain.BattleLog, player *domain.Player) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
+func (r *BattlePostgresRepo) SaveBattleLogAndPlayer(ctx context.Context, battleLog *domain.BattleLog, player *domain.Player) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(battleLog).Error; err != nil {
 			return err
 		}

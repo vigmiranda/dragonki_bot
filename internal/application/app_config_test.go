@@ -22,6 +22,9 @@ func TestGetAppConfig_Default(t *testing.T) {
 	if got.EnergyRegenDuration != 10*time.Minute {
 		t.Fatalf("expected default duration 10m, got %s", got.EnergyRegenDuration)
 	}
+	if got.LevelMult != 1 || got.KiCrystalsValue != 1 || got.KiCrystalsMult != 1 {
+		t.Fatalf("expected default numeric config values")
+	}
 }
 
 func TestGetAppConfig_FromEnv(t *testing.T) {
@@ -66,5 +69,17 @@ func TestGetAppConfig_NumericMinutesAndInvalidFallback(t *testing.T) {
 	got = getAppConfig()
 	if got.EnergyRegenTime != "10m" || got.EnergyRegenDuration != 10*time.Minute {
 		t.Fatalf("expected fallback 10m/10m, got %q/%s", got.EnergyRegenTime, got.EnergyRegenDuration)
+	}
+}
+
+func TestGetAppConfig_ReadsNumericConfigFromEnv(t *testing.T) {
+	resetAppConfigForTest()
+	t.Setenv("LEVEL_MULT", "4")
+	t.Setenv("KI_CRYSTALS_VALUE", "3")
+	t.Setenv("KI_CRYSTALS_MULT", "2")
+
+	got := getAppConfig()
+	if got.LevelMult != 4 || got.KiCrystalsValue != 3 || got.KiCrystalsMult != 2 {
+		t.Fatalf("unexpected numeric config: %+v", got)
 	}
 }

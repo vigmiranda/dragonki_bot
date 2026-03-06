@@ -40,3 +40,18 @@ func TestRegisterMercadoPagoWebhook_UnregisteredRoute(t *testing.T) {
 		t.Fatalf("expected 404, got %d", rec.Code)
 	}
 }
+
+func TestRegisterMercadoPagoWebhook_MethodNotAllowed(t *testing.T) {
+	mux := http.NewServeMux()
+	registerMercadoPagoWebhook(mux, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/webhook/mercadopago", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected 405, got %d", rec.Code)
+	}
+}
