@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
@@ -59,9 +58,9 @@ func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
 	viewResponse := view.GameResponse{
 		Text: msg,
 		Image: &view.Image{
-			Type: view.ImageBytes,
-			Data: utils.DecodeBase64(qrCode),
-			Name: "pix.png",
+			Type:   view.ImageBase64,
+			Base64: qrCode,
+			Name:   "pix.png",
 		},
 		MenuKey: "EXCHANGE_MENU",
 	}

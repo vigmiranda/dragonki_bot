@@ -1,20 +1,20 @@
 package view
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-
 type ImageType string
 
 const (
-	ImageNone  ImageType = "NONE"
-	ImageAsset ImageType = "ASSET"
-	ImageBytes ImageType = "BYTES"
+	ImageNone   ImageType = "NONE"
+	ImageAsset  ImageType = "ASSET"
+	ImageBytes  ImageType = "BYTES"
+	ImageBase64 ImageType = "BASE64"
 )
 
 type Image struct {
-	Type ImageType
-	Path string
-	Data []byte
-	Name string
+	Type   ImageType
+	Path   string
+	Data   []byte
+	Base64 string
+	Name   string
 }
 
 type GameResponse struct {
@@ -22,11 +22,4 @@ type GameResponse struct {
 	Image      *Image
 	MenuKey    string
 	MenuParams map[string]any
-}
-
-type MsgResponse struct {
-	Message    string
-	Img        tgbotapi.RequestFileData
-	Menu       tgbotapi.InlineKeyboardMarkup
-	Conditions bool
 }

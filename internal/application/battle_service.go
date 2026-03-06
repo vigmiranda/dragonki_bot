@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
@@ -44,8 +43,8 @@ type BattleService struct {
 
 func NewBattleService(
 	playerRepo ports.PlayerRepository,
-	monsterRepo *postgres.MonsterPostgresRepo,
-	regionRepo *postgres.RegionPostgres,
+	monsterRepo ports.MonsterRepository,
+	regionRepo ports.RegionRepository,
 	battleRepo ports.BattleRepository,
 	inventoryRepo ports.InventoryRepository,
 ) *BattleService {

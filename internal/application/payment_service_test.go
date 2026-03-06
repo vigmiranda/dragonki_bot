@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
@@ -164,7 +165,10 @@ func TestPaymentService_HandleBuyKi_DefaultAmount(t *testing.T) {
 	if resp.MenuKey != "EXCHANGE_MENU" {
 		t.Fatalf("expected EXCHANGE_MENU, got %q", resp.MenuKey)
 	}
-	if resp.Image == nil || resp.Image.Name != "pix.png" || len(resp.Image.Data) == 0 {
+	if resp.Image == nil ||
+		resp.Image.Name != "pix.png" ||
+		resp.Image.Type != view.ImageBase64 ||
+		resp.Image.Base64 == "" {
 		t.Fatalf("unexpected image payload: %+v", resp.Image)
 	}
 }
