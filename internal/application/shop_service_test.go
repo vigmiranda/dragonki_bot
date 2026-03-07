@@ -108,8 +108,27 @@ func TestShopService_ListEquipments_Success(t *testing.T) {
 
 func TestShopService_ListEquipmentsByType_Success(t *testing.T) {
 	items := []domain.Item{
-		{ID: 3, Name: "Espada A", Amount: 1, Price: 700, Type: domain.ItemEquipment},
-		{ID: 4, Name: "Espada B", Amount: 1, Price: 1900, Type: domain.ItemEquipment},
+		{
+			ID:             3,
+			Name:           "Espada A",
+			Amount:         1,
+			Price:          700,
+			Type:           domain.ItemEquipment,
+			RequiredLevel:  15,
+			AllowedClasses: "Wind Striker,Earth Sentinel",
+			AtkBonus:       9,
+		},
+		{
+			ID:             4,
+			Name:           "Espada B",
+			Amount:         1,
+			Price:          1900,
+			Type:           domain.ItemEquipment,
+			RequiredLevel:  35,
+			AllowedClasses: "Ki Vanguard",
+			AtkBonus:       20,
+			SpeedBonus:     2,
+		},
 	}
 
 	svc := &ShopService{
@@ -144,6 +163,15 @@ func TestShopService_ListEquipmentsByType_Success(t *testing.T) {
 	}
 	if !foundMinPrice {
 		t.Fatalf("expected min equipment price in label, params=%+v", resp.MenuParams)
+	}
+	if !strings.Contains(resp.Text, "Espada A") || !strings.Contains(resp.Text, "Espada B") {
+		t.Fatalf("expected listed item names in text, got %q", resp.Text)
+	}
+	if !strings.Contains(resp.Text, "Requisitos: Nivel 15+ | Classes: Wind Striker,Earth Sentinel") {
+		t.Fatalf("expected requirements for first item in text, got %q", resp.Text)
+	}
+	if !strings.Contains(resp.Text, "Bonus: ATK +9") {
+		t.Fatalf("expected bonus line for first item in text, got %q", resp.Text)
 	}
 }
 
