@@ -21,16 +21,34 @@ type Item struct {
 	Amount      int
 	Price       int
 
-	Slot          string
-	RequiredLevel int
-	AtkBonus      int
-	DefBonus      int
-	SpeedBonus    int
-	HPBonus       int
-	EnergyBonus   int
+	Slot          string `gorm:"-"`
+	RequiredLevel int    `gorm:"-"`
+	AtkBonus      int    `gorm:"-"`
+	DefBonus      int    `gorm:"-"`
+	SpeedBonus    int    `gorm:"-"`
+	HPBonus       int    `gorm:"-"`
+	EnergyBonus   int    `gorm:"-"`
 
 	// CSV de classes permitidas. Ex.: "Earth Sentinel,Wind Striker,Ki Vanguarda"
-	AllowedClasses string
+	AllowedClasses string `gorm:"-"`
+
+	EquipmentID *uint
+	Equipment   *Equipment `gorm:"foreignKey:EquipmentID"`
+}
+
+func (i *Item) HydrateEquipmentMetadata() {
+	if i == nil || i.Type != ItemEquipment || i.Equipment == nil {
+		return
+	}
+
+	i.Slot = i.Equipment.Slot
+	i.RequiredLevel = i.Equipment.RequiredLevel
+	i.AtkBonus = i.Equipment.AtkBonus
+	i.DefBonus = i.Equipment.DefBonus
+	i.SpeedBonus = i.Equipment.SpeedBonus
+	i.HPBonus = i.Equipment.HPBonus
+	i.EnergyBonus = i.Equipment.EnergyBonus
+	i.AllowedClasses = i.Equipment.AllowedClasses
 }
 
 func (i Item) AllowsClass(className string) bool {

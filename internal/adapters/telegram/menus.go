@@ -7,6 +7,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
+	"github.com/vigmiranda/dragonki/internal/bootstrap"
 )
 
 func onboardingMenu() *tgbotapi.InlineKeyboardMarkup {
@@ -147,7 +148,7 @@ func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
 	kiCrystalsConvert := getenvIntDefault("KI_CRYSTALS_CONVERT", 1)
 	kiCrystalsMult := getenvIntDefault("KI_CRYSTALS_MULT", 1)
 
-	menu := tgbotapi.NewInlineKeyboardMarkup(
+	rows := [][]tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				fmt.Sprintf("🔄 1💎 em %d de 💰", kiCrystalsConvert),
@@ -163,15 +164,23 @@ func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
 				fmt.Sprintf("🔄 10💎 em %d de 💰", 10*kiCrystalsConvert),
 				"action_convert?amountConvert=10"),
 		),
-		tgbotapi.NewInlineKeyboardRow(
+	}
+
+	if bootstrap.IsFeatureEnabled("payments", true) {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				fmt.Sprintf("Comprar %d 💎 por R$%d,00", kiCrystalsMult*kiCrystalsValue, kiCrystalsValue),
 				"action_buy_ki"),
-		),
+		))
+	}
+
+	rows = append(rows,
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
 		),
 	)
+
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	return &menu
 }
 

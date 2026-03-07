@@ -1,0 +1,1 @@
+-- no-op: legacy typo tables are intentionally not restored.

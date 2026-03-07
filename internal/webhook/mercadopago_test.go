@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/vigmiranda/dragonki/internal/bootstrap"
 )
 
 type fakePaymentConfirmer struct {
@@ -25,6 +27,9 @@ func (f *fakePaymentConfirmer) ConfirmPayment(ctx context.Context, paymentID int
 }
 
 func TestMercadoPagoWebhook_Handle_InvalidJSON(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
 	w := NewMercadoPagoWebhook(&fakePaymentConfirmer{}, "")
 	req := httptest.NewRequest(http.MethodPost, "/webhook/mercadopago", strings.NewReader("{"))
 	rec := httptest.NewRecorder()
@@ -37,6 +42,9 @@ func TestMercadoPagoWebhook_Handle_InvalidJSON(t *testing.T) {
 }
 
 func TestMercadoPagoWebhook_Handle_IgnoresNonPaymentEvents(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
 	fake := &fakePaymentConfirmer{}
 	w := NewMercadoPagoWebhook(fake, "")
 	req := httptest.NewRequest(http.MethodPost, "/webhook/mercadopago", strings.NewReader(`{"type":"merchant_order","data":{"id":"1"}}`))
@@ -53,6 +61,9 @@ func TestMercadoPagoWebhook_Handle_IgnoresNonPaymentEvents(t *testing.T) {
 }
 
 func TestMercadoPagoWebhook_Handle_PaymentCreatedDoesNotConfirm(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
 	fake := &fakePaymentConfirmer{}
 	w := NewMercadoPagoWebhook(fake, "")
 	req := httptest.NewRequest(http.MethodPost, "/webhook/mercadopago", strings.NewReader(`{"type":"payment","action":"payment.created","data":{"id":"123"}}`))
@@ -69,6 +80,9 @@ func TestMercadoPagoWebhook_Handle_PaymentCreatedDoesNotConfirm(t *testing.T) {
 }
 
 func TestMercadoPagoWebhook_Handle_InvalidPaymentID(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
 	fake := &fakePaymentConfirmer{}
 	w := NewMercadoPagoWebhook(fake, "")
 	req := httptest.NewRequest(http.MethodPost, "/webhook/mercadopago", strings.NewReader(`{"type":"payment","action":"payment.updated","data":{"id":"abc"}}`))
@@ -85,6 +99,9 @@ func TestMercadoPagoWebhook_Handle_InvalidPaymentID(t *testing.T) {
 }
 
 func TestMercadoPagoWebhook_Handle_ConfirmError(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
 	fake := &fakePaymentConfirmer{
 		confirmFn: func(ctx context.Context, paymentID int64) error { return errors.New("db fail") },
 	}
@@ -103,6 +120,9 @@ func TestMercadoPagoWebhook_Handle_ConfirmError(t *testing.T) {
 }
 
 func TestMercadoPagoWebhook_Handle_Success(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
 	fake := &fakePaymentConfirmer{}
 	w := NewMercadoPagoWebhook(fake, "")
 	req := httptest.NewRequest(http.MethodPost, "/webhook/mercadopago", strings.NewReader(`{"type":"payment","action":"payment.updated","data":{"id":"456"}}`))
@@ -119,6 +139,9 @@ func TestMercadoPagoWebhook_Handle_Success(t *testing.T) {
 }
 
 func TestMercadoPagoWebhook_Handle_UnauthorizedWhenTokenMismatch(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
 	fake := &fakePaymentConfirmer{}
 	w := NewMercadoPagoWebhook(fake, "secret")
 	req := httptest.NewRequest(http.MethodPost, "/webhook/mercadopago", strings.NewReader(`{"type":"payment","action":"payment.updated","data":{"id":"456"}}`))
@@ -128,6 +151,25 @@ func TestMercadoPagoWebhook_Handle_UnauthorizedWhenTokenMismatch(t *testing.T) {
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401, got %d", rec.Code)
+	}
+	if fake.callCount != 0 {
+		t.Fatalf("expected no confirm call, got %d", fake.callCount)
+	}
+}
+
+func TestMercadoPagoWebhook_Handle_DisabledByFeatureFlag(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return false, true })
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
+	fake := &fakePaymentConfirmer{}
+	w := NewMercadoPagoWebhook(fake, "")
+	req := httptest.NewRequest(http.MethodPost, "/webhook/mercadopago", strings.NewReader(`{"type":"payment","action":"payment.updated","data":{"id":"456"}}`))
+	rec := httptest.NewRecorder()
+
+	w.Handle(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 when payments feature is disabled, got %d", rec.Code)
 	}
 	if fake.callCount != 0 {
 		t.Fatalf("expected no confirm call, got %d", fake.callCount)

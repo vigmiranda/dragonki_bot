@@ -86,6 +86,7 @@ func main() {
 			&domain.PlayerEquipment{},
 			&domain.BattleLog{},
 			&domain.MonsterDrop{},
+			&domain.FeatureFlag{},
 		)
 		if err != nil {
 			log.Fatal("error ao rodar automigrate", err)
@@ -102,9 +103,11 @@ func main() {
 	monsterRepo := postgres.NewMonsterPostgresRepo(db)
 	regionRepo := postgres.NewRegionPostgresRepo(db)
 	paymentRepo := postgres.NewPaymentRepo(db)
+	featureFlagRepo := postgres.NewFeatureFlagPostgresRepo(db)
 	itemRepo := postgres.NewItemsPostgresRepo(db)
 	inventoryRepo := postgres.NewInventoryPostgresRepo(db)
 	battleRepo := postgres.NewBattlePostgresRepo(db)
+	bootstrap.SetFeatureFlagResolver(featureFlagRepo.FindByName)
 
 	playerService := application.NewPlayerService(playerRepo, regionRepo, inventoryRepo)
 	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo, battleRepo, inventoryRepo)

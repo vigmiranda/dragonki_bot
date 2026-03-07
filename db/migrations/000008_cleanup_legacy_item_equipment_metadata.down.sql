@@ -1,0 +1,2 @@
+-- Legacy metadata restoration is intentionally a no-op.
+-- Source of truth remains in public.equipments.

@@ -1,0 +1,9 @@
+ALTER TABLE IF EXISTS public.items
+    DROP COLUMN IF EXISTS slot,
+    DROP COLUMN IF EXISTS required_level,
+    DROP COLUMN IF EXISTS atk_bonus,
+    DROP COLUMN IF EXISTS def_bonus,
+    DROP COLUMN IF EXISTS speed_bonus,
+    DROP COLUMN IF EXISTS hp_bonus,
+    DROP COLUMN IF EXISTS energy_bonus,
+    DROP COLUMN IF EXISTS allowed_classes;

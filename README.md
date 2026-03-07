@@ -117,6 +117,9 @@ Deploy seguro:
 - `RUN_MIGRATIONS=true` somente quando quiser executar migração automática.
 - Em `staging`/`production`, manter `RUN_MIGRATIONS=false` por padrão.
 - Defina `MP_WEBHOOK_TOKEN` para proteger o endpoint de webhook.
+- Feature flags agora são lidas da tabela `public.feature_flags` no Postgres.
+- Para desativar compra de Ki sem novo deploy:
+  - `UPDATE public.feature_flags SET enabled = FALSE, updated_at = NOW() WHERE name = 'PAYMENTS';`
 - Para aplicar seeds SQL manualmente (ex.: atualizar `monster_drops`):
   - `go run ./cmd/seed`
   - Opcional: `SQL_SEED_FILE=internal/adapters/postgres/SQL/Inserts/monster_drops.sql go run ./cmd/seed`
