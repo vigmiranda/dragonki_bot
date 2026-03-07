@@ -144,7 +144,12 @@ func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.Game
 		if err := s.PlayerRepository.Update(player); err != nil {
 			return view.GameResponse{}, err
 		}
-		msg = "Kiara, a Mercadora\n\nObrigada pela compra. Volte sempre!\n\n"
+		msg = fmt.Sprintf("Kiara, a Mercadora\n\nObrigada pela compra. Volte sempre!\n\nItem: %s\n", item.Name)
+		msg += fmt.Sprintf("Requisitos: %s\n", itemRequirementText(item))
+		if bonusText := itemPositiveBonusText(item); bonusText != "" {
+			msg += fmt.Sprintf("Bonus: %s\n", bonusText)
+		}
+		msg += "\n"
 	}
 
 	return view.GameResponse{
@@ -209,4 +214,45 @@ func shopEquipmentTypeLabel(slot domain.EquipmentSlot) string {
 	default:
 		return string(slot)
 	}
+}
+
+func itemPositiveBonusText(item *domain.Item) string {
+	if item == nil {
+		return ""
+	}
+	bonuses := make([]string, 0, 5)
+	if item.AtkBonus > 0 {
+		bonuses = append(bonuses, fmt.Sprintf("ATK +%d", item.AtkBonus))
+	}
+	if item.DefBonus > 0 {
+		bonuses = append(bonuses, fmt.Sprintf("DEF +%d", item.DefBonus))
+	}
+	if item.SpeedBonus > 0 {
+		bonuses = append(bonuses, fmt.Sprintf("VEL +%d", item.SpeedBonus))
+	}
+	if item.HPBonus > 0 {
+		bonuses = append(bonuses, fmt.Sprintf("HP +%d", item.HPBonus))
+	}
+	if item.EnergyBonus > 0 {
+		bonuses = append(bonuses, fmt.Sprintf("ENERGIA +%d", item.EnergyBonus))
+	}
+	return strings.Join(bonuses, " | ")
+}
+
+func itemRequirementText(item *domain.Item) string {
+	if item == nil {
+		return "N/A"
+	}
+
+	levelText := "Nivel 1+"
+	if item.RequiredLevel > 0 {
+		levelText = fmt.Sprintf("Nivel %d+", item.RequiredLevel)
+	}
+
+	classText := "Todas as classes"
+	if strings.TrimSpace(item.AllowedClasses) != "" {
+		classText = strings.TrimSpace(item.AllowedClasses)
+	}
+
+	return fmt.Sprintf("%s | Classes: %s", levelText, classText)
 }

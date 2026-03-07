@@ -101,7 +101,7 @@ func classTargets(classID uint, className string) []string {
 var classAliasesByID = map[uint][]string{
 	2: {"Ki Vanguard", "Ki Vanguarda"},
 	3: {"Earth Sentinel"},
-	4: {"Wind Striker", "Win Striker"},
+	4: {"Wind Striker"},
 }
 
 func normalizeClassName(v string) string {

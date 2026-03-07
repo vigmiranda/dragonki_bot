@@ -196,7 +196,19 @@ func TestShopService_BuyItem_Success(t *testing.T) {
 	}
 	itemRepo := &fakeItemsRepo{
 		getItemByIDFn: func(id int) (*domain.Item, error) {
-			return &domain.Item{ID: 7, Name: "Pocao", Price: 300, Amount: 2}, nil
+			return &domain.Item{
+				ID:             7,
+				Name:           "Pocao",
+				Price:          300,
+				Amount:         2,
+				RequiredLevel:  15,
+				AllowedClasses: "Wind Striker,Earth Sentinel",
+				AtkBonus:       3,
+				DefBonus:       0,
+				SpeedBonus:     1,
+				HPBonus:        0,
+				EnergyBonus:    2,
+			}, nil
 		},
 	}
 	svc := &ShopService{
@@ -224,6 +236,18 @@ func TestShopService_BuyItem_Success(t *testing.T) {
 	}
 	if !strings.Contains(resp.Text, "Obrigada") {
 		t.Fatalf("expected success message, got %q", resp.Text)
+	}
+	if !strings.Contains(resp.Text, "Item: Pocao") {
+		t.Fatalf("expected item name in success message, got %q", resp.Text)
+	}
+	if !strings.Contains(resp.Text, "Requisitos: Nivel 15+ | Classes: Wind Striker,Earth Sentinel") {
+		t.Fatalf("expected requirements text in success message, got %q", resp.Text)
+	}
+	if !strings.Contains(resp.Text, "ATK +3") || !strings.Contains(resp.Text, "VEL +1") || !strings.Contains(resp.Text, "ENERGIA +2") {
+		t.Fatalf("expected positive bonus text in success message, got %q", resp.Text)
+	}
+	if strings.Contains(resp.Text, "DEF +0") || strings.Contains(resp.Text, "HP +0") {
+		t.Fatalf("expected only bonuses > 0 in success message, got %q", resp.Text)
 	}
 }
 
