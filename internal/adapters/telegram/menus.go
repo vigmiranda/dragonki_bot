@@ -127,6 +127,21 @@ func shopItemsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 func shopEquipmentTypesMenu() *tgbotapi.InlineKeyboardMarkup {
 	return utils.ShopEquipmentTypesMenu()
 }
+func shopEquipmentActionMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🛒 Compra", "open_shop_equipment_types"),
+			tgbotapi.NewInlineKeyboardButtonData("💰 Venda", "list_sell_equipments?page=1"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "to_shop"),
+		),
+	)
+	return &menu
+}
+func shopSellItemsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
+	return utils.ShopSellItemsMenu(itemsParams)
+}
 func potionMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	return utils.PotionMenu(itemsParams)
 }

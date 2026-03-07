@@ -37,6 +37,12 @@ func mapMenu(
 	case "SHOP_EQUIPMENT_TYPES_MENU":
 		return shopEquipmentTypesMenu()
 
+	case "SHOP_EQUIPMENT_ACTION_MENU":
+		return shopEquipmentActionMenu()
+
+	case "SHOP_SELL_ITEMS_MENU":
+		return shopSellItemsMenu(params)
+
 	case "INVENTORY_MENU":
 		return inventoryMenu()
 

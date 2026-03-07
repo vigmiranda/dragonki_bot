@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 
@@ -77,8 +78,20 @@ func (s *ShopService) ListPotions() (view.GameResponse, error) {
 }
 
 func (s *ShopService) ListEquipments() (view.GameResponse, error) {
-	msg := "Kiara, a Mercadora\n\nEscolha o tipo de equipamento.\nMostro ate 3 opcoes sortidas por tipo.\n\n"
+	msg := "Kiara, a Mercadora\n\nEquipamentos:\nEscolha se deseja comprar ou vender.\n\n"
 
+	return view.GameResponse{
+		Text: msg,
+		Image: &view.Image{
+			Type: view.ImageAsset,
+			Path: "assets/npcs/kiara_mercadora.png",
+		},
+		MenuKey: "SHOP_EQUIPMENT_ACTION_MENU",
+	}, nil
+}
+
+func (s *ShopService) OpenBuyEquipmentTypes() (view.GameResponse, error) {
+	msg := "Kiara, a Mercadora\n\nEscolha o tipo de equipamento para compra.\n\n"
 	return view.GameResponse{
 		Text: msg,
 		Image: &view.Image{
@@ -170,11 +183,130 @@ func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.Game
 	}, nil
 }
 
+func (s *ShopService) ListSellEquipments(userID int64, page int) (view.GameResponse, error) {
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+	if page < 1 {
+		page = 1
+	}
+
+	items, total, err := s.InventoryRepository.ListItemsByUserAndType(int64(player.ID), domain.ItemEquipment, page, 5)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(5)))
+	if totalPages == 0 {
+		totalPages = 1
+	}
+	if page > totalPages {
+		page = totalPages
+		items, total, err = s.InventoryRepository.ListItemsByUserAndType(int64(player.ID), domain.ItemEquipment, page, 5)
+		if err != nil {
+			return view.GameResponse{}, err
+		}
+		totalPages = int(math.Ceil(float64(total) / float64(5)))
+		if totalPages == 0 {
+			totalPages = 1
+		}
+	}
+
+	msg := "Kiara, a Mercadora\n\nEscolha um equipamento para vender.\nItens equipados nao aparecem nesta lista.\n\n"
+	if len(items) == 0 {
+		msg = "Kiara, a Mercadora\n\nVoce nao possui equipamentos disponiveis para venda.\n\n"
+	}
+
+	return view.GameResponse{
+		Text: msg,
+		Image: &view.Image{
+			Type: view.ImageAsset,
+			Path: "assets/npcs/kiara_mercadora.png",
+		},
+		MenuKey: "SHOP_SELL_ITEMS_MENU",
+		MenuParams: map[string]any{
+			"Items":            items,
+			"page":             page,
+			"totalPages":       totalPages,
+			"paginationAction": "list_sell_equipments",
+			"backAction":       "list_equipments",
+		},
+	}, nil
+}
+
+func (s *ShopService) SellItem(userID int64, params map[string]string) (view.GameResponse, error) {
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+
+	inventoryItemID, convErr := strconv.Atoi(strings.TrimSpace(params["inventoryItemID"]))
+	if convErr != nil || inventoryItemID <= 0 {
+		return view.GameResponse{
+			Text: "Kiara, a Mercadora\n\nItem invalido para venda.\n\n",
+			Image: &view.Image{
+				Type: view.ImageAsset,
+				Path: "assets/npcs/kiara_mercadora.png",
+			},
+			MenuKey: "SHOP_MENU",
+		}, nil
+	}
+
+	page, _ := strconv.Atoi(strings.TrimSpace(params["page"]))
+	if page < 1 {
+		page = 1
+	}
+
+	invItem, err := s.InventoryRepository.GetInventoryItemByUser(int64(player.ID), uint(inventoryItemID))
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+	if invItem == nil || invItem.Quantity <= 0 || invItem.Item.Type != domain.ItemEquipment {
+		listResp, listErr := s.ListSellEquipments(userID, page)
+		if listErr != nil {
+			return view.GameResponse{}, listErr
+		}
+		listResp.Text = "Kiara, a Mercadora\n\nNao foi possivel vender este item.\n\n" + listResp.Text
+		return listResp, nil
+	}
+
+	sellValue := equipmentSellPrice(&invItem.Item)
+	invItem.Quantity--
+	if err := s.InventoryRepository.UpdateInventoryItem(invItem); err != nil {
+		return view.GameResponse{}, err
+	}
+
+	player.Gold += sellValue
+	if err := s.PlayerRepository.Update(player); err != nil {
+		return view.GameResponse{}, err
+	}
+
+	listResp, listErr := s.ListSellEquipments(userID, page)
+	if listErr != nil {
+		return view.GameResponse{}, listErr
+	}
+	listResp.Text = fmt.Sprintf(
+		"Kiara, a Mercadora\n\n%s vendido por %d Gold.\n\n%s",
+		invItem.Item.Name,
+		sellValue,
+		listResp.Text,
+	)
+	return listResp, nil
+}
+
 func equipmentPurchasePrice(item *domain.Item) int {
 	if item == nil {
 		return 0
 	}
 	return item.Price
+}
+
+func equipmentSellPrice(item *domain.Item) int {
+	if item == nil || item.Price <= 0 {
+		return 0
+	}
+	return int(math.Floor(float64(item.Price) * 0.4))
 }
 
 func normalizeShopEquipmentSlot(raw string) (domain.EquipmentSlot, bool) {
