@@ -108,6 +108,14 @@ func (s *ShopService) ListEquipmentsByType(rawSlot string) (view.GameResponse, e
 	menuParams["_backAction"] = "list_equipments"
 
 	msg := fmt.Sprintf("Kiara, a Mercadora\n\nOpcoes de %s de hoje.\n\n", shopEquipmentTypeLabel(slot))
+	for _, equipment := range equipments {
+		msg += fmt.Sprintf("• %s\n", equipment.Name)
+		msg += fmt.Sprintf("  Requisitos: %s\n", itemRequirementText(&equipment))
+		if bonusText := itemPositiveBonusText(&equipment); bonusText != "" {
+			msg += fmt.Sprintf("  Bonus: %s\n", bonusText)
+		}
+		msg += "\n"
+	}
 
 	return view.GameResponse{
 		Text: msg,
