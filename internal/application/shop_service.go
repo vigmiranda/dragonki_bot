@@ -174,9 +174,6 @@ func equipmentPurchasePrice(item *domain.Item) int {
 	if item == nil {
 		return 0
 	}
-	if item.Type == domain.ItemEquipment && item.Price < 1500 {
-		return 1500
-	}
 	return item.Price
 }
 
