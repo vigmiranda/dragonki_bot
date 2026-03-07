@@ -61,9 +61,64 @@ func ShopEquipmentTypesMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("Amuletos", "list_equipments_type?slot=AMULET"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Voltar", "to_shop"),
+			tgbotapi.NewInlineKeyboardButtonData("Voltar", "list_equipments"),
 		),
 	)
+	return &menu
+}
+
+func ShopSellItemsMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
+	rawItems, ok := params["Items"].([]domain.InventoryItem)
+	if !ok {
+		fmt.Printf("ShopSellItemsMenu -> %v\\n", ok)
+	}
+
+	page := toInt(params["page"])
+	if page < 1 {
+		page = 1
+	}
+	totalPages := toInt(params["totalPages"])
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
+	paginationAction := paramString(params, "paginationAction")
+	if paginationAction == "" {
+		paginationAction = "list_sell_equipments"
+	}
+	backAction := paramString(params, "backAction")
+	if backAction == "" {
+		backAction = "list_equipments"
+	}
+
+	var rows [][]tgbotapi.InlineKeyboardButton
+	for _, item := range rawItems {
+		price := int(float64(item.Item.Price) * 0.4)
+		label := fmt.Sprintf("Vender %s (+%d Gold)", item.Item.Name, price)
+		callback := fmt.Sprintf("sell_item?inventoryItemID=%d&page=%d", item.ID, page)
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(label, callback),
+		))
+	}
+
+	var navRow []tgbotapi.InlineKeyboardButton
+	if page > 1 {
+		navRow = append(navRow, tgbotapi.NewInlineKeyboardButtonData("<", withPage(paginationAction, page-1)))
+	}
+	if page < totalPages {
+		navRow = append(navRow, tgbotapi.NewInlineKeyboardButtonData(">", withPage(paginationAction, page+1)))
+	}
+	if len(navRow) > 0 {
+		rows = append(rows, navRow)
+	}
+
+	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Voltar", backAction),
+		),
+	)
+
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	return &menu
 }
 

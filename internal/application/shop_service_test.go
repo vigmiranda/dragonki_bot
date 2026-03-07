@@ -95,14 +95,26 @@ func TestShopService_ListEquipments_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp.MenuKey != "SHOP_EQUIPMENT_TYPES_MENU" {
-		t.Fatalf("expected SHOP_EQUIPMENT_TYPES_MENU, got %q", resp.MenuKey)
+	if resp.MenuKey != "SHOP_EQUIPMENT_ACTION_MENU" {
+		t.Fatalf("expected SHOP_EQUIPMENT_ACTION_MENU, got %q", resp.MenuKey)
 	}
 	if resp.Image == nil || resp.Image.Path != "assets/npcs/kiara_mercadora.png" {
 		t.Fatalf("unexpected image: %+v", resp.Image)
 	}
-	if !strings.Contains(strings.ToLower(resp.Text), "tipo") {
+	if !strings.Contains(strings.ToLower(resp.Text), "comprar ou vender") {
 		t.Fatalf("unexpected text: %q", resp.Text)
+	}
+}
+
+func TestShopService_OpenBuyEquipmentTypes_Success(t *testing.T) {
+	svc := &ShopService{}
+
+	resp, err := svc.OpenBuyEquipmentTypes()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.MenuKey != "SHOP_EQUIPMENT_TYPES_MENU" {
+		t.Fatalf("expected SHOP_EQUIPMENT_TYPES_MENU, got %q", resp.MenuKey)
 	}
 }
 
@@ -384,5 +396,85 @@ func TestShopService_BuyItem_InvalidItemID_CurrentBehaviorUsesZero(t *testing.T)
 	}
 	if capturedID != 0 {
 		t.Fatalf("expected parsed id fallback to 0, got %d", capturedID)
+	}
+}
+
+func TestShopService_ListSellEquipments_Success(t *testing.T) {
+	player := basePlayer()
+	player.ID = 50
+	svc := &ShopService{
+		PlayerRepository: &fakePlayerRepo{
+			getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+		},
+		InventoryRepository: &fakeInventoryRepo{
+			listByTypeFn: func(playerID int64, itemType domain.ItemType, page int, pageSize int) ([]domain.InventoryItem, int64, error) {
+				if playerID != int64(player.ID) {
+					t.Fatalf("unexpected playerID %d", playerID)
+				}
+				if itemType != domain.ItemEquipment {
+					t.Fatalf("expected equipment type, got %s", itemType)
+				}
+				return []domain.InventoryItem{
+					{ID: 1, Quantity: 1, Item: domain.Item{Name: "Espada", Price: 500, Type: domain.ItemEquipment}},
+				}, 1, nil
+			},
+		},
+	}
+
+	resp, err := svc.ListSellEquipments(99, 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.MenuKey != "SHOP_SELL_ITEMS_MENU" {
+		t.Fatalf("expected SHOP_SELL_ITEMS_MENU, got %q", resp.MenuKey)
+	}
+}
+
+func TestShopService_SellItem_Success(t *testing.T) {
+	player := basePlayer()
+	player.ID = 51
+	player.Gold = 100
+
+	invItem := &domain.InventoryItem{
+		ID:       10,
+		ItemID:   200,
+		Quantity: 1,
+		Item: domain.Item{
+			ID:    200,
+			Name:  "Lanca",
+			Type:  domain.ItemEquipment,
+			Price: 500,
+		},
+	}
+
+	invRepo := &fakeInventoryRepo{
+		getByUserFn: func(playerID int64, inventoryItemID uint) (*domain.InventoryItem, error) {
+			return invItem, nil
+		},
+		listByTypeFn: func(playerID int64, itemType domain.ItemType, page int, pageSize int) ([]domain.InventoryItem, int64, error) {
+			return []domain.InventoryItem{}, 0, nil
+		},
+	}
+	playerRepo := &fakePlayerRepo{
+		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+	}
+
+	svc := &ShopService{
+		PlayerRepository:    playerRepo,
+		InventoryRepository: invRepo,
+	}
+
+	resp, err := svc.SellItem(99, map[string]string{"inventoryItemID": "10", "page": "1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if invItem.Quantity != 0 {
+		t.Fatalf("expected quantity=0 after sell, got %d", invItem.Quantity)
+	}
+	if player.Gold != 300 {
+		t.Fatalf("expected gold=300 (100 + 40%% of 500), got %d", player.Gold)
+	}
+	if !strings.Contains(resp.Text, "vendido por 200 Gold") {
+		t.Fatalf("expected sell confirmation text, got %q", resp.Text)
 	}
 }
