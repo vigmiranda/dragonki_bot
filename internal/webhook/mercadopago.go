@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/vigmiranda/dragonki/internal/bootstrap"
 )
 
 type paymentConfirmer interface {
@@ -46,6 +48,11 @@ func (w *MercadoPagoWebhook) authorize(r *http.Request) bool {
 
 func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+
+	if !bootstrap.IsFeatureEnabled("payments", true) {
+		wr.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	if !w.authorize(r) {
 		wr.WriteHeader(http.StatusUnauthorized)

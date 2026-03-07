@@ -37,6 +37,8 @@ func main() {
 
 	paymentRepo := postgres.NewPaymentRepo(db)
 	playerRepo := postgres.NewPlayerPostgresRepo(db)
+	featureFlagRepo := postgres.NewFeatureFlagPostgresRepo(db)
+	bootstrap.SetFeatureFlagResolver(featureFlagRepo.FindByName)
 
 	mpClient := mercadopago.NewClient()
 	mpGateway := mercadopago.NewGateway(mpClient)

@@ -485,6 +485,9 @@ func TestInventoryService_EquipItem_LevelInsufficient(t *testing.T) {
 	if !strings.Contains(strings.ToLower(resp.Text), "nivel 10") {
 		t.Fatalf("expected level restriction message, got %q", resp.Text)
 	}
+	if resp.Image == nil || resp.Image.Path != "assets/npcs/arkanis_inventario.png" {
+		t.Fatalf("expected inventory guide image, got %+v", resp.Image)
+	}
 }
 
 func TestInventoryService_EquipItem_ClassRestriction(t *testing.T) {
@@ -520,6 +523,9 @@ func TestInventoryService_EquipItem_ClassRestriction(t *testing.T) {
 	}
 	if !strings.Contains(strings.ToLower(resp.Text), "nao pode equipar") {
 		t.Fatalf("expected class restriction message, got %q", resp.Text)
+	}
+	if resp.Image == nil || resp.Image.Path != "assets/npcs/arkanis_inventario.png" {
+		t.Fatalf("expected inventory guide image, got %+v", resp.Image)
 	}
 }
 

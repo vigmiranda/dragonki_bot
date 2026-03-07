@@ -499,6 +499,7 @@ func (s *InventoryService) UseItem(playerID int64, inventoryItemID uint) (view.G
 	if invItem.Quantity <= 0 {
 		return view.GameResponse{
 			Text:    "❌ Você não possui mais essa poção.",
+			Image:   inventoryGuideImage(),
 			MenuKey: "MAIN_MENU",
 		}, nil
 	}
@@ -660,7 +661,11 @@ func (s *InventoryService) EquipItem(player *domain.Player, invItem *domain.Inve
 	}
 	if invItem.Quantity <= 0 {
 		log.Printf("equip_item out of stock | inventoryItemID=%d | itemID=%d", invItem.ID, invItem.ItemID)
-		return view.GameResponse{Text: "Item nao encontrado no inventario.", MenuKey: "MAIN_MENU"}, nil
+		return view.GameResponse{
+			Text:    "Item nao encontrado no inventario.",
+			Image:   inventoryGuideImage(),
+			MenuKey: "MAIN_MENU",
+		}, nil
 	}
 
 	item := invItem.Item
@@ -685,11 +690,19 @@ func (s *InventoryService) EquipItem(player *domain.Player, invItem *domain.Inve
 	}
 	if player.Level < item.RequiredLevel {
 		log.Printf("equip_item blocked by level | playerLevel=%d | requiredLevel=%d", player.Level, item.RequiredLevel)
-		return view.GameResponse{Text: fmt.Sprintf("Voce precisa ser nivel %d para equipar este item.", item.RequiredLevel), MenuKey: "MAIN_MENU"}, nil
+		return view.GameResponse{
+			Text:    fmt.Sprintf("Voce precisa ser nivel %d para equipar este item.", item.RequiredLevel),
+			Image:   inventoryGuideImage(),
+			MenuKey: "MAIN_MENU",
+		}, nil
 	}
 	if !item.AllowsClassByIDAndName(player.ClassID, player.Class.Name) {
 		log.Printf("equip_item blocked by class | class=%s | allowed=%q", player.Class.Name, item.AllowedClasses)
-		return view.GameResponse{Text: fmt.Sprintf("%s nao pode equipar este item.", player.Class.Name), MenuKey: "MAIN_MENU"}, nil
+		return view.GameResponse{
+			Text:    fmt.Sprintf("%s nao pode equipar este item.", player.Class.Name),
+			Image:   inventoryGuideImage(),
+			MenuKey: "MAIN_MENU",
+		}, nil
 	}
 
 	slot, ok := normalizeEquipmentSlot(item.Slot)
@@ -782,4 +795,11 @@ func (s *InventoryService) EquipItem(player *domain.Player, invItem *domain.Inve
 		MenuKey:    "MAIN_MENU",
 		MenuParams: map[string]any{"stats_updated": map[string]int{"atk": player.ATK, "def": player.DEF, "speed": player.Speed, "max_hp": player.MaxHP}},
 	}, nil
+}
+
+func inventoryGuideImage() *view.Image {
+	return &view.Image{
+		Type: view.ImageAsset,
+		Path: "assets/npcs/arkanis_inventario.png",
+	}
 }

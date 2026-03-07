@@ -21,6 +21,10 @@ type PlayerEquipment struct {
 	AccessoryInventoryItemID *uint `gorm:"column:accessory_inventory_item_id"`
 }
 
+func (PlayerEquipment) TableName() string {
+	return "player_equipments"
+}
+
 func (pe *PlayerEquipment) GetSlotInventoryItemID(slot EquipmentSlot) *uint {
 	switch slot {
 	case SlotWeapon:

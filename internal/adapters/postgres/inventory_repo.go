@@ -70,12 +70,18 @@ func (r *InventoryPostgres) ListItemsByUserAndType(
 	}
 	if err := findQuery.
 		Preload("Item").
+		Preload("Item.Equipment").
 		Order("inventory_items.id ASC").
 		Limit(pageSize).
 		Offset(offset).
 		Find(&items).Error; err != nil {
 		return nil, 0, err
 	}
+
+	if err := r.attachEquipmentByItemID(items); err != nil {
+		return nil, 0, err
+	}
+	hydrateInventoryItemsEquipmentMetadata(items)
 
 	return items, total, nil
 }
@@ -108,9 +114,10 @@ func (r *InventoryPostgres) ListEquipmentItemsByUserAndSlot(
 	countQuery := r.db.
 		Model(&domain.InventoryItem{}).
 		Joins("JOIN items ON items.id = inventory_items.item_id").
+		Joins("JOIN equipments ON equipments.item_id = items.id").
 		Where("inventory_items.inventory_id = ?", inventory.ID).
 		Where("items.type = ?", domain.ItemEquipment).
-		Where("items.slot = ?", slot).
+		Where("equipments.slot = ?", slot).
 		Where("inventory_items.quantity > 0")
 	if len(excludedIDs) > 0 {
 		countQuery = countQuery.Where("inventory_items.id NOT IN ?", excludedIDs)
@@ -122,21 +129,28 @@ func (r *InventoryPostgres) ListEquipmentItemsByUserAndSlot(
 	findQuery := r.db.
 		Model(&domain.InventoryItem{}).
 		Joins("JOIN items ON items.id = inventory_items.item_id").
+		Joins("JOIN equipments ON equipments.item_id = items.id").
 		Where("inventory_items.inventory_id = ?", inventory.ID).
 		Where("items.type = ?", domain.ItemEquipment).
-		Where("items.slot = ?", slot).
+		Where("equipments.slot = ?", slot).
 		Where("inventory_items.quantity > 0")
 	if len(excludedIDs) > 0 {
 		findQuery = findQuery.Where("inventory_items.id NOT IN ?", excludedIDs)
 	}
 	if err := findQuery.
 		Preload("Item").
+		Preload("Item.Equipment").
 		Order("inventory_items.id ASC").
 		Limit(pageSize).
 		Offset(offset).
 		Find(&items).Error; err != nil {
 		return nil, 0, err
 	}
+
+	if err := r.attachEquipmentByItemID(items); err != nil {
+		return nil, 0, err
+	}
+	hydrateInventoryItemsEquipmentMetadata(items)
 
 	return items, total, nil
 }
@@ -174,15 +188,16 @@ func (r *InventoryPostgres) CountEquipmentItemsBySlot(playerID int64) (map[domai
 
 	query := r.db.
 		Table("inventory_items").
-		Select("items.slot AS slot, COUNT(inventory_items.id) AS total").
+		Select("equipments.slot AS slot, COUNT(inventory_items.id) AS total").
 		Joins("JOIN items ON items.id = inventory_items.item_id").
+		Joins("JOIN equipments ON equipments.item_id = items.id").
 		Where("inventory_items.inventory_id = ?", inventory.ID).
 		Where("items.type = ?", domain.ItemEquipment).
 		Where("inventory_items.quantity > 0")
 	if len(excludedIDs) > 0 {
 		query = query.Where("inventory_items.id NOT IN ?", excludedIDs)
 	}
-	if err := query.Group("items.slot").Scan(&rows).Error; err != nil {
+	if err := query.Group("equipments.slot").Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 
@@ -252,12 +267,17 @@ func (r *InventoryPostgres) GetInventoryItemByUser(playerID int64, inventoryItem
 	err := r.db.
 		Joins("JOIN inventories ON inventories.id = inventory_items.inventory_id").
 		Preload("Item").
+		Preload("Item.Equipment").
 		Where("inventory_items.id = ?", inventoryItemID).
 		Where("inventories.player_id = ?", playerID).
 		First(&invItem).Error
 	if err != nil {
 		return nil, err
 	}
+	if err := r.attachEquipmentByInventoryItem(&invItem); err != nil {
+		return nil, err
+	}
+	invItem.Item.HydrateEquipmentMetadata()
 	return &invItem, nil
 }
 
@@ -335,4 +355,72 @@ func normalizeEquipmentSlot(raw string) (domain.EquipmentSlot, bool) {
 	default:
 		return "", false
 	}
+}
+
+func hydrateInventoryItemsEquipmentMetadata(items []domain.InventoryItem) {
+	for i := range items {
+		items[i].Item.HydrateEquipmentMetadata()
+	}
+}
+
+func (r *InventoryPostgres) attachEquipmentByItemID(items []domain.InventoryItem) error {
+	itemIDs := make([]uint, 0, len(items))
+	itemIndexByID := make(map[uint][]int, len(items))
+	for i := range items {
+		itemID := items[i].Item.ID
+		if itemID == 0 {
+			itemID = items[i].ItemID
+		}
+		if itemID == 0 {
+			continue
+		}
+		itemIDs = append(itemIDs, itemID)
+		itemIndexByID[itemID] = append(itemIndexByID[itemID], i)
+	}
+	if len(itemIDs) == 0 {
+		return nil
+	}
+
+	var equipments []domain.Equipment
+	if err := r.db.
+		Model(&domain.Equipment{}).
+		Where("item_id IN ?", itemIDs).
+		Find(&equipments).Error; err != nil {
+		return err
+	}
+
+	for i := range equipments {
+		indexes, ok := itemIndexByID[equipments[i].ItemID]
+		if !ok {
+			continue
+		}
+		for _, idx := range indexes {
+			eq := equipments[i]
+			items[idx].Item.Equipment = &eq
+		}
+	}
+	return nil
+}
+
+func (r *InventoryPostgres) attachEquipmentByInventoryItem(invItem *domain.InventoryItem) error {
+	if invItem == nil {
+		return nil
+	}
+	itemID := invItem.Item.ID
+	if itemID == 0 {
+		itemID = invItem.ItemID
+	}
+	if itemID == 0 {
+		return nil
+	}
+
+	var equipment domain.Equipment
+	if err := r.db.
+		Model(&domain.Equipment{}).
+		Where("item_id = ?", itemID).
+		First(&equipment).Error; err != nil {
+		return nil
+	}
+	invItem.Item.Equipment = &equipment
+	return nil
 }
