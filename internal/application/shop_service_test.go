@@ -155,14 +155,14 @@ func TestShopService_ListEquipmentsByType_Success(t *testing.T) {
 	if len(resp.MenuParams) != 3 { // 2 itens + _backAction
 		t.Fatalf("expected 3 params, got %d", len(resp.MenuParams))
 	}
-	foundMinPrice := false
+	foundCatalogPrice := false
 	for label := range resp.MenuParams {
-		if strings.Contains(label, "Espada A - 1500 Gold") {
-			foundMinPrice = true
+		if strings.Contains(label, "Espada A - 700 Gold") {
+			foundCatalogPrice = true
 		}
 	}
-	if !foundMinPrice {
-		t.Fatalf("expected min equipment price in label, params=%+v", resp.MenuParams)
+	if !foundCatalogPrice {
+		t.Fatalf("expected catalog equipment price in label, params=%+v", resp.MenuParams)
 	}
 	if !strings.Contains(resp.Text, "Espada A") || !strings.Contains(resp.Text, "Espada B") {
 		t.Fatalf("expected listed item names in text, got %q", resp.Text)
@@ -279,7 +279,7 @@ func TestShopService_BuyItem_Success(t *testing.T) {
 	}
 }
 
-func TestShopService_BuyItem_EquipmentMinPrice1500(t *testing.T) {
+func TestShopService_BuyItem_EquipmentUsesCatalogPrice(t *testing.T) {
 	player := basePlayer()
 	player.ID = 30
 	player.Gold = 1600
@@ -303,8 +303,8 @@ func TestShopService_BuyItem_EquipmentMinPrice1500(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if player.Gold != 100 {
-		t.Fatalf("expected gold 100 (1600-1500), got %d", player.Gold)
+	if player.Gold != 1300 {
+		t.Fatalf("expected gold 1300 (1600-300), got %d", player.Gold)
 	}
 }
 
