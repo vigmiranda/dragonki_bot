@@ -22,6 +22,7 @@ type Handler struct {
 	rankService       *application.RankService
 	weeklyBossService *application.WeeklyBossService
 	referralService   *application.ReferralService
+	chamberService    *application.AncestralKiChamberService
 }
 
 func NewHandler(
@@ -40,6 +41,7 @@ func NewHandler(
 	rankService *application.RankService,
 	weeklyBossService *application.WeeklyBossService,
 	referralService *application.ReferralService,
+	chamberService *application.AncestralKiChamberService,
 
 ) *Handler {
 	return &Handler{
@@ -58,5 +60,6 @@ func NewHandler(
 		rankService:       rankService,
 		weeklyBossService: weeklyBossService,
 		referralService:   referralService,
+		chamberService:    chamberService,
 	}
 }

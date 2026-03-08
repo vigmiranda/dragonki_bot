@@ -9,6 +9,7 @@ No menu principal voce encontra:
 - `Personagem`
 - `Inventario`
 - `Economia`
+- `Convites`
 - `Eventos`
 - `Rankings`
 - `Entrar na Comunidade`
@@ -177,7 +178,74 @@ Observacao:
 
 ---
 
-## 6) Rankings
+## Camara do Ki Ancestral
+
+### `Abrir Camara`
+O que mostra:
+- custo de entrada (`1 Energia` + `150 Gold`)
+- maior nivel de camara ja desbloqueado
+- status da run ativa (se houver)
+
+### `Iniciar Nivel`
+O que faz:
+- inicia uma run no nivel escolhido
+- consome o custo de entrada uma unica vez
+
+Regras:
+- nivel 1 sempre liberado
+- nivel N so libera ao concluir nivel N-1
+- se ja existir run ativa, nao inicia outra
+
+### `Atacar Batalha Atual`
+O que faz:
+- executa a batalha atual da run
+- usa dificuldade escalada pelo nivel da camara e do player
+
+Regras:
+- cada run tem `5 batalhas`
+- ao vencer, avanca para a proxima batalha
+- ao perder, a run falha e encerra
+
+### `Entre batalhas`
+Apos cada vitoria, voce pode:
+- `Continuar`
+- `Usar Pocoes`
+- `Transformar`
+- `Sair da Camara`
+
+### `Concluir nivel`
+Quando vence as `5/5` batalhas:
+- nivel da camara e concluido
+- proximo nivel e desbloqueado
+
+### `Sair da Camara`
+Se sair antes de concluir 5/5:
+- progresso da run atual e perdido
+- nova tentativa volta para batalha 1
+
+---
+
+## 6) Convites
+
+### `🎁 Convites`
+O que faz:
+- Mostra seu link de indicacao.
+- Mostra quantas indicacoes estao pendentes e quantas ja foram recompensadas.
+
+Como funciona:
+- Compartilhe seu link com amigos.
+- O amigo precisa entrar no bot usando o link (`/start ref_<seu_player_id>`).
+- Quando o indicado atingir o nivel minimo configurado no servidor, voce recebe recompensa.
+
+Regras:
+- Nao vale autoindicacao.
+- Cada jogador pode ser vinculado a apenas um convidador.
+- A recompensa de cada indicacao e paga apenas uma vez.
+- Valores de recompensa e nivel minimo podem variar por configuracao do servidor.
+
+---
+
+## 7) Rankings
 
 ### `Top Batalhas`
 Mostra quem mais batalhou na semana.
@@ -193,7 +261,7 @@ Mostra quem mais fugiu na semana.
 
 ---
 
-## 7) Regras gerais importantes
+## 8) Regras gerais importantes
 
 - Energia limita acoes de combate.
 - Gold e necessario para compras, descanso e ataque do Big Boss.
@@ -202,7 +270,7 @@ Mostra quem mais fugiu na semana.
 
 ---
 
-## 8) Dicas para evoluir mais rapido
+## 9) Dicas para evoluir mais rapido
 
 - Mantenha energia sempre em ciclo (cacar + descanso).
 - Invista em equipamentos com bonus para seu estilo.

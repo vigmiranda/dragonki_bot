@@ -13,6 +13,9 @@ func TestMainMenu_HidesBigBossWhenFeatureDisabled(t *testing.T) {
 		if name == "BIG_BOSS_WEEKLY" {
 			return false, true
 		}
+		if name == "ANCESTRAL_KI_CHAMBER" {
+			return false, true
+		}
 		return false, false
 	})
 	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
@@ -32,6 +35,9 @@ func TestMainMenu_ShowsBigBossWhenFeatureEnabled(t *testing.T) {
 	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) {
 		if name == "BIG_BOSS_WEEKLY" {
 			return true, true
+		}
+		if name == "ANCESTRAL_KI_CHAMBER" {
+			return false, true
 		}
 		return false, false
 	})
@@ -53,6 +59,9 @@ func TestHandleBigBoss_BlockedWhenFeatureDisabled(t *testing.T) {
 		if name == "BIG_BOSS_WEEKLY" {
 			return false, true
 		}
+		if name == "ANCESTRAL_KI_CHAMBER" {
+			return false, true
+		}
 		return false, false
 	})
 	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
@@ -69,6 +78,9 @@ func TestHandleBigBoss_FeatureEnabledWithoutServiceShowsUnavailable(t *testing.T
 		if name == "BIG_BOSS_WEEKLY" {
 			return true, true
 		}
+		if name == "ANCESTRAL_KI_CHAMBER" {
+			return false, true
+		}
 		return false, false
 	})
 	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
@@ -77,6 +89,24 @@ func TestHandleBigBoss_FeatureEnabledWithoutServiceShowsUnavailable(t *testing.T
 	got := h.handleBigBoss("to_big_boss", 1)
 	if !strings.Contains(got.Message, "indisponivel") {
 		t.Fatalf("expected unavailable message, got %q", got.Message)
+	}
+}
+
+func TestEventsMenu_DoesNotShowAncestralKiChamber(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) {
+		if name == "BIG_BOSS_WEEKLY" {
+			return true, true
+		}
+		if name == "ANCESTRAL_KI_CHAMBER" {
+			return true, true
+		}
+		return false, true
+	})
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
+	events := eventsMenu()
+	if menuHasCallback(events, "to_ancestral_ki_chamber") {
+		t.Fatalf("expected chamber button hidden in events menu")
 	}
 }
 

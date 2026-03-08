@@ -121,6 +121,9 @@ func main() {
 			&domain.BattleLog{},
 			&domain.MonsterDrop{},
 			&domain.FeatureFlag{},
+			&domain.AncestralKiChamberProgress{},
+			&domain.AncestralKiChamberRun{},
+			&domain.AncestralKiChamberBattleLog{},
 		)
 		if err != nil {
 			log.Fatal("error ao rodar automigrate", err)
@@ -143,6 +146,7 @@ func main() {
 	inventoryRepo := postgres.NewInventoryPostgresRepo(db)
 	battleRepo := postgres.NewBattlePostgresRepo(db)
 	weeklyBossRepo := postgres.NewWeeklyBossPostgresRepo(db)
+	chamberRepo := postgres.NewAncestralKiChamberPostgresRepo(db)
 	bootstrap.SetFeatureFlagResolver(featureFlagRepo.FindByName)
 
 	playerService := application.NewPlayerService(playerRepo, regionRepo, inventoryRepo)
@@ -155,6 +159,7 @@ func main() {
 	exchangeService := application.NewExchangeService(playerRepo)
 	inventoryService := application.NewInventoryService(inventoryRepo, playerRepo, itemRepo)
 	rankService := application.NewRankService(battleRepo)
+	chamberService := application.NewAncestralKiChamberService(chamberRepo, playerRepo, monsterRepo, inventoryRepo)
 	var rewardQueue application.WeeklyBossRewardQueue
 	if isBigBossQueueEnabled() {
 		queueName := strings.TrimSpace(os.Getenv("BIG_BOSS_QUEUE_NAME"))
@@ -206,6 +211,7 @@ func main() {
 		rankService,
 		weeklyBossService,
 		referralService,
+		chamberService,
 	)
 
 	mux := http.NewServeMux()

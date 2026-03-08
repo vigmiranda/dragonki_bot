@@ -219,12 +219,12 @@ func eventsMenu() *tgbotapi.InlineKeyboardMarkup {
 
 	if bootstrap.IsFeatureEnabled("big_boss_weekly", false) {
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("👑 Big Boss Semanal", "to_big_boss"),
+			tgbotapi.NewInlineKeyboardButtonData("Big Boss Semanal", "to_big_boss"),
 		))
 	}
 
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+		tgbotapi.NewInlineKeyboardButtonData("Voltar", "action_menu"),
 	))
 
 	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
@@ -317,6 +317,84 @@ func bigBossRankingMenu() *tgbotapi.InlineKeyboardMarkup {
 	return &menu
 }
 
+func ancestralKiChamberMenu() *tgbotapi.InlineKeyboardMarkup {
+	rows := make([][]tgbotapi.InlineKeyboardButton, 0, 7)
+
+	for i := 1; i <= 5; i++ {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("Iniciar Nivel %d", i),
+				fmt.Sprintf("start_ancestral_ki_run?level=%d", i),
+			),
+		))
+	}
+
+	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Niveis 6 a 10", "ancestral_ki_levels_6_10"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Voltar", "menu_events"),
+		),
+	)
+
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	return &menu
+}
+
+func ancestralKiChamberLevels6To10Menu() *tgbotapi.InlineKeyboardMarkup {
+	rows := make([][]tgbotapi.InlineKeyboardButton, 0, 7)
+
+	for i := 6; i <= 10; i++ {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("Iniciar Nivel %d", i),
+				fmt.Sprintf("start_ancestral_ki_run?level=%d", i),
+			),
+		))
+	}
+
+	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Niveis 1 a 5", "to_ancestral_ki_chamber"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Voltar", "menu_events"),
+		),
+	)
+
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	return &menu
+}
+
+func ancestralKiChamberRunMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Atacar Batalha Atual", "ancestral_ki_chamber_continue"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Sair da Camara", "abandon_ancestral_ki_run"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Voltar", "to_ancestral_ki_chamber"),
+		),
+	)
+	return &menu
+}
+
+func ancestralKiChamberPostWinMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Continuar", "ancestral_ki_chamber_continue"),
+			tgbotapi.NewInlineKeyboardButtonData("Sair", "abandon_ancestral_ki_run"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Usar Pocoes", "chamber_open_potions?page=1"),
+			tgbotapi.NewInlineKeyboardButtonData("Transformar", "chamber_transform"),
+		),
+	)
+	return &menu
+}
 func getenvIntDefault(key string, def int) int {
 	raw := os.Getenv(key)
 	if raw == "" {

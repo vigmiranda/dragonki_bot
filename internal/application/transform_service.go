@@ -18,8 +18,9 @@ func NewTransformService(repo ports.PlayerRepository) *TransformService {
 }
 func (s *TransformService) Training() (view.GameResponse, error) {
 	msg := fmt.Sprintf(
-		"✨ Câmara do Ki Ancestral ✨ \n\n" +
-			"Sentimos muito mas ela ainda se encontra em construção!!",
+		"Area de Treinamento\n\n" +
+			"Aqui voce aprimora o controle do Ki e prepara sua transformacao.\n" +
+			"Use esta area para revisar as regras e ativar sua forma quando estiver pronto.",
 	)
 	img := &view.Image{
 		Type: view.ImageAsset,
