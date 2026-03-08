@@ -1,7 +1,7 @@
-FROM golang:1.21 AS builder
+FROM golang:1.22 AS builder
 
 WORKDIR /app
-COPY go.mod go.sum go.work
+COPY go.mod go.sum go.work ./
 COPY . .
 
 RUN go build -o dragonki_webhook ./cmd/webhook
