@@ -32,31 +32,17 @@ func choosingGenderMenu() *tgbotapi.InlineKeyboardMarkup {
 func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 	rows := [][]tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⚔️ Caçar", "action_hunt"),
-			tgbotapi.NewInlineKeyboardButtonData("🗺 Explorar", "list_map"),
+			tgbotapi.NewInlineKeyboardButtonData("⚔️ Aventura", "menu_adventure"),
+			tgbotapi.NewInlineKeyboardButtonData("🗺 Personagem", "menu_character"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
-			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar", "list_transform"),
+			tgbotapi.NewInlineKeyboardButtonData("👤 Inventario", "menu_inventory_scope"),
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Economia", "menu_economy"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🧳 Inventory", "open_inventory"),
-			tgbotapi.NewInlineKeyboardButtonData("⛩ Câm. Ki Ancestral", "to_training"),
+			tgbotapi.NewInlineKeyboardButtonData("🧳 Eventos", "menu_events"),
+			tgbotapi.NewInlineKeyboardButtonData("⛩ Rankings", "open_rank"),
 		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
-			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🔄 Casa de Câmbio", "to_exchange"),
-			tgbotapi.NewInlineKeyboardButtonData("🏆 Rank", "open_rank"),
-		),
-	}
-
-	if bootstrap.IsFeatureEnabled("big_boss_weekly", false) {
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("👑 Big Boss", "to_big_boss"),
-		))
 	}
 
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
@@ -165,6 +151,83 @@ func regionsMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 }
 func choiceClassMenu(itemsParams map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	return utils.ChoiceClassMenu(itemsParams)
+}
+
+func adventureMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⚔️ Cacar", "action_hunt"),
+			tgbotapi.NewInlineKeyboardButtonData("🗺 Explorar", "list_map"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⛩ Treinamento", "to_training"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+		),
+	)
+	return &menu
+}
+
+func characterMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("👤 Status", "action_status"),
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar", "list_transform"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+		),
+	)
+	return &menu
+}
+
+func inventoryScopeMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🎒 Abrir Inventario", "open_inventory"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📿 Equipados", "open_inventory_equipped"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+		),
+	)
+	return &menu
+}
+
+func economyMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
+			tgbotapi.NewInlineKeyboardButtonData("🔄 Cambio", "to_exchange"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+		),
+	)
+	return &menu
+}
+
+func eventsMenu() *tgbotapi.InlineKeyboardMarkup {
+	rows := make([][]tgbotapi.InlineKeyboardButton, 0, 3)
+
+	if bootstrap.IsFeatureEnabled("big_boss_weekly", false) {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("👑 Big Boss Semanal", "to_big_boss"),
+		))
+	}
+
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+	))
+
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	return &menu
 }
 
 func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {

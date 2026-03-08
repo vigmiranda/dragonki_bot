@@ -18,8 +18,13 @@ func TestMainMenu_HidesBigBossWhenFeatureDisabled(t *testing.T) {
 	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
 
 	menu := mainMenu()
-	if menuHasCallback(menu, "to_big_boss") {
-		t.Fatalf("expected Big Boss button hidden when feature is disabled")
+	if !menuHasCallback(menu, "menu_events") {
+		t.Fatalf("expected events scope button visible on main menu")
+	}
+
+	events := eventsMenu()
+	if menuHasCallback(events, "to_big_boss") {
+		t.Fatalf("expected Big Boss hidden inside events menu when feature is disabled")
 	}
 }
 
@@ -33,8 +38,13 @@ func TestMainMenu_ShowsBigBossWhenFeatureEnabled(t *testing.T) {
 	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
 
 	menu := mainMenu()
-	if !menuHasCallback(menu, "to_big_boss") {
-		t.Fatalf("expected Big Boss button visible when feature is enabled")
+	if !menuHasCallback(menu, "menu_events") {
+		t.Fatalf("expected events scope button visible on main menu")
+	}
+
+	events := eventsMenu()
+	if !menuHasCallback(events, "to_big_boss") {
+		t.Fatalf("expected Big Boss button visible inside events menu when feature is enabled")
 	}
 }
 

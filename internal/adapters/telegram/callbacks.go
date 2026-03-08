@@ -24,7 +24,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	switch action {
 	case "to_start", "select_man", "select_woman":
 		inputTelegram = h.handleOnboarding(action, userID)
-	case "action_menu":
+	case "action_menu", "menu_adventure", "menu_character", "menu_inventory_scope", "menu_economy", "menu_events":
 		inputTelegram = h.handleMenu(action, userID)
 	case "list_map", "to_region":
 		inputTelegram = h.handleMap(action, userID, params)

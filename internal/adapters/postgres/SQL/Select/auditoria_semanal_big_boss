@@ -1,0 +1,86 @@
+WITH latest_boss AS (
+    SELECT wb.id, wb.name, wb.week_key, wb.status, wb.current_hp, wb.max_hp, wb.defeated_at
+    FROM public.weekly_bosses wb
+    ORDER BY wb.id DESC
+    LIMIT 1
+),
+top3 AS (
+    SELECT
+        c.boss_id,
+        c.player_id,
+        p.name AS player_name,
+        c.total_damage,
+        c.last_attack_at,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.boss_id
+            ORDER BY c.total_damage DESC, c.last_attack_at ASC
+        ) AS position
+    FROM public.weekly_boss_contributions c
+    JOIN public.players p ON p.id = c.player_id
+    JOIN latest_boss lb ON lb.id = c.boss_id
+),
+payouts AS (
+    SELECT
+        wp.boss_id,
+        wp.player_id,
+        wp.position,
+        wp.gold_paid,
+        wp.status AS payout_status,
+        wp.paid_at,
+        wp.error_message
+    FROM public.weekly_boss_payouts wp
+    JOIN latest_boss lb ON lb.id = wp.boss_id
+),
+reward_cfg AS (
+    SELECT
+        wr.position,
+        wr.gold AS configured_gold,
+        wr.enabled
+    FROM public.weekly_boss_rewards wr
+    WHERE wr.position IN (1,2,3)
+),
+reward_items AS (
+    SELECT
+        wr.position,
+        STRING_AGG(CONCAT(i.name, ' x', wri.quantity), ', ' ORDER BY i.name) AS reward_items
+    FROM public.weekly_boss_rewards wr
+    LEFT JOIN public.weekly_boss_reward_items wri ON wri.reward_id = wr.id
+    LEFT JOIN public.items i ON i.id = wri.item_id
+    WHERE wr.position IN (1,2,3)
+    GROUP BY wr.position
+)
+SELECT
+    lb.id AS boss_id,
+    lb.week_key,
+    lb.name AS boss_name,
+    lb.status AS boss_status,
+    lb.current_hp,
+    lb.max_hp,
+    lb.defeated_at,
+
+    t.position,
+    t.player_id,
+    t.player_name,
+    t.total_damage,
+    t.last_attack_at,
+
+    rc.configured_gold,
+    COALESCE(ri.reward_items, '(sem itens configurados)') AS configured_items,
+
+    py.gold_paid,
+    py.payout_status,
+    py.paid_at,
+    py.error_message
+FROM latest_boss lb
+LEFT JOIN top3 t
+    ON t.boss_id = lb.id
+   AND t.position <= 3
+LEFT JOIN reward_cfg rc
+    ON rc.position = t.position
+LEFT JOIN reward_items ri
+    ON ri.position = t.position
+LEFT JOIN payouts py
+    ON py.boss_id = lb.id
+   AND py.player_id = t.player_id
+ORDER BY t.position;
+Se quiser auditar um boss específico (e não o último), troco pra WHERE wb.week_key = '2026-W10'.

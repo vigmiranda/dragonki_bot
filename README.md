@@ -1,149 +1,116 @@
-# 🐉 DragonKi — Telegram RPG Bot
+# DragonKi Bot
 
-**DragonKi** é um RPG por texto para Telegram inspirado em **Dungeons & Dragons** e **Dragon Ball**, combinando fantasia clássica, progressão de poder, energia (stamina) e transformações baseadas em Ki.
+Bot de RPG para Telegram com backend em Go, Postgres e Redis.
 
-Cada jogador possui seu próprio personagem, evolução persistente em banco de dados e ações limitadas por energia que se regenera com o tempo.
+## Stack
+- Go 1.22
+- Postgres
+- Redis (fila assíncrona)
+- Telegram Bot API
+- GORM
+- Asynq (jobs no Redis)
 
----
+## Serviços do projeto
+- `cmd/bot`: serviço principal (webhook Telegram + regras de jogo)
+- `cmd/webhook`: webhook de pagamentos (Mercado Pago)
+- `cmd/worker`: consumidor de jobs assíncronos (premiação Big Boss)
 
-## 🎮 Funcionalidades
+## Funcionalidades importantes
+- Feature flags em banco (`feature_flags`)
+- Inventário/equipamentos normalizados
+- Loja com compra e venda de equipamentos
+- Big Boss semanal
+  - geração semanal automática
+  - ataque diário (1x por dia)
+  - ranking por dano
+  - premiação Top 3
+  - premiação assíncrona via fila Redis
 
-- 🤖 Bot de Telegram multiplayer
-- 🧙 Personagem individual por usuário
-- ⚔️ Sistema de batalhas PvE
-- ⚡ Energia limitada com recarga automática por tempo
-- 🔥 Sistema de transformação (Ki Awakened)
-- 🏆 Progressão por nível e XP
-- 💾 Persistência com SQLite
-- 🐳 Pronto para Docker
-- ☁️ Deploy gratuito (Railway)
+## Estrutura de dados (Big Boss)
+- `weekly_bosses`: instâncias semanais
+- `weekly_boss_attacks`: histórico de ataques diários
+- `weekly_boss_contributions`: dano acumulado por jogador
+- `weekly_boss_templates`: catálogo dinâmico de bosses (sorteio)
+- `weekly_boss_rewards`: configuração de premiação por posição
+- `weekly_boss_reward_items`: itens da premiação
+- `weekly_boss_payouts`: auditoria/idempotência dos pagamentos
 
----
-
-## 🐉 Lore Resumido
-
-No mundo de **Aethoria**, os Dragões Primordiais libertaram uma energia ancestral conhecida como **Ki**.  
-Aqueles capazes de dominá-la se tornam Portadores do Ki, guerreiros capazes de evoluir, despertar e transcender seus limites.
-
-Seu destino é ascender.
-
----
-## 🧩 NPC`s
-- 🙎‍♂️ Sir Soneca - Dono da pousada
----
-## 🧩 Comandos do Jogo
-
-| Comando        | Descrição |
-|---------------|----------|
-| `/start`      | Cria o personagem |
-| `/status`     | Mostra status completo |
-| `/batalhar`   | Luta contra um monstro (consome energia) |
-| `/transform`  | Ativa transformação de Ki (nível 3+) |
-
----
-
-## ⚔️ Classes (v1)
-
-> Atualmente o personagem inicia como **Blade Monk**  
-> Sistema de escolha de classes será expandido na v2.
-
-**Blade Monk**
-- Especialista em Ki e combate corpo-a-corpo
-- Focado em progressão e transformações
-
----
-
-## 🔥 Sistema de Transformação
-
-### ⚡ Ki Awakened
-- Desbloqueia no nível 3
-- Custo: 3 de energia
-- Duração: 3 batalhas
-- Bônus:
-    - +50% ATK
-    - +20% XP
-
-Transformações são temporárias e não acumulam.
-
----
-
-## ⚡ Sistema de Energia
-
-- Energia máxima: **10**
-- Recupera **1 ponto a cada 10 minutos**
-- Batalhas consomem energia
-- Transformações consomem energia
-
-A recarga é calculada automaticamente com base no tempo, sem uso de cron jobs.
-
----
-
-## 🧠 Tecnologias Utilizadas
-
-- **Go 1.21+**
-- **Telegram Bot API**
-- **PostgreSQL**
-- **Docker**
-- **Railway (Deploy) -> https://railway.app/** 
-
----
-## ⚙️ Configuração de Ambiente
-
-O projeto carrega variáveis nesta ordem:
-
-1. Variáveis já definidas no sistema (não são sobrescritas)
-2. `.env`
-3. `.env.<APP_ENV>`
-
-Se `APP_ENV` não for definido, o padrão é `development`.
-
-Arquivos de referência:
-
-- `.env.example`
-- `.env.development`
-- `.env.staging`
-- `.env.production`
-
-Variáveis críticas:
-
+## Variáveis de ambiente
+Base:
+- `APP_ENV`
 - `DATABASE_URL`
 - `BOT_TOKEN`
+- `RUN_MIGRATIONS`
+- `RUN_AUTO_MIGRATE`
+- `MIGRATIONS_DIR`
+
+Fila / Worker:
+- `REDIS_URL` (ex: `redis://localhost:6379`)
+- `BIG_BOSS_QUEUE_ENABLED` (`true|false`)
+- `BIG_BOSS_QUEUE_NAME` (default: `big_boss_rewards`)
+- `QUEUE_CONCURRENCY` (default: `10`)
+
+Pagamentos:
 - `MP_ACCESS_TOKEN`
 - `MP_NOTIFICATION_URL`
 - `MP_WEBHOOK_TOKEN`
+- `KI_CRYSTALS_VALUE`
+- `KI_CRYSTALS_MULT`
+- `KI_CRYSTALS_CONVERT`
 
-Deploy seguro:
+## Rodando local (Docker)
+Subir Postgres + Redis:
 
-- `RUN_MIGRATIONS=true` somente quando quiser executar migração automática.
-- Em `staging`/`production`, manter `RUN_MIGRATIONS=false` por padrão.
-- Defina `MP_WEBHOOK_TOKEN` para proteger o endpoint de webhook.
-- Feature flags agora são lidas da tabela `public.feature_flags` no Postgres.
-- Para desativar compra de Ki sem novo deploy:
-  - `UPDATE public.feature_flags SET enabled = FALSE, updated_at = NOW() WHERE name = 'PAYMENTS';`
-- Para aplicar seeds SQL manualmente (ex.: atualizar `monster_drops`):
-  - `go run ./cmd/seed`
-  - Opcional: `SQL_SEED_FILE=internal/adapters/postgres/SQL/Inserts/monster_drops.sql go run ./cmd/seed`
+```bash
+docker compose up -d
+```
 
----
+## Rodando local (Go)
+Aplicar migrations (uma vez):
 
-## 📁 Estrutura do Projeto
+```bash
+$env:RUN_MIGRATIONS="true"
+go run ./cmd/bot
+```
 
-```text
-dragonki/
-├── main.go
-├── go.mod
-├── Dockerfile
-└── database.db (gerado automaticamente)
+Bot:
 
-## Database Migrations (golang-migrate)
+```bash
+$env:RUN_MIGRATIONS="false"
+$env:BIG_BOSS_QUEUE_ENABLED="true"
+$env:REDIS_URL="redis://localhost:6379"
+go run ./cmd/bot
+```
 
-Variaveis:
-- RUN_MIGRATIONS: aplica migrations versionadas no boot do bot quando true.
-- RUN_AUTO_MIGRATE: controla AutoMigrate do GORM (recomendado true apenas em development).
-- MIGRATIONS_DIR: diretorio das migrations (padrao: db/migrations).
+Worker:
 
-Comandos:
-- go run ./cmd/migrate -action up
-- go run ./cmd/migrate -action version
-- go run ./cmd/migrate -action down -steps 1
-- go run ./cmd/migrate -action force -version 1
+```bash
+$env:REDIS_URL="redis://localhost:6379"
+$env:QUEUE_CONCURRENCY="10"
+go run ./cmd/worker
+```
+
+## Deploy Railway
+### Bot
+- Dockerfile: `Dockerfile.bot`
+- Habilitar `BIG_BOSS_QUEUE_ENABLED=true` e `REDIS_URL`
+
+### Worker
+- Criar serviço separado no mesmo repo
+- Dockerfile path: `Dockerfile.worker`
+- Start command: vazio (usar `CMD` do Dockerfile)
+- Configurar `DATABASE_URL`, `REDIS_URL`, `QUEUE_CONCURRENCY`, `APP_ENV`
+
+### Webhook pagamentos
+- Dockerfile: `Dockerfile.webhook`
+
+## Notas operacionais
+- O scheduler do Big Boss roda no `cmd/bot`.
+- A premiação Top 3 é enfileirada ao derrotar o boss.
+- `weekly_boss_payouts` evita duplicidade de pagamento.
+
+## Testes
+
+```bash
+go test ./internal/application ./internal/adapters/postgres ./internal/adapters/telegram ./cmd/bot ./cmd/worker
+```
