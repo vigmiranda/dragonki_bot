@@ -1,0 +1,20 @@
+FROM golang:1.22 AS builder
+
+WORKDIR /app
+COPY go.mod go.sum go.work ./
+COPY . .
+
+RUN go build -o dragonki_worker ./cmd/worker
+
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y ca-certificates \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /app/dragonki_worker .
+
+CMD ["./dragonki_worker"]
