@@ -3,6 +3,8 @@ package telegram
 import (
 	"log"
 	"runtime/debug"
+	"strconv"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -33,7 +35,34 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 		h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Erro interno"))
 		return
 	}
-	if update.Message.Text == "/start" {
+	messageText := strings.TrimSpace(update.Message.Text)
+	if strings.HasPrefix(messageText, "/start") {
+		if h.referralService != nil {
+			player, playerErr := h.onboardingService.Onboarding(update.Message.Chat.ID)
+			if playerErr == nil && player != nil {
+				registerResult, refErr := h.referralService.RegisterByStartParam(messageText, int64(player.ID), player.OnboardingStep)
+				if refErr != nil {
+					log.Printf("referral register failed | chatID=%d | playerID=%d | err=%v", update.Message.Chat.ID, player.ID, refErr)
+				} else if registerResult != nil && registerResult.Linked {
+					h.bot.Send(tgbotapi.NewMessage(
+						update.Message.Chat.ID,
+						"Convite registrado com sucesso! Ao atingir nivel "+
+							formatInt(registerResult.RequiredLevel)+
+							", seu convidador recebe "+
+							formatInt(registerResult.RewardGold)+" Gold e "+
+							formatInt(registerResult.RewardKiCrystal)+" Ki Crystal(s).",
+					))
+					if registerResult.ReferrerUserID > 0 && registerResult.ReferrerUserID != update.Message.Chat.ID {
+						h.bot.Send(tgbotapi.NewMessage(
+							registerResult.ReferrerUserID,
+							"Um novo jogador entrou pelo seu link de indicacao! "+
+								"Recompensa ao atingir nivel "+
+								formatInt(registerResult.RequiredLevel)+".",
+						))
+					}
+				}
+			}
+		}
 		switch status {
 		case "DONE":
 			h.newPanel(update.Message.Chat.ID, "OLD_PLAYER")
@@ -53,4 +82,8 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 	}
 
 	h.handleCallback(update)
+}
+
+func formatInt(v int) string {
+	return strconv.Itoa(v)
 }

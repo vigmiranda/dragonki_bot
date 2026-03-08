@@ -37,6 +37,7 @@ type BattleService struct {
 	regionRepo          ports.RegionRepository
 	battleRepo          ports.BattleRepository
 	inventoryRepository ports.InventoryRepository
+	referralService     *ReferralService
 
 	cfg battleConfig
 	rng *rand.Rand
@@ -48,13 +49,19 @@ func NewBattleService(
 	regionRepo ports.RegionRepository,
 	battleRepo ports.BattleRepository,
 	inventoryRepo ports.InventoryRepository,
+	referralService ...*ReferralService,
 ) *BattleService {
+	var refService *ReferralService
+	if len(referralService) > 0 {
+		refService = referralService[0]
+	}
 	return &BattleService{
 		playerRepo:          playerRepo,
 		monsterRepo:         monsterRepo,
 		regionRepo:          regionRepo,
 		battleRepo:          battleRepo,
 		inventoryRepository: inventoryRepo,
+		referralService:     refService,
 		cfg:                 loadBattleConfig(resolveAppConfig(getAppConfig())),
 		rng:                 rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
@@ -208,6 +215,18 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	outcome, err := s.resolveBattleOutcome(player, monster, region, state, xpReceived, moneyReceived)
 	if err != nil {
 		return view.GameResponse{}, err
+	}
+	if s.referralService != nil && player.Level > state.oldLevel {
+		rewardResult, referralErr := s.referralService.ProcessLevelUp(int64(player.ID), player.Level)
+		if referralErr != nil {
+			log.Printf("referral level-up processing failed | playerID=%d | level=%d | err=%v", player.ID, player.Level, referralErr)
+		} else if rewardResult != nil && rewardResult.Granted {
+			outcome.msg += fmt.Sprintf(
+				"\n\n🎁 Bônus de indicação liberado!\nSeu convidador recebeu %d Gold e %d Ki Crystal(s).",
+				rewardResult.RewardGold,
+				rewardResult.RewardKiCrystal,
+			)
+		}
 	}
 
 	battleLog := &domain.BattleLog{

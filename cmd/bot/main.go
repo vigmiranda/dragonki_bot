@@ -138,6 +138,7 @@ func main() {
 	regionRepo := postgres.NewRegionPostgresRepo(db)
 	paymentRepo := postgres.NewPaymentRepo(db)
 	featureFlagRepo := postgres.NewFeatureFlagPostgresRepo(db)
+	referralRepo := postgres.NewReferralPostgresRepo(db)
 	itemRepo := postgres.NewItemsPostgresRepo(db)
 	inventoryRepo := postgres.NewInventoryPostgresRepo(db)
 	battleRepo := postgres.NewBattlePostgresRepo(db)
@@ -145,7 +146,6 @@ func main() {
 	bootstrap.SetFeatureFlagResolver(featureFlagRepo.FindByName)
 
 	playerService := application.NewPlayerService(playerRepo, regionRepo, inventoryRepo)
-	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo, battleRepo, inventoryRepo)
 	onboardingService := application.NewOnboardingService(playerRepo)
 	transformService := application.NewTransformService(playerRepo)
 	menuService := application.NewMenuService(playerRepo, regionRepo)
@@ -187,6 +187,9 @@ func main() {
 
 	log.Println("DragonKi bot iniciado:", bot.Self.UserName)
 
+	referralService := application.NewReferralService(referralRepo, playerRepo, bot.Self.UserName)
+	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo, battleRepo, inventoryRepo, referralService)
+
 	handler := telegram.NewHandler(
 		bot,
 		playerService,
@@ -202,6 +205,7 @@ func main() {
 		inventoryService,
 		rankService,
 		weeklyBossService,
+		referralService,
 	)
 
 	mux := http.NewServeMux()
