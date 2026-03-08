@@ -1,0 +1,12 @@
+ALTER TABLE public.weekly_bosses
+    ADD COLUMN IF NOT EXISTS tag VARCHAR(64) NOT NULL DEFAULT '';
+
+UPDATE public.weekly_bosses
+SET tag = CASE
+    WHEN UPPER(name) LIKE '%ASTARION%' THEN 'ASTARION'
+    WHEN UPPER(name) LIKE '%SURTR%' THEN 'SURTR'
+    WHEN UPPER(name) LIKE '%VORGATH%' THEN 'VORGATH'
+    WHEN UPPER(name) LIKE '%NYXARA%' THEN 'NYXARA'
+    ELSE tag
+END
+WHERE COALESCE(TRIM(tag), '') = '';
