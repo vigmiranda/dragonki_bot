@@ -137,6 +137,7 @@ func TestHandleUpdate_StartWithReferral_SendsMessagesToReferredAndReferrer(t *te
 		nil,
 		nil,
 		application.NewReferralService(referralRepo, playerRepo, bot.Self.UserName),
+		nil,
 	)
 
 	h.HandleUpdate(tgbotapi.Update{
@@ -250,6 +251,7 @@ func TestHandleUpdate_StartWithReferral_DuplicateDoesNotSendReferralMessages(t *
 		nil,
 		nil,
 		application.NewReferralService(referralRepo, playerRepo, bot.Self.UserName),
+		nil,
 	)
 
 	h.HandleUpdate(tgbotapi.Update{

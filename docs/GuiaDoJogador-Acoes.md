@@ -178,6 +178,53 @@ Observacao:
 
 ---
 
+## Camara do Ki Ancestral
+
+### `Abrir Camara`
+O que mostra:
+- custo de entrada (`1 Energia` + `150 Gold`)
+- maior nivel de camara ja desbloqueado
+- status da run ativa (se houver)
+
+### `Iniciar Nivel`
+O que faz:
+- inicia uma run no nivel escolhido
+- consome o custo de entrada uma unica vez
+
+Regras:
+- nivel 1 sempre liberado
+- nivel N so libera ao concluir nivel N-1
+- se ja existir run ativa, nao inicia outra
+
+### `Atacar Batalha Atual`
+O que faz:
+- executa a batalha atual da run
+- usa dificuldade escalada pelo nivel da camara e do player
+
+Regras:
+- cada run tem `5 batalhas`
+- ao vencer, avanca para a proxima batalha
+- ao perder, a run falha e encerra
+
+### `Entre batalhas`
+Apos cada vitoria, voce pode:
+- `Continuar`
+- `Usar Pocoes`
+- `Transformar`
+- `Sair da Camara`
+
+### `Concluir nivel`
+Quando vence as `5/5` batalhas:
+- nivel da camara e concluido
+- proximo nivel e desbloqueado
+
+### `Sair da Camara`
+Se sair antes de concluir 5/5:
+- progresso da run atual e perdido
+- nova tentativa volta para batalha 1
+
+---
+
 ## 6) Convites
 
 ### `🎁 Convites`

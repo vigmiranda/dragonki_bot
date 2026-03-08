@@ -204,7 +204,11 @@ func PotionMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 
 	for _, item := range rawItems {
 		label := fmt.Sprintf("%dx %s", item.Quantity, item.Item.Name)
-		callback := fmt.Sprintf("use_item?inventoryItemID=%d", item.ID)
+		action := paramString(params, "itemAction")
+		if action == "" {
+			action = "use_item"
+		}
+		callback := fmt.Sprintf("%s?inventoryItemID=%d", action, item.ID)
 		if isEquipment {
 			callback = fmt.Sprintf("equip_item?inventoryItemID=%d", item.ID)
 		}

@@ -12,6 +12,9 @@ func TestPostgresConstructors(t *testing.T) {
 	if got := NewBattlePostgresRepo(db); got == nil {
 		t.Fatalf("expected NewBattlePostgresRepo non-nil")
 	}
+	if got := NewAncestralKiChamberPostgresRepo(db); got == nil {
+		t.Fatalf("expected NewAncestralKiChamberPostgresRepo non-nil")
+	}
 	if got := NewFeatureFlagPostgresRepo(db); got == nil {
 		t.Fatalf("expected NewFeatureFlagPostgresRepo non-nil")
 	}

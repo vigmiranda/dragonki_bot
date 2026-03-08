@@ -37,6 +37,18 @@ func mapMenu(
 	case "BIG_BOSS_RANKING_MENU":
 		return bigBossRankingMenu()
 
+	case "ANCESTRAL_KI_CHAMBER_MENU":
+		return ancestralKiChamberMenu()
+
+	case "ANCESTRAL_KI_CHAMBER_LEVELS_6_10_MENU":
+		return ancestralKiChamberLevels6To10Menu()
+
+	case "ANCESTRAL_KI_CHAMBER_RUN_MENU":
+		return ancestralKiChamberRunMenu()
+
+	case "ANCESTRAL_KI_CHAMBER_POST_WIN_MENU":
+		return ancestralKiChamberPostWinMenu()
+
 	case "SHOP_ITEMS_MENU":
 		return shopItemsMenu(params)
 
