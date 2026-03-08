@@ -33,6 +33,9 @@ func TestPostgresConstructors(t *testing.T) {
 	if got := NewRegionPostgresRepo(db); got == nil {
 		t.Fatalf("expected NewRegionPostgresRepo non-nil")
 	}
+	if got := NewReferralPostgresRepo(db); got == nil {
+		t.Fatalf("expected NewReferralPostgresRepo non-nil")
+	}
 	if got := NewWeeklyBossPostgresRepo(db); got == nil {
 		t.Fatalf("expected NewWeeklyBossPostgresRepo non-nil")
 	}

@@ -10,6 +10,7 @@ import (
 )
 
 type battleState struct {
+	oldLevel        int
 	oldXP           int
 	oldGold         int
 	monsterHP       int
@@ -42,6 +43,7 @@ func parseMonsterIDParam(params map[string]string) (int64, error) {
 
 func initBattleState(player *domain.Player, monster *domain.Monster, stats effectivePlayerStats) *battleState {
 	state := &battleState{
+		oldLevel:    player.Level,
 		oldXP:       player.XP,
 		oldGold:     player.Gold,
 		monsterHP:   monster.HP,

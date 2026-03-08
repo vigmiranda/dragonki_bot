@@ -177,6 +177,7 @@ func characterMenu() *tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🛏️ Pousada", "to_sleep"),
+			tgbotapi.NewInlineKeyboardButtonData("🎁 Convites", "open_referral"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
