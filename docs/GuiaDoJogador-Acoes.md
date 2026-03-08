@@ -9,6 +9,7 @@ No menu principal voce encontra:
 - `Personagem`
 - `Inventario`
 - `Economia`
+- `Convites`
 - `Eventos`
 - `Rankings`
 - `Entrar na Comunidade`
@@ -177,7 +178,27 @@ Observacao:
 
 ---
 
-## 6) Rankings
+## 6) Convites
+
+### `🎁 Convites`
+O que faz:
+- Mostra seu link de indicacao.
+- Mostra quantas indicacoes estao pendentes e quantas ja foram recompensadas.
+
+Como funciona:
+- Compartilhe seu link com amigos.
+- O amigo precisa entrar no bot usando o link (`/start ref_<seu_player_id>`).
+- Quando o indicado atingir o nivel minimo configurado no servidor, voce recebe recompensa.
+
+Regras:
+- Nao vale autoindicacao.
+- Cada jogador pode ser vinculado a apenas um convidador.
+- A recompensa de cada indicacao e paga apenas uma vez.
+- Valores de recompensa e nivel minimo podem variar por configuracao do servidor.
+
+---
+
+## 7) Rankings
 
 ### `Top Batalhas`
 Mostra quem mais batalhou na semana.
@@ -193,7 +214,7 @@ Mostra quem mais fugiu na semana.
 
 ---
 
-## 7) Regras gerais importantes
+## 8) Regras gerais importantes
 
 - Energia limita acoes de combate.
 - Gold e necessario para compras, descanso e ataque do Big Boss.
@@ -202,7 +223,7 @@ Mostra quem mais fugiu na semana.
 
 ---
 
-## 8) Dicas para evoluir mais rapido
+## 9) Dicas para evoluir mais rapido
 
 - Mantenha energia sempre em ciclo (cacar + descanso).
 - Invista em equipamentos com bonus para seu estilo.
