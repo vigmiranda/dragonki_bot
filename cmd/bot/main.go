@@ -13,6 +13,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/vigmiranda/dragonki/internal/adapters/mercadopago"
 	"github.com/vigmiranda/dragonki/internal/adapters/postgres"
+	"github.com/vigmiranda/dragonki/internal/adapters/queue"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram"
 	"github.com/vigmiranda/dragonki/internal/application"
 	"github.com/vigmiranda/dragonki/internal/bootstrap"
@@ -63,6 +64,39 @@ func shouldRunAutoMigrate() bool {
 	return strings.EqualFold(raw, "true")
 }
 
+func isBigBossQueueEnabled() bool {
+	raw := strings.TrimSpace(os.Getenv("BIG_BOSS_QUEUE_ENABLED"))
+	if raw == "" {
+		return false
+	}
+	return strings.EqualFold(raw, "true")
+}
+
+func startWeeklyBossScheduler(service *application.WeeklyBossService) {
+	if service == nil {
+		return
+	}
+
+	const interval = time.Hour
+	go func() {
+		run := func() {
+			if err := service.EnsureCurrentWeeklyBoss(time.Now().UTC()); err != nil {
+				log.Printf("weekly boss scheduler error: %v", err)
+				return
+			}
+			log.Printf("weekly boss scheduler sync ok")
+		}
+
+		run()
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			run()
+		}
+	}()
+}
+
 func main() {
 	appEnv, loadedEnvFiles, err := bootstrap.LoadEnvByEnvironment()
 	if err != nil {
@@ -107,6 +141,7 @@ func main() {
 	itemRepo := postgres.NewItemsPostgresRepo(db)
 	inventoryRepo := postgres.NewInventoryPostgresRepo(db)
 	battleRepo := postgres.NewBattlePostgresRepo(db)
+	weeklyBossRepo := postgres.NewWeeklyBossPostgresRepo(db)
 	bootstrap.SetFeatureFlagResolver(featureFlagRepo.FindByName)
 
 	playerService := application.NewPlayerService(playerRepo, regionRepo, inventoryRepo)
@@ -120,6 +155,22 @@ func main() {
 	exchangeService := application.NewExchangeService(playerRepo)
 	inventoryService := application.NewInventoryService(inventoryRepo, playerRepo, itemRepo)
 	rankService := application.NewRankService(battleRepo)
+	var rewardQueue application.WeeklyBossRewardQueue
+	if isBigBossQueueEnabled() {
+		queueName := strings.TrimSpace(os.Getenv("BIG_BOSS_QUEUE_NAME"))
+		q, qErr := queue.NewAsynqBigBossQueue(os.Getenv("REDIS_URL"), queueName)
+		if qErr != nil {
+			log.Printf("big boss queue init failed, fallback inline payout | err=%v", qErr)
+		} else {
+			rewardQueue = q
+			defer q.Close()
+		}
+	}
+
+	weeklyBossService := application.NewWeeklyBossService(weeklyBossRepo, playerRepo, inventoryRepo, rewardQueue)
+	if bootstrap.IsFeatureEnabled("big_boss_weekly", false) {
+		startWeeklyBossScheduler(weeklyBossService)
+	}
 
 	mpClient := mercadopago.NewClient()
 	mpGateway := mercadopago.NewGateway(mpClient)
@@ -150,6 +201,7 @@ func main() {
 		exchangeService,
 		inventoryService,
 		rankService,
+		weeklyBossService,
 	)
 
 	mux := http.NewServeMux()

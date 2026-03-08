@@ -31,6 +31,12 @@ func mapMenu(
 	case "RANK_MENU":
 		return rankMenu()
 
+	case "BIG_BOSS_MENU":
+		return bigBossMenu()
+
+	case "BIG_BOSS_RANKING_MENU":
+		return bigBossRankingMenu()
+
 	case "SHOP_ITEMS_MENU":
 		return shopItemsMenu(params)
 

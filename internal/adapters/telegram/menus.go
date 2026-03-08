@@ -30,7 +30,7 @@ func choosingGenderMenu() *tgbotapi.InlineKeyboardMarkup {
 }
 
 func mainMenu() *tgbotapi.InlineKeyboardMarkup {
-	menu := tgbotapi.NewInlineKeyboardMarkup(
+	rows := [][]tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⚔️ Caçar", "action_hunt"),
 			tgbotapi.NewInlineKeyboardButtonData("🗺 Explorar", "list_map"),
@@ -51,13 +51,22 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("🔄 Casa de Câmbio", "to_exchange"),
 			tgbotapi.NewInlineKeyboardButtonData("🏆 Rank", "open_rank"),
 		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL(
-				"💬 Entrar na Comunidade",
-				"https://t.me/dragonki_community",
-			),
+	}
+
+	if bootstrap.IsFeatureEnabled("big_boss_weekly", false) {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("👑 Big Boss", "to_big_boss"),
+		))
+	}
+
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonURL(
+			"💬 Entrar na Comunidade",
+			"https://t.me/dragonki_community",
 		),
-	)
+	))
+
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	return &menu
 }
 func transformMenu() *tgbotapi.InlineKeyboardMarkup {
@@ -219,6 +228,31 @@ func rankMenu() *tgbotapi.InlineKeyboardMarkup {
 	)
 	return &menu
 }
+
+func bigBossMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar", "big_boss_attack"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏆 Ranking", "big_boss_ranking"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+		),
+	)
+	return &menu
+}
+
+func bigBossRankingMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "to_big_boss"),
+		),
+	)
+	return &menu
+}
+
 func getenvIntDefault(key string, def int) int {
 	raw := os.Getenv(key)
 	if raw == "" {
