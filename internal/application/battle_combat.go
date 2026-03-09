@@ -116,21 +116,30 @@ func (s *BattleService) resolveWinOutcome(
 	moneyReceived int,
 ) (*battleOutcome, error) {
 	goodNews := ""
+	reachedMaxLevel := false
+	maxLevel := s.maxPlayerLevel()
 
 	itemName, qty, dropErr := s.HandleDrops(monster.MonsterID, int64(player.ID))
 	if dropErr != nil {
 		return nil, dropErr
 	}
 
-	player.XP += xpReceived
 	player.Gold += moneyReceived
-
-	if qty > 0 {
-		goodNews += fmt.Sprintf("🥳 Dropou %dx %s \n", qty, itemName)
+	if player.Level >= maxLevel {
+		player.Level = maxLevel
+		player.XP = 0
+		xpReceived = 0
+		reachedMaxLevel = true
+	} else {
+		player.XP += xpReceived
 	}
 
-	XPLvlUp := 45 * math.Pow(float64(player.Level), 1.65)
-	if player.XP >= int(XPLvlUp) {
+	if qty > 0 {
+		goodNews += fmt.Sprintf("Dropou %dx %s\n", qty, itemName)
+	}
+
+	xpLvlUp := 45 * math.Pow(float64(player.Level), 1.65)
+	if player.Level < maxLevel && player.XP >= int(xpLvlUp) {
 		player.Level++
 		player.ATK += int(float64(player.ATK) * player.Class.AtkBonus)
 		player.DEF += int(float64(player.DEF) * player.Class.DefBonus)
@@ -141,8 +150,19 @@ func (s *BattleService) resolveWinOutcome(
 		player.FormBattlesLeft = 0
 		player.Form = formBase
 		player.HP = player.MaxHP
-		goodNews += "⬆️ <b>Subiu de nível!</b> \n"
-		xpReceived = int(XPLvlUp) - state.oldXP
+		goodNews += "Subiu de nivel!\n"
+		xpReceived = int(xpLvlUp) - state.oldXP
+
+		if player.Level >= maxLevel {
+			player.Level = maxLevel
+			player.XP = 0
+			reachedMaxLevel = true
+		}
+	}
+
+	if reachedMaxLevel {
+		goodNews += fmt.Sprintf("Nivel maximo atingido (%d). XP nao e mais acumulado.\n", maxLevel)
+		xpReceived = 0
 	}
 
 	if player.FormBattlesLeft > 0 {
@@ -150,14 +170,14 @@ func (s *BattleService) resolveWinOutcome(
 	}
 
 	msg := fmt.Sprintf(
-		"🏆 Vitória! %s \n"+
+		"Vitoria! %s\n"+
 			"%s"+
-			"Você recebeu de dano: %d\n"+
-			"⚔️ +%d XP\n"+
-			"💰 +%d Gold\n"+
-			"❤️ HP: %d/%d\n"+
-			"⚡️ Energia: %d/%d\n"+
-			"💪 Level: %d\n",
+			"Voce recebeu de dano: %d\n"+
+			"+%d XP\n"+
+			"+%d Gold\n"+
+			"HP: %d/%d\n"+
+			"Energia: %d/%d\n"+
+			"Level: %d\n",
 		player.Name,
 		goodNews,
 		state.atkTotalMonster,
@@ -204,11 +224,11 @@ func (s *BattleService) resolveLoseOutcome(player *domain.Player, region *domain
 	player.Form = formBase
 
 	msg := fmt.Sprintf(
-		"💀 Derrota! %s\n"+
-			"⚔️ -%d%% de XP = %d\n"+
-			"💰 -%d%% de Gold = %d\n"+
-			"⚡️ Energia: %d/%d\n"+
-			"💪 Level: %d\n",
+		"Derrota! %s\n"+
+			"-%d%% de XP = %d\n"+
+			"-%d%% de Gold = %d\n"+
+			"Energia: %d/%d\n"+
+			"Level: %d\n",
 		player.Name,
 		region.Nerf,
 		state.oldXP-player.XP,

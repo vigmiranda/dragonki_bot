@@ -11,6 +11,7 @@ type appConfig struct {
 	EnergyRegenTime     string
 	EnergyRegenDuration time.Duration
 	LevelMult           int
+	MaxPlayerLevel      int
 	KiCrystalsValue     int
 	KiCrystalsMult      int
 }
@@ -25,6 +26,7 @@ func getAppConfig() appConfig {
 		cfg = appConfig{
 			EnergyRegenTime: os.Getenv("ENERGY_REGEN_TIME"),
 			LevelMult:       1,
+			MaxPlayerLevel:  50,
 			KiCrystalsValue: 1,
 			KiCrystalsMult:  1,
 		}
@@ -54,6 +56,11 @@ func getAppConfig() appConfig {
 				cfg.KiCrystalsMult = parsed
 			}
 		}
+		if v := os.Getenv("MAX_PLAYER_LEVEL"); v != "" {
+			if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+				cfg.MaxPlayerLevel = parsed
+			}
+		}
 	})
 	return cfg
 }
@@ -75,6 +82,9 @@ func resolveAppConfig(cfg appConfig) appConfig {
 	base := getAppConfig()
 	if cfg.LevelMult > 0 {
 		base.LevelMult = cfg.LevelMult
+	}
+	if cfg.MaxPlayerLevel > 0 {
+		base.MaxPlayerLevel = cfg.MaxPlayerLevel
 	}
 	if cfg.KiCrystalsValue > 0 {
 		base.KiCrystalsValue = cfg.KiCrystalsValue
