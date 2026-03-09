@@ -261,10 +261,26 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	img := outcome.img
 	menu := outcome.menu
 	menuParams := make(map[string]any)
-	if player.Level > state.oldLevel && (player.Level == 15 || player.Level == 35 || player.Level == 50) && player.XP == 0 {
-		msg, img, menu, menuParams, err = s.ChangeClass(player)
-		if err != nil {
-			return view.GameResponse{}, err
+	if player.Level > state.oldLevel && player.XP == 0 {
+		switch player.Level {
+		case 15:
+			msg, img, menu, menuParams, err = s.ChangeClass(player)
+			if err != nil {
+				return view.GameResponse{}, err
+			}
+		case 35, 50:
+			evolveMsg, evolveImg, evolveErr := s.AutoEvolveClass(player)
+			if evolveErr != nil {
+				return view.GameResponse{}, evolveErr
+			}
+			if evolveMsg != "" {
+				msg = evolveMsg
+				if evolveImg != nil {
+					img = evolveImg
+				}
+				menu = menuMain
+				menuParams = map[string]any{}
+			}
 		}
 	}
 

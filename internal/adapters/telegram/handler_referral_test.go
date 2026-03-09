@@ -34,6 +34,10 @@ func (f *fakePlayerRepoTG) GetClassesByLvl(lvl int) ([]domain.Class, error) { re
 
 func (f *fakePlayerRepoTG) GetClassesByID(id int64) (*domain.Class, error) { return nil, nil }
 
+func (f *fakePlayerRepoTG) FindClassEvolutionByBaseClassAndLevel(baseClass string, lvl int) (*domain.Class, error) {
+	return nil, nil
+}
+
 type fakeReferralRepoTG struct {
 	referral           *domain.Referral
 	referrerUserIDByID map[int64]int64

@@ -1,10 +1,13 @@
 package application
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
+	"gorm.io/gorm"
 )
 
 func (s *BattleService) HandleDrops(monsterID int, playerID int64) (string, int, error) {
@@ -68,4 +71,52 @@ func (s *BattleService) ChangeClass(player *domain.Player) (string, *view.Image,
 	}
 
 	return msg, img, menu, menuParams, nil
+}
+
+func (s *BattleService) AutoEvolveClass(player *domain.Player) (string, *view.Image, error) {
+	if player == nil {
+		return "", nil, nil
+	}
+	if player.Level != 35 && player.Level != 50 {
+		return "", nil, nil
+	}
+
+	baseClass := strings.TrimSpace(player.Class.Name)
+	if baseClass == "" {
+		return "", nil, nil
+	}
+
+	nextClass, err := s.playerRepo.FindClassEvolutionByBaseClassAndLevel(baseClass, player.Level)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", nil, nil
+		}
+		return "", nil, err
+	}
+	if nextClass == nil || nextClass.ID == player.Class.ID {
+		return "", nil, nil
+	}
+
+	player.ClassID = uint(nextClass.ID)
+	player.Class = *nextClass
+	if err := s.playerRepo.Update(player); err != nil {
+		return "", nil, err
+	}
+
+	msg := fmt.Sprintf(
+		"<b>Evolucao automatica!</b>\n\n"+
+			"Sua classe evoluiu de <b>%s</b> para <b>%s</b>.\n"+
+			"Continue treinando para desbloquear todo o potencial do seu Ki.\n",
+		baseClass,
+		nextClass.Name,
+	)
+
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/skins/%s/%splayer.png",
+			domain.ConvertLowCase(player.Gender),
+			nextClass.Skin),
+	}
+
+	return msg, img, nil
 }

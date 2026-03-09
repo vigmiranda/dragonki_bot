@@ -7,7 +7,12 @@
 # Descrição
 
 O módulo **Player VIP** permite que o jogador adquira um pacote VIP com
-duração de **7 dias corridos**, pagando **10 Ki Crystals**.
+duração de **7 dias corridos**, pagando **10 Ki Crystals**. 
+Após a aquisição deverá ser apresentado na tela de status do player que ele 
+está vip e o tempo restante. 
+
+Deverá ter também uma tela de apresentação dos benefícios antes da conclusão da compra!!
+Deverá ter feature toggle!!
 
 Ao adquirir o pacote, o jogador recebe benefícios temporários no jogo
 como:
