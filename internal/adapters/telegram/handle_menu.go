@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
 func (h *Handler) handleMenu(action string, userID int64) InputTelegram {
@@ -28,9 +29,25 @@ func (h *Handler) handleMenu(action string, userID int64) InputTelegram {
 			ShowMenu: true,
 		}
 	case "menu_character":
+		imgPath := "assets/maps/plain_lv1.png"
+		if h.playerService != nil && h.playerService.PlayerRepository != nil {
+			player, err := h.playerService.PlayerRepository.GetOrCreate(userID)
+			if err != nil {
+				fmt.Printf("menu_character -> %v\\n", err)
+			} else if player != nil && player.Class.Skin != "" {
+				transform := "player"
+				if player.Form == "Ki Awakened" {
+					transform = "ki_awakened"
+				}
+				imgPath = fmt.Sprintf("assets/skins/%s/%s%s.png",
+					domain.ConvertLowCase(player.Gender),
+					player.Class.Skin,
+					transform)
+			}
+		}
 		return InputTelegram{
 			Message:  "Personagem\nGerencie status, transformacao e descanso.",
-			Img:      tgbotapi.FilePath("assets/maps/plain_lv1.png"),
+			Img:      tgbotapi.FilePath(imgPath),
 			Menu:     characterMenu(),
 			ShowMenu: true,
 		}
