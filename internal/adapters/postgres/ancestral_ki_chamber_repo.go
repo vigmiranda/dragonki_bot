@@ -85,11 +85,13 @@ func (r *AncestralKiChamberPostgresRepo) UpdateRun(run *domain.AncestralKiChambe
 		Model(&domain.AncestralKiChamberRun{}).
 		Where("id = ?", run.ID).
 		Updates(map[string]any{
-			"current_battle": run.CurrentBattle,
-			"victories":      run.Victories,
-			"status":         run.Status,
-			"finished_at":    run.FinishedAt,
-			"updated_at":     run.UpdatedAt,
+			"current_battle":   run.CurrentBattle,
+			"victories":        run.Victories,
+			"accumulated_xp":   run.AccumulatedXP,
+			"accumulated_gold": run.AccumulatedGold,
+			"status":           run.Status,
+			"finished_at":      run.FinishedAt,
+			"updated_at":       run.UpdatedAt,
 		}).Error
 }
 

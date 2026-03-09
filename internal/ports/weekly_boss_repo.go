@@ -15,7 +15,7 @@ type WeeklyBossRepository interface {
 	GetRandomTemplate() (*domain.WeeklyBossTemplate, error)
 	ApplyDamage(id uint, damage int64, at time.Time) (*domain.WeeklyBoss, error)
 
-	HasPlayerAttackedOnDate(bossID uint, playerID int64, attackDate time.Time) (bool, error)
+	CountPlayerAttacksOnDate(bossID uint, playerID int64, attackDate time.Time) (int64, error)
 	CreateAttack(attack *domain.WeeklyBossAttack) error
 
 	GetContribution(bossID uint, playerID int64) (*domain.WeeklyBossContribution, error)

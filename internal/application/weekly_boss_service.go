@@ -24,6 +24,7 @@ type WeeklyBossService struct {
 	playerRepo    ports.PlayerRepository
 	inventoryRepo ports.InventoryRepository
 	rewardQueue   WeeklyBossRewardQueue
+	vipService    *VIPService
 	rng           *rand.Rand
 }
 
@@ -40,6 +41,10 @@ func NewWeeklyBossService(
 		rewardQueue:   rewardQueue,
 		rng:           rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
+}
+
+func (s *WeeklyBossService) SetVIPService(vipService *VIPService) {
+	s.vipService = vipService
 }
 
 func (s *WeeklyBossService) EnsureCurrentWeeklyBoss(at time.Time) error {
@@ -103,10 +108,12 @@ func (s *WeeklyBossService) Open(userID int64) (view.GameResponse, error) {
 		return view.GameResponse{}, err
 	}
 
-	attackedToday, err := s.bossRepo.HasPlayerAttackedOnDate(boss.ID, int64(player.ID), now)
+	attacksToday, err := s.bossRepo.CountPlayerAttacksOnDate(boss.ID, int64(player.ID), now)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
+	attackLimit := s.dailyAttackLimit(int64(player.ID))
+	canAttack := attacksToday < int64(attackLimit)
 
 	totalDamage := int64(0)
 	contribution, err := s.bossRepo.GetContribution(boss.ID, int64(player.ID))
@@ -127,14 +134,16 @@ func (s *WeeklyBossService) Open(userID int64) (view.GameResponse, error) {
 			"HP: %d / %d\n\n"+
 			"Tempo restante: %s\n"+
 			"Seu dano total: %d\n"+
-			"Ataque diario: %s\n\n"+
+			"Ataques hoje: %d/%d (%s)\n\n"+
 			"Custo do ataque: -%d⚡ e -%d💰",
 		boss.Name,
 		boss.CurrentHP,
 		boss.MaxHP,
 		formatDuration(remaining),
 		totalDamage,
-		availabilityText(!attackedToday),
+		attacksToday,
+		attackLimit,
+		availabilityText(canAttack),
 		weeklyBossAttackEnergyCost,
 		weeklyBossAttackGoldCost,
 	)
@@ -180,13 +189,14 @@ func (s *WeeklyBossService) Attack(userID int64) (view.GameResponse, error) {
 		}, nil
 	}
 
-	alreadyAttacked, err := s.bossRepo.HasPlayerAttackedOnDate(boss.ID, int64(player.ID), now)
+	attacksToday, err := s.bossRepo.CountPlayerAttacksOnDate(boss.ID, int64(player.ID), now)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
-	if alreadyAttacked {
+	attackLimit := s.dailyAttackLimit(int64(player.ID))
+	if attacksToday >= int64(attackLimit) {
 		return view.GameResponse{
-			Text:    "Voce ja enfrentou o Big Boss hoje.\nVolte amanha para atacar novamente.",
+			Text:    "Voce ja atingiu seu limite diario de ataques no Big Boss.\nVolte amanha para atacar novamente.",
 			Image:   &view.Image{Type: view.ImageAsset, Path: "assets/npcs/mestre_kalunga_insta.png"},
 			MenuKey: "BIG_BOSS_MENU",
 		}, nil
@@ -214,7 +224,7 @@ func (s *WeeklyBossService) Attack(userID int64) (view.GameResponse, error) {
 	}); err != nil {
 		if isDailyAttackUniqueViolation(err) {
 			return view.GameResponse{
-				Text:    "Voce ja enfrentou o Big Boss hoje.\nVolte amanha para atacar novamente.",
+				Text:    "Voce ja atingiu seu limite diario de ataques no Big Boss.\nVolte amanha para atacar novamente.",
 				Image:   &view.Image{Type: view.ImageAsset, Path: "assets/npcs/mestre_kalunga_insta.png"},
 				MenuKey: "BIG_BOSS_MENU",
 			}, nil
@@ -387,6 +397,18 @@ func availabilityText(available bool) string {
 		return "disponivel"
 	}
 	return "indisponivel"
+}
+
+func (s *WeeklyBossService) dailyAttackLimit(playerID int64) int {
+	baseLimit := 1
+	if s == nil || s.vipService == nil {
+		return baseLimit
+	}
+	limit := s.vipService.GetBigBossDailyAttackLimit(playerID)
+	if limit < 1 {
+		return baseLimit
+	}
+	return limit
 }
 
 func isDailyAttackUniqueViolation(err error) bool {

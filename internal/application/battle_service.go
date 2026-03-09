@@ -39,6 +39,7 @@ type BattleService struct {
 	battleRepo          ports.BattleRepository
 	inventoryRepository ports.InventoryRepository
 	referralService     *ReferralService
+	vipService          *VIPService
 
 	cfg battleConfig
 	rng *rand.Rand
@@ -82,6 +83,10 @@ func (s *BattleService) maxPlayerLevel() int {
 		return s.cfg.MaxPlayerLevel
 	}
 	return 50
+}
+
+func (s *BattleService) SetVIPService(vipService *VIPService) {
+	s.vipService = vipService
 }
 
 func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
@@ -220,6 +225,9 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 
 	xpReceived := clamp(CalculateXPReward(player.Level, int(monster.Level)), monster.MinXP, monster.MaxXP)
 	moneyReceived := randBetweenInclusive(s.rng, monster.MinMoney, monster.MaxMoney)
+	if s.vipService != nil {
+		xpReceived, moneyReceived = s.vipService.ApplyBattleBonuses(int64(player.ID), xpReceived, moneyReceived)
+	}
 
 	outcome, err := s.resolveBattleOutcome(player, monster, region, state, xpReceived, moneyReceived)
 	if err != nil {

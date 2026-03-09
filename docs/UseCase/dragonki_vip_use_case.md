@@ -13,6 +13,7 @@ está vip e o tempo restante.
 
 Deverá ter também uma tela de apresentação dos benefícios antes da conclusão da compra!!
 Deverá ter feature toggle!!
+O menu deve vir dentro de Economia 
 
 Ao adquirir o pacote, o jogador recebe benefícios temporários no jogo
 como:

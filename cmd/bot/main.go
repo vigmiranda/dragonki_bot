@@ -141,6 +141,8 @@ func main() {
 	monsterRepo := postgres.NewMonsterPostgresRepo(db)
 	regionRepo := postgres.NewRegionPostgresRepo(db)
 	paymentRepo := postgres.NewPaymentRepo(db)
+	vipConfigRepo := postgres.NewVIPConfigRepo(db)
+	playerVIPRepo := postgres.NewPlayerVIPRepo(db)
 	featureFlagRepo := postgres.NewFeatureFlagPostgresRepo(db)
 	referralRepo := postgres.NewReferralPostgresRepo(db)
 	itemRepo := postgres.NewItemsPostgresRepo(db)
@@ -150,13 +152,15 @@ func main() {
 	chamberRepo := postgres.NewAncestralKiChamberPostgresRepo(db)
 	bootstrap.SetFeatureFlagResolver(featureFlagRepo.FindByName)
 
-	playerService := application.NewPlayerService(playerRepo, regionRepo, inventoryRepo)
+	vipService := application.NewVIPService(playerRepo, vipConfigRepo, playerVIPRepo)
+	playerService := application.NewPlayerService(playerRepo, regionRepo, inventoryRepo, vipService)
 	onboardingService := application.NewOnboardingService(playerRepo)
 	transformService := application.NewTransformService(playerRepo)
 	menuService := application.NewMenuService(playerRepo, regionRepo)
 	mapService := application.NewMapService(playerRepo, regionRepo)
 	energyService := application.NewEnergyService(playerRepo)
 	shopService := application.NewShopService(playerRepo, itemRepo, inventoryRepo)
+	shopService.SetVIPService(vipService)
 	exchangeService := application.NewExchangeService(playerRepo)
 	inventoryService := application.NewInventoryService(inventoryRepo, playerRepo, itemRepo)
 	rankService := application.NewRankService(battleRepo)
@@ -174,6 +178,7 @@ func main() {
 	}
 
 	weeklyBossService := application.NewWeeklyBossService(weeklyBossRepo, playerRepo, inventoryRepo, rewardQueue)
+	weeklyBossService.SetVIPService(vipService)
 	if bootstrap.IsFeatureEnabled("big_boss_weekly", false) {
 		startWeeklyBossScheduler(weeklyBossService)
 	}
@@ -195,6 +200,7 @@ func main() {
 
 	referralService := application.NewReferralService(referralRepo, playerRepo, bot.Self.UserName)
 	battleService := application.NewBattleService(playerRepo, monsterRepo, regionRepo, battleRepo, inventoryRepo, referralService)
+	battleService.SetVIPService(vipService)
 
 	handler := telegram.NewHandler(
 		bot,
@@ -213,6 +219,7 @@ func main() {
 		weeklyBossService,
 		referralService,
 		chamberService,
+		vipService,
 	)
 
 	mux := http.NewServeMux()

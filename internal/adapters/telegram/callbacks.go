@@ -44,7 +44,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		inputTelegram = h.handleEnergy(action, userID)
 	case "to_shop", "list_potions", "list_equipments", "open_shop_equipment_types", "list_buy_equipments", "list_equipments_type", "list_sell_equipments", "buy_item", "sell_item":
 		inputTelegram = h.handleShop(action, userID, params)
-	case "to_exchange", "action_convert":
+	case "to_exchange", "action_convert", "to_vip", "confirm_buy_vip":
 		inputTelegram = h.handleExchange(action, userID, params)
 	case "to_big_boss", "big_boss_attack", "big_boss_ranking":
 		inputTelegram = h.handleBigBoss(action, userID)

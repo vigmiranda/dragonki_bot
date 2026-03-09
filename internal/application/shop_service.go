@@ -16,6 +16,7 @@ type ShopService struct {
 	PlayerRepository    ports.PlayerRepository
 	ItemRepository      ports.ItemsRepository
 	InventoryRepository ports.InventoryRepository
+	vipService          *VIPService
 }
 
 func NewShopService(repo ports.PlayerRepository, itemRepo ports.ItemsRepository, inventoryRepo ports.InventoryRepository) *ShopService {
@@ -24,6 +25,10 @@ func NewShopService(repo ports.PlayerRepository, itemRepo ports.ItemsRepository,
 		ItemRepository:      itemRepo,
 		InventoryRepository: inventoryRepo,
 	}
+}
+
+func (s *ShopService) SetVIPService(vipService *VIPService) {
+	s.vipService = vipService
 }
 
 func (s *ShopService) OpenShop(userID int64) (view.GameResponse, error) {
@@ -115,7 +120,7 @@ func (s *ShopService) ListEquipmentsByType(rawSlot string) (view.GameResponse, e
 
 	menuParams := make(map[string]any)
 	for _, equipment := range equipments {
-		label := fmt.Sprintf("%d x %s - %d Gold", equipment.Amount, equipment.Name, equipmentPurchasePrice(&equipment))
+		label := fmt.Sprintf("%d x %s - %d Gold", equipment.Amount, equipment.Name, equipmentPurchasePrice(&equipment, 1))
 		menuParams[label] = strconv.Itoa(int(equipment.ID))
 	}
 	menuParams["_backAction"] = "list_equipments"
@@ -154,7 +159,8 @@ func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.Game
 		log.Fatal(err)
 	}
 
-	price := equipmentPurchasePrice(item)
+	priceMultiplier, _ := s.vipMultipliers(int64(player.ID))
+	price := equipmentPurchasePrice(item, priceMultiplier)
 	msg := "Kiara, a Mercadora\n\nVoce nao tem gold suficiente para este item.\n\n"
 
 	if player.Gold >= price {
@@ -271,7 +277,8 @@ func (s *ShopService) SellItem(userID int64, params map[string]string) (view.Gam
 		return listResp, nil
 	}
 
-	sellValue := equipmentSellPrice(&invItem.Item)
+	_, sellMultiplier := s.vipMultipliers(int64(player.ID))
+	sellValue := equipmentSellPrice(&invItem.Item, sellMultiplier)
 	invItem.Quantity--
 	if err := s.InventoryRepository.UpdateInventoryItem(invItem); err != nil {
 		return view.GameResponse{}, err
@@ -295,18 +302,41 @@ func (s *ShopService) SellItem(userID int64, params map[string]string) (view.Gam
 	return listResp, nil
 }
 
-func equipmentPurchasePrice(item *domain.Item) int {
+func equipmentPurchasePrice(item *domain.Item, multiplier float64) int {
 	if item == nil {
 		return 0
 	}
-	return item.Price
+	if multiplier <= 0 {
+		multiplier = 1
+	}
+	value := int(math.Floor(float64(item.Price) * multiplier))
+	if value < 1 {
+		value = 1
+	}
+	return value
 }
 
-func equipmentSellPrice(item *domain.Item) int {
+func equipmentSellPrice(item *domain.Item, multiplier float64) int {
 	if item == nil || item.Price <= 0 {
 		return 0
 	}
-	return int(math.Floor(float64(item.Price) * 0.4))
+	if multiplier <= 0 {
+		multiplier = 1
+	}
+	value := int(math.Floor(float64(item.Price) * 0.4 * multiplier))
+	if value < 1 {
+		value = 1
+	}
+	return value
+}
+
+func (s *ShopService) vipMultipliers(playerID int64) (priceMultiplier float64, sellMultiplier float64) {
+	priceMultiplier = 1.0
+	sellMultiplier = 1.0
+	if s == nil || s.vipService == nil {
+		return priceMultiplier, sellMultiplier
+	}
+	return s.vipService.GetShopPriceAndSellMultiplier(playerID)
 }
 
 func normalizeShopEquipmentSlot(raw string) (domain.EquipmentSlot, bool) {

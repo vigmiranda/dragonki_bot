@@ -25,6 +25,7 @@ type Handler struct {
 	weeklyBossService *application.WeeklyBossService
 	referralService   *application.ReferralService
 	chamberService    *application.AncestralKiChamberService
+	vipService        *application.VIPService
 
 	pixCodeMsgMu       sync.Mutex
 	pixCodeMessageByID map[int64]int
@@ -47,8 +48,12 @@ func NewHandler(
 	weeklyBossService *application.WeeklyBossService,
 	referralService *application.ReferralService,
 	chamberService *application.AncestralKiChamberService,
-
+	vipService ...*application.VIPService,
 ) *Handler {
+	var v *application.VIPService
+	if len(vipService) > 0 {
+		v = vipService[0]
+	}
 	return &Handler{
 		bot:                bot,
 		playerService:      playerService,
@@ -66,6 +71,7 @@ func NewHandler(
 		weeklyBossService:  weeklyBossService,
 		referralService:    referralService,
 		chamberService:     chamberService,
+		vipService:         v,
 		pixCodeMessageByID: make(map[int64]int),
 	}
 }

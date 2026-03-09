@@ -113,7 +113,7 @@ func (r *WeeklyBossPostgresRepo) ApplyDamage(id uint, damage int64, at time.Time
 	return r.GetByID(id)
 }
 
-func (r *WeeklyBossPostgresRepo) HasPlayerAttackedOnDate(bossID uint, playerID int64, attackDate time.Time) (bool, error) {
+func (r *WeeklyBossPostgresRepo) CountPlayerAttacksOnDate(bossID uint, playerID int64, attackDate time.Time) (int64, error) {
 	var count int64
 	err := r.db.
 		Model(&domain.WeeklyBossAttack{}).
@@ -122,9 +122,9 @@ func (r *WeeklyBossPostgresRepo) HasPlayerAttackedOnDate(bossID uint, playerID i
 		Where("attack_date = ?", attackDate.UTC().Format("2006-01-02")).
 		Count(&count).Error
 	if err != nil {
-		return false, err
+		return 0, err
 	}
-	return count > 0, nil
+	return count, nil
 }
 
 func (r *WeeklyBossPostgresRepo) CreateAttack(attack *domain.WeeklyBossAttack) error {
