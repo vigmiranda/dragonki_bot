@@ -37,7 +37,7 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("👤 Inventario", "menu_inventory_scope"),
-			tgbotapi.NewInlineKeyboardButtonData("🔥 Economia", "menu_economy"),
+			tgbotapi.NewInlineKeyboardButtonData("💰 Economia", "menu_economy"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🧳 Eventos", "menu_events"),

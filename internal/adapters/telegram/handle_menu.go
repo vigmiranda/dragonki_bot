@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
 func (h *Handler) handleMenu(action string, userID int64) InputTelegram {
@@ -28,23 +29,46 @@ func (h *Handler) handleMenu(action string, userID int64) InputTelegram {
 			ShowMenu: true,
 		}
 	case "menu_character":
+		imgPath := "assets/maps/plain_lv1.png"
+		if h.playerService != nil && h.playerService.PlayerRepository != nil {
+			player, err := h.playerService.PlayerRepository.GetOrCreate(userID)
+			if err != nil {
+				fmt.Printf("menu_character -> %v\\n", err)
+			} else if player != nil && player.Class.Skin != "" {
+				transform := "player"
+				if player.Form == "Ki Awakened" {
+					transform = "ki_awakened"
+				}
+				imgPath = fmt.Sprintf("assets/skins/%s/%s%s.png",
+					domain.ConvertLowCase(player.Gender),
+					player.Class.Skin,
+					transform)
+			}
+		}
 		return InputTelegram{
 			Message:  "Personagem\nGerencie status, transformacao e descanso.",
-			Img:      tgbotapi.FilePath("assets/maps/plain_lv1.png"),
+			Img:      tgbotapi.FilePath(imgPath),
 			Menu:     characterMenu(),
 			ShowMenu: true,
 		}
 	case "menu_inventory_scope":
 		return InputTelegram{
-			Message:  "Inventario\nAcesse seus itens e equipamentos.",
-			Img:      tgbotapi.FilePath("assets/maps/plain_lv1.png"),
+			Message: fmt.Sprintf(
+				"🌌 Arkanis, o Guardião dos Ecos \n\n" +
+					"“Eu sou Arkanis… aquele que vigia o que você conquista.\n" +
+					"Cada item que carrega conta a história das suas batalhas.”\n\n" +
+					"✨ “Organize-se. Prepare-se.\n" +
+					"Um(a) guerreiro(a) forte não é feito só de Ki… mas de estratégia.”\n\n" +
+					"📦 Abra seu inventário e escolha com sabedoria.\n\n",
+			),
+			Img:      tgbotapi.FilePath("assets/npcs/arkanis_inventario.png"),
 			Menu:     inventoryScopeMenu(),
 			ShowMenu: true,
 		}
 	case "menu_economy":
 		return InputTelegram{
 			Message:  "Economia\nLojinha e cambio.",
-			Img:      tgbotapi.FilePath("assets/maps/plain_lv1.png"),
+			Img:      tgbotapi.FilePath("assets/npcs/kiara_e_trikan.png"),
 			Menu:     economyMenu(),
 			ShowMenu: true,
 		}
