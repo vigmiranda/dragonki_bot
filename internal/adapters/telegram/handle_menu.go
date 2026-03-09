@@ -36,15 +36,22 @@ func (h *Handler) handleMenu(action string, userID int64) InputTelegram {
 		}
 	case "menu_inventory_scope":
 		return InputTelegram{
-			Message:  "Inventario\nAcesse seus itens e equipamentos.",
-			Img:      tgbotapi.FilePath("assets/maps/plain_lv1.png"),
+			Message: fmt.Sprintf(
+				"🌌 Arkanis, o Guardião dos Ecos \n\n" +
+					"“Eu sou Arkanis… aquele que vigia o que você conquista.\n" +
+					"Cada item que carrega conta a história das suas batalhas.”\n\n" +
+					"✨ “Organize-se. Prepare-se.\n" +
+					"Um(a) guerreiro(a) forte não é feito só de Ki… mas de estratégia.”\n\n" +
+					"📦 Abra seu inventário e escolha com sabedoria.\n\n",
+			),
+			Img:      tgbotapi.FilePath("assets/npcs/arkanis_inventario.png"),
 			Menu:     inventoryScopeMenu(),
 			ShowMenu: true,
 		}
 	case "menu_economy":
 		return InputTelegram{
 			Message:  "Economia\nLojinha e cambio.",
-			Img:      tgbotapi.FilePath("assets/maps/plain_lv1.png"),
+			Img:      tgbotapi.FilePath("assets/npcs/kiara_e_trikan.png"),
 			Menu:     economyMenu(),
 			ShowMenu: true,
 		}
