@@ -56,6 +56,7 @@ Base:
 - `RUN_MIGRATIONS`
 - `RUN_AUTO_MIGRATE`
 - `MIGRATIONS_DIR`
+- `MAX_PLAYER_LEVEL` (default: `50`)
 
 Fila / Worker:
 - `REDIS_URL` (ex: `redis://localhost:6379`)

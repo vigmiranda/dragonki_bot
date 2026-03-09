@@ -29,6 +29,7 @@ const (
 type battleConfig struct {
 	LevelMult       int
 	EnergyRegenTime string
+	MaxPlayerLevel  int
 }
 
 type BattleService struct {
@@ -71,8 +72,16 @@ func loadBattleConfig(appCfg appConfig) battleConfig {
 	cfg := battleConfig{
 		LevelMult:       appCfg.LevelMult,
 		EnergyRegenTime: appCfg.EnergyRegenTime,
+		MaxPlayerLevel:  appCfg.MaxPlayerLevel,
 	}
 	return cfg
+}
+
+func (s *BattleService) maxPlayerLevel() int {
+	if s.cfg.MaxPlayerLevel > 0 {
+		return s.cfg.MaxPlayerLevel
+	}
+	return 50
 }
 
 func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
@@ -252,7 +261,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	img := outcome.img
 	menu := outcome.menu
 	menuParams := make(map[string]any)
-	if (player.Level == 15 || player.Level == 35 || player.Level == 50) && player.XP == 0 {
+	if player.Level > state.oldLevel && (player.Level == 15 || player.Level == 35 || player.Level == 50) && player.XP == 0 {
 		msg, img, menu, menuParams, err = s.ChangeClass(player)
 		if err != nil {
 			return view.GameResponse{}, err

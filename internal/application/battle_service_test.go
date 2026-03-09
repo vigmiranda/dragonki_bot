@@ -297,9 +297,12 @@ func TestLoadBattleConfig_Defaults(t *testing.T) {
 }
 
 func TestLoadBattleConfig_UsesConfiguredLevelMult(t *testing.T) {
-	cfg := loadBattleConfig(appConfig{EnergyRegenTime: "10m", LevelMult: 3})
+	cfg := loadBattleConfig(appConfig{EnergyRegenTime: "10m", LevelMult: 3, MaxPlayerLevel: 60})
 	if cfg.LevelMult != 3 {
 		t.Fatalf("expected level mult 3, got %d", cfg.LevelMult)
+	}
+	if cfg.MaxPlayerLevel != 60 {
+		t.Fatalf("expected max player level 60, got %d", cfg.MaxPlayerLevel)
 	}
 }
 
@@ -666,6 +669,110 @@ func TestBattle_Level15_TriggersChangeClassMenu(t *testing.T) {
 	}
 	if player.XP != 0 {
 		t.Fatalf("expected xp reset after level up, got %d", player.XP)
+	}
+}
+
+func TestBattle_Level50_DoesNotAccumulateXPOrLevelUp(t *testing.T) {
+	player := basePlayer()
+	player.Level = 50
+	player.XP = 10
+
+	playerRepo := &fakePlayerRepo{
+		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+		getClassesByLvlFn: func(lvl int) ([]domain.Class, error) {
+			t.Fatalf("did not expect class selection at capped level without level up")
+			return nil, nil
+		},
+	}
+	monsterRepo := &fakeMonsterRepo{
+		getByMonsterIDFn: func(monsterID int64) (*domain.Monster, error) {
+			return &domain.Monster{
+				MonsterID: 10, Name: "CapTest", Tag: "CAP", RegionID: 1,
+				HP: 1, ATK: 1, DEF: 0,
+				MinXP: 1000, MaxXP: 1000, MinMoney: 1, MaxMoney: 1,
+			}, nil
+		},
+		getMonsterDropsFn: func(monsterID int) ([]domain.MonsterDrop, error) { return nil, nil },
+	}
+	regionRepo := &fakeRegionRepo{
+		getByIDFn: func(regionID int64) (*domain.Region, error) { return &domain.Region{RegionID: 1, Nerf: 10}, nil },
+	}
+	battleRepo := &fakeBattleRepo{}
+
+	svc := &BattleService{
+		playerRepo:          playerRepo,
+		monsterRepo:         monsterRepo,
+		regionRepo:          regionRepo,
+		battleRepo:          battleRepo,
+		inventoryRepository: &fakeInventoryRepo{},
+		rng:                 rand.New(rand.NewSource(1)),
+	}
+
+	resp, err := svc.Battle(99, map[string]string{"monsterID": "10"})
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if player.Level != 50 {
+		t.Fatalf("expected level to remain 50, got %d", player.Level)
+	}
+	if player.XP != 0 {
+		t.Fatalf("expected xp to remain capped at 0, got %d", player.XP)
+	}
+	if battleRepo.logs[0].XPGained != 0 {
+		t.Fatalf("expected no xp gain on cap, got %d", battleRepo.logs[0].XPGained)
+	}
+	if resp.MenuKey == menuChoiceCls {
+		t.Fatalf("did not expect class choice menu at capped level without level up")
+	}
+}
+
+func TestBattle_Level49_Reaches50AndStopsXP(t *testing.T) {
+	player := basePlayer()
+	player.Level = 49
+	player.XP = 0
+	player.ATK = 100
+	player.DEF = 100
+	player.MaxHP = 100
+	player.HP = 100
+
+	playerRepo := &fakePlayerRepo{
+		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+		getClassesByLvlFn: func(lvl int) ([]domain.Class, error) {
+			return []domain.Class{{Name: "Final", MinLevel: 50}}, nil
+		},
+	}
+	monsterRepo := &fakeMonsterRepo{
+		getByMonsterIDFn: func(monsterID int64) (*domain.Monster, error) {
+			return &domain.Monster{
+				MonsterID: 11, Name: "CapBoss", Tag: "CAP_BOSS", RegionID: 1,
+				HP: 1, ATK: 1, DEF: 0,
+				MinXP: 100000, MaxXP: 100000, MinMoney: 1, MaxMoney: 1,
+			}, nil
+		},
+		getMonsterDropsFn: func(monsterID int) ([]domain.MonsterDrop, error) { return nil, nil },
+	}
+	regionRepo := &fakeRegionRepo{
+		getByIDFn: func(regionID int64) (*domain.Region, error) { return &domain.Region{RegionID: 1, Nerf: 10}, nil },
+	}
+
+	svc := &BattleService{
+		playerRepo:          playerRepo,
+		monsterRepo:         monsterRepo,
+		regionRepo:          regionRepo,
+		battleRepo:          &fakeBattleRepo{},
+		inventoryRepository: &fakeInventoryRepo{},
+		rng:                 rand.New(rand.NewSource(1)),
+	}
+
+	_, err := svc.Battle(99, map[string]string{"monsterID": "11"})
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if player.Level != 50 {
+		t.Fatalf("expected level up to 50, got %d", player.Level)
+	}
+	if player.XP != 0 {
+		t.Fatalf("expected xp reset and capped at 0 on level 50, got %d", player.XP)
 	}
 }
 
