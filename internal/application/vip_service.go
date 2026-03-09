@@ -58,14 +58,20 @@ func (s *VIPService) Open(userID int64) (view.GameResponse, error) {
 		"<b>DragonKi VIP</b>\n\n"+
 			"Custo: %d Ki Crystals\n"+
 			"Duracao: %d dias\n\n"+
-			"Beneficios previstos:\n"+
-			"- bonus de XP\n"+
-			"- bonus de Gold\n"+
-			"- melhoria de economia no jogo\n"+
-			"- limite maior em eventos VIP\n\n"+
+			"Beneficios:\n"+
+			"- Bonus de XP: +%s\n"+
+			"- Bonus de Gold: +%s\n"+
+			"- Bonus na venda de itens: +%s\n"+
+			"- Desconto na loja: -%s\n"+
+			"- Limite diario de ataques no Big Boss: %d\n\n"+
 			"%s",
 		cfg.VIPPriceKiCrystals,
 		cfg.DurationDays,
+		formatVIPPercent(cfg.XPBonusPercent),
+		formatVIPPercent(cfg.GoldBonusPercent),
+		formatVIPPercent(cfg.SellBonusPercent),
+		formatVIPPercent(cfg.ShopDiscountPercent),
+		cfg.BigBossDailyAttackLimit,
 		statusText,
 	)
 
@@ -255,4 +261,8 @@ func formatVIPRemaining(d time.Duration) string {
 		return fmt.Sprintf("%dd %dh", days, hours)
 	}
 	return fmt.Sprintf("%dh", hours)
+}
+
+func formatVIPPercent(value float64) string {
+	return fmt.Sprintf("%.0f%%", value*100)
 }
