@@ -157,7 +157,7 @@ func (s *AncestralKiChamberService) StartRun(userID int64, chamberLevel int) (vi
 		MenuKey: "ANCESTRAL_KI_CHAMBER_RUN_MENU",
 		Image: &view.Image{
 			Type: view.ImageAsset,
-			Path: "assets/maps/plain_lv1.png",
+			Path: "assets/maps/ki_ancestral_hall.png",
 		},
 	}, nil
 }
