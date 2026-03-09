@@ -36,6 +36,7 @@ func main() {
 	db := postgres.OpenDB()
 
 	paymentRepo := postgres.NewPaymentRepo(db)
+	webhookAuditRepo := postgres.NewPaymentWebhookAuditRepo(db)
 	playerRepo := postgres.NewPlayerPostgresRepo(db)
 	featureFlagRepo := postgres.NewFeatureFlagPostgresRepo(db)
 	bootstrap.SetFeatureFlagResolver(featureFlagRepo.FindByName)
@@ -50,7 +51,7 @@ func main() {
 	)
 
 	// Webhook
-	mpWebhook := webhook.NewMercadoPagoWebhook(paymentService, os.Getenv("MP_WEBHOOK_TOKEN"))
+	mpWebhook := webhook.NewMercadoPagoWebhook(paymentService, os.Getenv("MP_WEBHOOK_TOKEN"), webhookAuditRepo)
 
 	mux := http.NewServeMux()
 	registerMercadoPagoWebhook(mux, mpWebhook.Handle)

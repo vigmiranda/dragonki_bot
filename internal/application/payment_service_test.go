@@ -7,6 +7,7 @@ import (
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
+	"gorm.io/gorm"
 )
 
 type fakePaymentGateway struct {
@@ -29,6 +30,7 @@ func (f *fakePaymentGateway) CreatePix(ctx context.Context, playerID int64, amou
 type fakePaymentRepo struct {
 	saveFn            func(ctx context.Context, payment *domain.Payment) error
 	settlePendingFn   func(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error)
+	latestPendingFn   func(ctx context.Context, playerID int64) (*domain.Payment, error)
 	savedPayments     []*domain.Payment
 	settleCalls       int
 	lastPartnerID     int64
@@ -51,6 +53,13 @@ func (f *fakePaymentRepo) SettlePendingByPartnerID(ctx context.Context, partnerI
 		return false, nil
 	}
 	return f.settlePendingFn(ctx, partnerID, kiCrystalsMult)
+}
+
+func (f *fakePaymentRepo) GetLatestPendingByPlayerID(ctx context.Context, playerID int64) (*domain.Payment, error) {
+	if f.latestPendingFn == nil {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return f.latestPendingFn(ctx, playerID)
 }
 
 func TestNewPaymentService(t *testing.T) {
@@ -150,8 +159,8 @@ func TestPaymentService_HandleBuyKi_DefaultAmount(t *testing.T) {
 	if gateway.lastAmount != 1 {
 		t.Fatalf("expected default amount 1, got %v", gateway.lastAmount)
 	}
-	if resp.MenuKey != "EXCHANGE_MENU" {
-		t.Fatalf("expected EXCHANGE_MENU, got %q", resp.MenuKey)
+	if resp.MenuKey != "PIX_PAYMENT_MENU" {
+		t.Fatalf("expected PIX_PAYMENT_MENU, got %q", resp.MenuKey)
 	}
 	if resp.Image == nil ||
 		resp.Image.Name != "pix.png" ||
@@ -199,6 +208,45 @@ func TestPaymentService_ConfirmPayment_SettleError(t *testing.T) {
 	err := svc.ConfirmPayment(context.Background(), 9)
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("expected settle error, got %v", err)
+	}
+}
+
+func TestPaymentService_HandleCopyPixCode_NotFound(t *testing.T) {
+	svc := &PaymentService{
+		paymentRepository: &fakePaymentRepo{
+			latestPendingFn: func(ctx context.Context, playerID int64) (*domain.Payment, error) {
+				return nil, gorm.ErrRecordNotFound
+			},
+		},
+	}
+
+	resp, err := svc.HandleCopyPixCode(10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.MenuKey != "EXCHANGE_MENU" {
+		t.Fatalf("expected EXCHANGE_MENU, got %q", resp.MenuKey)
+	}
+}
+
+func TestPaymentService_HandleCopyPixCode_Success(t *testing.T) {
+	svc := &PaymentService{
+		paymentRepository: &fakePaymentRepo{
+			latestPendingFn: func(ctx context.Context, playerID int64) (*domain.Payment, error) {
+				return &domain.Payment{QRCode: "000201PIXCODE"}, nil
+			},
+		},
+	}
+
+	resp, err := svc.HandleCopyPixCode(10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.MenuKey != "PIX_PAYMENT_MENU" {
+		t.Fatalf("expected PIX_PAYMENT_MENU, got %q", resp.MenuKey)
+	}
+	if resp.Image == nil || resp.Image.Type != view.ImageAsset {
+		t.Fatalf("expected image asset response")
 	}
 }
 

@@ -9,12 +9,28 @@ import (
 	"testing"
 
 	"github.com/vigmiranda/dragonki/internal/bootstrap"
+	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
 type fakePaymentConfirmer struct {
 	confirmFn   func(ctx context.Context, paymentID int64) error
 	callCount   int
 	lastPayment int64
+}
+
+type fakeWebhookAuditStore struct {
+	saveFn    func(ctx context.Context, audit *domain.PaymentWebhookAudit) error
+	callCount int
+	last      *domain.PaymentWebhookAudit
+}
+
+func (f *fakeWebhookAuditStore) Save(ctx context.Context, audit *domain.PaymentWebhookAudit) error {
+	f.callCount++
+	f.last = audit
+	if f.saveFn == nil {
+		return nil
+	}
+	return f.saveFn(ctx, audit)
 }
 
 func (f *fakePaymentConfirmer) ConfirmPayment(ctx context.Context, paymentID int64) error {
@@ -135,6 +151,39 @@ func TestMercadoPagoWebhook_Handle_Success(t *testing.T) {
 	}
 	if fake.callCount != 1 || fake.lastPayment != 456 {
 		t.Fatalf("unexpected confirm payload: calls=%d id=%d", fake.callCount, fake.lastPayment)
+	}
+}
+
+func TestMercadoPagoWebhook_Handle_AuditSaved(t *testing.T) {
+	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
+	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+
+	fake := &fakePaymentConfirmer{}
+	auditStore := &fakeWebhookAuditStore{}
+	w := NewMercadoPagoWebhook(fake, "", auditStore)
+	req := httptest.NewRequest(http.MethodPost, "/webhook/mercadopago?source=test", strings.NewReader(`{"type":"payment","action":"payment.updated","data":{"id":"456"}}`))
+	req.Header.Set("X-Test", "ok")
+	rec := httptest.NewRecorder()
+
+	w.Handle(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if auditStore.callCount != 1 {
+		t.Fatalf("expected one audit record, got %d", auditStore.callCount)
+	}
+	if auditStore.last == nil {
+		t.Fatalf("expected audit payload")
+	}
+	if auditStore.last.ProcessingStatus != "CONFIRMED" {
+		t.Fatalf("expected CONFIRMED status, got %q", auditStore.last.ProcessingStatus)
+	}
+	if auditStore.last.PartnerPaymentID != 456 {
+		t.Fatalf("expected partner_payment_id=456, got %d", auditStore.last.PartnerPaymentID)
+	}
+	if !strings.Contains(auditStore.last.RawBody, "\"payment.updated\"") {
+		t.Fatalf("expected raw body to contain webhook payload")
 	}
 }
 

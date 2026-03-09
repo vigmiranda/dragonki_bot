@@ -272,6 +272,18 @@ func exchangeMenu() *tgbotapi.InlineKeyboardMarkup {
 	return &menu
 }
 
+func pixPaymentMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Copiar codigo PIX", "action_copy_pix_code"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "to_exchange"),
+		),
+	)
+	return &menu
+}
+
 func rankMenu() *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(

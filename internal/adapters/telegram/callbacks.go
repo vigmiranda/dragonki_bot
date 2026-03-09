@@ -21,6 +21,10 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	inputTelegram := InputTelegram{}
 	log.Printf("Callback recebido | action=%s | params=%v", action, params)
 
+	if action == "to_exchange" {
+		h.clearPixCodeMessage(userID, chatID)
+	}
+
 	switch action {
 	case "to_start", "select_man", "select_woman":
 		inputTelegram = h.handleOnboarding(action, userID)
@@ -50,7 +54,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		inputTelegram = h.handleReferral(action, userID)
 	case "open_inventory", "open_inventory_potions", "open_inventory_equipaments", "open_inventory_equipaments_type", "open_inventory_equipped", "use_item", "equip_item", "unequip_item", "unequip_all":
 		inputTelegram = h.handleInventory(action, userID, params)
-	case "action_buy_ki":
+	case "action_buy_ki", "action_copy_pix_code":
 		inputTelegram = h.handlePayment(action, userID)
 	}
 

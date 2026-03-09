@@ -28,6 +28,9 @@ func mapMenu(
 	case "EXCHANGE_MENU":
 		return exchangeMenu()
 
+	case "PIX_PAYMENT_MENU":
+		return pixPaymentMenu()
+
 	case "RANK_MENU":
 		return rankMenu()
 

@@ -113,6 +113,7 @@ func main() {
 			&domain.Monster{},
 			&domain.Region{},
 			&domain.Payment{},
+			&domain.PaymentWebhookAudit{},
 			&domain.Item{},
 			&domain.Equipment{},
 			&domain.Inventory{},

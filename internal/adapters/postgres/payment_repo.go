@@ -77,3 +77,15 @@ func (r *PaymentRepo) SettlePendingByPartnerID(ctx context.Context, partnerID in
 
 	return settledNow, nil
 }
+
+func (r *PaymentRepo) GetLatestPendingByPlayerID(ctx context.Context, playerID int64) (*domain.Payment, error) {
+	var p domain.Payment
+	err := r.db.WithContext(ctx).
+		Where("player_id = ? AND status = ?", playerID, domain.PaymentPending).
+		Order("created_at DESC").
+		First(&p).Error
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
