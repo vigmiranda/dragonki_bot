@@ -145,6 +145,27 @@ func getMsgAndImgByRegion(region *domain.Region) (string, *view.Image) {
 			Type: view.ImageAsset,
 			Path: fmt.Sprintf("assets/npcs/nyssara_guardia_das_raizes.png"),
 		}
+	case 3:
+		msg = fmt.Sprintf(
+			"\n\n <b>🌋 Bem-vindo às Volcano Lands, viajante.</b> \n\n"+
+				"Eu sou Pyressa, guardiã das chamas eternas.\n"+
+				"Aqui, a terra não dorme… ela ferve.\n"+
+				"Rios de lava cortam estas montanhas e criaturas moldadas pelo fogo caminham entre as rochas.\n"+
+				"Cada passo em falso pode despertar algo que dorme sob o magma.\n"+
+				"As Volcano Lands forjam guerreiros…\n"+
+				"mas reduzem os fracos a cinzas.\n\n"+
+				"Saiba que aqui…\n"+
+				"⚔️ Cada derrota te custará <b> %d%% </b> do seu XP e do seu Gold.\n\n"+
+				"Mantenha seu Ki firme.\n"+
+				"Sinta o calor das profundezas.\n"+
+				"E jamais vire as costas para as chamas.\n\n"+
+				"<b>As Volcano Lands já sentiram sua presença. </b>🔥🌋",
+			region.Nerf,
+		)
+		img = &view.Image{
+			Type: view.ImageAsset,
+			Path: fmt.Sprintf("assets/npcs/pyressa_guardian_das_chamas.png"),
+		}
 	}
 	return msg, img
 }
