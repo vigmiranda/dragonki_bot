@@ -131,3 +131,12 @@ func AutoEvolveClass(player *Player) {
 
 DragonKi Game Design Document
 Class Evolution System
+
+---
+
+# Regra Temporaria de Producao (2026-03-09)
+
+- Nivel maximo atual do jogador: **50**
+- Ao atingir o nivel 50, o jogador **nao acumula mais XP**
+- No nivel 50, o jogador **nao evolui para nivel 51+**
+

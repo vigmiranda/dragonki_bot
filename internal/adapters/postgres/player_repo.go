@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -139,4 +140,17 @@ func (r *PlayerPostgresRepo) GetClassesByID(id int64) (*domain.Class, error) {
 	}
 
 	return classes, nil
+}
+
+func (r *PlayerPostgresRepo) FindClassEvolutionByBaseClassAndLevel(baseClass string, lvl int) (*domain.Class, error) {
+	var nextClass domain.Class
+	err := r.db.Model(&domain.Class{}).
+		Where("base_class = ?", strings.TrimSpace(baseClass)).
+		Where("min_level = ?", lvl).
+		Order("id ASC").
+		First(&nextClass).Error
+	if err != nil {
+		return nil, err
+	}
+	return &nextClass, nil
 }

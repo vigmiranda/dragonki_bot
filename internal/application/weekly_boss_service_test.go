@@ -143,6 +143,9 @@ func (m *weeklyBossPlayerRepoMock) GetClassesByLvl(lvl int) ([]domain.Class, err
 func (m *weeklyBossPlayerRepoMock) GetClassesByID(id int64) (*domain.Class, error) {
 	return nil, nil
 }
+func (m *weeklyBossPlayerRepoMock) FindClassEvolutionByBaseClassAndLevel(baseClass string, lvl int) (*domain.Class, error) {
+	return nil, nil
+}
 
 type weeklyBossInventoryRepoMock struct {
 	calls []struct {

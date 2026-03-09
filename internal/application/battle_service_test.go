@@ -145,6 +145,7 @@ type fakePlayerRepo struct {
 	countOnlineFn        func() (int, error)
 	getClassesByLvlFn    func(lvl int) ([]domain.Class, error)
 	getClassesByIDFn     func(id int64) (*domain.Class, error)
+	findEvolutionFn      func(baseClass string, lvl int) (*domain.Class, error)
 	updatedPlayers       []*domain.Player
 	getOrCreateCallCount int
 }
@@ -184,6 +185,13 @@ func (f *fakePlayerRepo) GetClassesByID(id int64) (*domain.Class, error) {
 		return nil, nil
 	}
 	return f.getClassesByIDFn(id)
+}
+
+func (f *fakePlayerRepo) FindClassEvolutionByBaseClassAndLevel(baseClass string, lvl int) (*domain.Class, error) {
+	if f.findEvolutionFn == nil {
+		return nil, nil
+	}
+	return f.findEvolutionFn(baseClass, lvl)
 }
 
 type fakeRegionRepo struct {
@@ -669,6 +677,64 @@ func TestBattle_Level15_TriggersChangeClassMenu(t *testing.T) {
 	}
 	if player.XP != 0 {
 		t.Fatalf("expected xp reset after level up, got %d", player.XP)
+	}
+}
+
+func TestBattle_Level35_TriggersAutoClassEvolution(t *testing.T) {
+	player := basePlayer()
+	player.Level = 34
+	player.XP = 0
+	player.ClassID = 2
+	player.Class = domain.Class{ID: 2, Name: "Ki Vanguard", Skin: "ki_vanguard", AtkBonus: 0.03, DefBonus: 0.05, HpBonus: 0.03, SpeedBonus: 0.045}
+	player.ATK = 100
+	player.DEF = 100
+	player.MaxHP = 100
+	player.HP = 100
+
+	playerRepo := &fakePlayerRepo{
+		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+		findEvolutionFn: func(baseClass string, lvl int) (*domain.Class, error) {
+			if baseClass != "Ki Vanguard" || lvl != 35 {
+				t.Fatalf("unexpected evolution query baseClass=%q lvl=%d", baseClass, lvl)
+			}
+			return &domain.Class{ID: 5, Name: "Storm Vanguard", Skin: "storm_vanguard"}, nil
+		},
+	}
+	monsterRepo := &fakeMonsterRepo{
+		getByMonsterIDFn: func(monsterID int64) (*domain.Monster, error) {
+			return &domain.Monster{
+				MonsterID: 91, Name: "Boss", Tag: "BOSS", RegionID: 1,
+				HP: 1, ATK: 1, DEF: 0,
+				MinXP: 50000, MaxXP: 50000, MinMoney: 1, MaxMoney: 1,
+			}, nil
+		},
+		getMonsterDropsFn: func(monsterID int) ([]domain.MonsterDrop, error) { return nil, nil },
+	}
+	regionRepo := &fakeRegionRepo{
+		getByIDFn: func(regionID int64) (*domain.Region, error) { return &domain.Region{RegionID: 1, Nerf: 10}, nil },
+	}
+
+	svc := &BattleService{
+		playerRepo:          playerRepo,
+		monsterRepo:         monsterRepo,
+		regionRepo:          regionRepo,
+		battleRepo:          &fakeBattleRepo{},
+		inventoryRepository: &fakeInventoryRepo{},
+		rng:                 rand.New(rand.NewSource(1)),
+	}
+
+	resp, err := svc.Battle(99, map[string]string{"monsterID": "91"})
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if resp.MenuKey == menuChoiceCls {
+		t.Fatalf("did not expect manual class choice on level 35")
+	}
+	if !strings.Contains(resp.Text, "Evolucao automatica") {
+		t.Fatalf("expected auto evolution message, got %q", resp.Text)
+	}
+	if player.ClassID != 5 || player.Class.Name != "Storm Vanguard" {
+		t.Fatalf("expected evolved class id=5 name=Storm Vanguard, got id=%d name=%q", player.ClassID, player.Class.Name)
 	}
 }
 
