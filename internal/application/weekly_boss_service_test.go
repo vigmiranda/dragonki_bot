@@ -15,7 +15,7 @@ type weeklyBossRepoMock struct {
 	activeErr       error
 	weekBoss        *domain.WeeklyBoss
 	weekErr         error
-	attackedToday   bool
+	attacksToday    int64
 	attackedErr     error
 	contribution    *domain.WeeklyBossContribution
 	contributionErr error
@@ -73,11 +73,11 @@ func (m *weeklyBossRepoMock) ApplyDamage(id uint, damage int64, at time.Time) (*
 	}
 	return m.activeBoss, nil
 }
-func (m *weeklyBossRepoMock) HasPlayerAttackedOnDate(bossID uint, playerID int64, attackDate time.Time) (bool, error) {
+func (m *weeklyBossRepoMock) CountPlayerAttacksOnDate(bossID uint, playerID int64, attackDate time.Time) (int64, error) {
 	if m.attackedErr != nil {
-		return false, m.attackedErr
+		return 0, m.attackedErr
 	}
-	return m.attackedToday, nil
+	return m.attacksToday, nil
 }
 func (m *weeklyBossRepoMock) CreateAttack(attack *domain.WeeklyBossAttack) error {
 	return m.createAttackErr
@@ -232,8 +232,8 @@ func TestWeeklyBossService_Attack_InsufficientResources(t *testing.T) {
 
 func TestWeeklyBossService_Attack_AlreadyAttackedToday(t *testing.T) {
 	repo := &weeklyBossRepoMock{
-		activeBoss:    &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 100, CurrentHP: 1000, MaxHP: 1000},
-		attackedToday: true,
+		activeBoss:   &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 100, CurrentHP: 1000, MaxHP: 1000},
+		attacksToday: 1,
 	}
 	playerRepo := &weeklyBossPlayerRepoMock{player: &domain.Player{ID: 1, Energy: 50, Gold: 1000, HP: 100, ATK: 20, DEF: 10, Speed: 10}}
 	svc := NewWeeklyBossService(repo, playerRepo, nil, nil)

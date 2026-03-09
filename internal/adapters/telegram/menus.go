@@ -202,13 +202,31 @@ func inventoryScopeMenu() *tgbotapi.InlineKeyboardMarkup {
 }
 
 func economyMenu() *tgbotapi.InlineKeyboardMarkup {
-	menu := tgbotapi.NewInlineKeyboardMarkup(
+	rows := [][]tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🏪 Lojinha", "to_shop"),
 			tgbotapi.NewInlineKeyboardButtonData("🔄 Cambio", "to_exchange"),
 		),
+	}
+	if bootstrap.IsFeatureEnabled("vip", false) {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("👑 VIP", "to_vip"),
+		))
+	}
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+	))
+	menu := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	return &menu
+}
+
+func vipMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),
+			tgbotapi.NewInlineKeyboardButtonData("👑 Ativar VIP", "confirm_buy_vip"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "menu_economy"),
 		),
 	)
 	return &menu

@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS player_vip;
+DROP TABLE IF EXISTS vip_config;

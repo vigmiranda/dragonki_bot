@@ -15,14 +15,25 @@ type PlayerService struct {
 	PlayerRepository    ports.PlayerRepository
 	RegionRepository    ports.RegionRepository
 	InventoryRepository ports.InventoryRepository
+	vipService          *VIPService
 	cfg                 appConfig
 }
 
-func NewPlayerService(repo ports.PlayerRepository, regionRepo ports.RegionRepository, inventoryRepo ports.InventoryRepository) *PlayerService {
+func NewPlayerService(
+	repo ports.PlayerRepository,
+	regionRepo ports.RegionRepository,
+	inventoryRepo ports.InventoryRepository,
+	vipService ...*VIPService,
+) *PlayerService {
+	var v *VIPService
+	if len(vipService) > 0 {
+		v = vipService[0]
+	}
 	return &PlayerService{
 		PlayerRepository:    repo,
 		RegionRepository:    regionRepo,
 		InventoryRepository: inventoryRepo,
+		vipService:          v,
 		cfg:                 getAppConfig(),
 	}
 }
@@ -89,9 +100,14 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		stats.Bonus.Speed,
 	)
 
-	XPLvlUp := 45 * math.Pow(float64(player.Level), 1.65)
+	xpLvlUp := 45 * math.Pow(float64(player.Level), 1.65)
+	vipStatus := "👑 VIP: inativo"
+	if s.vipService != nil {
+		vipStatus = s.vipService.GetVIPStatusText(int64(player.ID))
+	}
+
 	msg := fmt.Sprintf(
-		genderIcon+"<b>%s</b> - <b>Classe</b>: %s \n"+
+		"%s<b>%s</b> - <b>Classe</b>: %s \n"+
 			"🗺️ <b>Local</b>: %s - (Lv %d+)\n"+
 			"💪 <b>Level</b>: %d   🧬 <b>XP</b>: %d/%d\n"+
 			"❤️ <b>HP</b>: %d/%d   ⚡️ <b>Energia</b>: %d/%d\n"+
@@ -99,14 +115,16 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 			"%s"+
 			"💰 <b>Gold</b>: %d\n"+
 			"💎 <b>Ki Crystals</b>: %d\n"+
+			"%s\n"+
 			"<b>+1 de ⚡️ em </b>: %s\n",
+		genderIcon,
 		player.Name,
 		player.Class.Name,
 		region.Name,
 		region.MinLevel,
 		player.Level,
 		player.XP,
-		int(XPLvlUp),
+		int(xpLvlUp),
 		currentHP,
 		stats.MaxHP,
 		currentEnergy,
@@ -117,6 +135,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 		equipmentBonusLine,
 		player.Gold,
 		player.KiCrystals,
+		vipStatus,
 		cfg.EnergyRegenTime,
 	)
 	img := &view.Image{
@@ -168,10 +187,9 @@ func (s *PlayerService) UpdateClass(playerId int64, params map[string]string) (v
 	}
 
 	msg := fmt.Sprintf(
-		"<b>%s</b>\n\n"+
+		"%s\n\n"+
 			"Otima escolha!\n"+
 			"Seu Ki agora segue um novo caminho.\n"+
-			"Seus poderes comecaram a se alinhar com sua essencia.\n"+
 			"Treine. Evolua. Supere seus limites.\n",
 		class.Name,
 	)
