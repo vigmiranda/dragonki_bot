@@ -126,11 +126,13 @@ func TestAncestralKiChamberService_ResolveBattleResult_CompleteRun(t *testing.T)
 	}
 
 	player := &domain.Player{ID: 10, Level: 20, Energy: 10, Gold: 1000}
+	initialXP := player.XP
+	initialGold := player.Gold
 	svc := NewAncestralKiChamberService(repo, &fakePlayerRepo{
 		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
 	}, nil, nil)
 
-	resp, err := svc.ResolveBattleResult(99, 1, 20, true)
+	resp, err := svc.ResolveBattleResult(99, 1, 20, true, 100, 200)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -142,6 +144,12 @@ func TestAncestralKiChamberService_ResolveBattleResult_CompleteRun(t *testing.T)
 	}
 	if repo.activeRun.Status != domain.AncestralKiChamberRunStatusCompleted {
 		t.Fatalf("expected run status completed, got %s", repo.activeRun.Status)
+	}
+	if player.XP != initialXP+40 {
+		t.Fatalf("expected 40 xp payout, got %d", player.XP-initialXP)
+	}
+	if player.Gold != initialGold+80 {
+		t.Fatalf("expected 80 gold payout, got %d", player.Gold-initialGold)
 	}
 }
 
@@ -230,6 +238,40 @@ func TestAncestralKiChamberService_ContinueRun_SkipsAurumKarun(t *testing.T) {
 	}
 	if strings.Contains(strings.ToUpper(resp.Text), "AURUM") {
 		t.Fatalf("expected Aurum Karun to be skipped, got %q", resp.Text)
+	}
+}
+
+func TestAncestralKiChamberService_PickMonsterForRun_RespectsLevelRange(t *testing.T) {
+	player := &domain.Player{ID: 10, Level: 10, RegionID: 1}
+	run := &domain.AncestralKiChamberRun{
+		ID:            90,
+		PlayerID:      10,
+		ChamberLevel:  1,
+		CurrentBattle: 1,
+		Victories:     0,
+		Status:        domain.AncestralKiChamberRunStatusActive,
+	}
+
+	svc := NewAncestralKiChamberService(
+		&chamberRepoMock{},
+		&fakePlayerRepo{getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil }},
+		&fakeMonsterRepo{
+			listByRegionFn: func(regionID int64) ([]domain.Monster, error) {
+				return []domain.Monster{
+					{MonsterID: 1, Name: "SALAMORTH", Level: 35, HP: 100, ATK: 20, DEF: 10, RegionID: 1},
+					{MonsterID: 2, Name: "LOBO", Level: 10, HP: 50, ATK: 10, DEF: 5, RegionID: 1},
+				}, nil
+			},
+		},
+		nil,
+	)
+
+	monster, _, err := svc.pickMonsterForRun(player, run)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if monster.Name == "SALAMORTH" {
+		t.Fatalf("expected out-of-range monster to be ignored")
 	}
 }
 

@@ -18,6 +18,7 @@ const (
 	ancestralKiChamberEntryGoldCost   = 150
 	ancestralKiChamberMaxLevel        = 10
 	ancestralKiChamberTotalBattles    = 5
+	ancestralKiChamberSuccessPct      = 0.40
 )
 
 type AncestralKiChamberService struct {
@@ -78,7 +79,7 @@ func (s *AncestralKiChamberService) Open(userID int64) (view.GameResponse, error
 			MenuKey: "ANCESTRAL_KI_CHAMBER_RUN_MENU",
 			Image: &view.Image{
 				Type: view.ImageAsset,
-				Path: "assets/maps/plain_lv1.png",
+				Path: "assets/maps/ki_ancestral_hall.png",
 			},
 		}, nil
 	}
@@ -209,7 +210,9 @@ func (s *AncestralKiChamberService) ContinueRun(userID int64) (view.GameResponse
 	}
 
 	won := playerHP > 0 && monsterHP <= 0
-	resultResp, err := s.ResolveBattleResult(userID, int64(monster.MonsterID), monsterLevel, won)
+	xpReward := clamp(CalculateXPReward(player.Level, monsterLevel), monster.MinXP, monster.MaxXP)
+	goldReward := randBetweenInclusive(s.rng, monster.MinMoney, monster.MaxMoney)
+	resultResp, err := s.ResolveBattleResult(userID, int64(monster.MonsterID), monsterLevel, won, xpReward, goldReward)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
@@ -240,6 +243,8 @@ func (s *AncestralKiChamberService) ResolveBattleResult(
 	monsterID int64,
 	monsterLevel int,
 	won bool,
+	xpReward int,
+	goldReward int,
 ) (view.GameResponse, error) {
 	player, err := s.playerRepo.GetOrCreate(userID)
 	if err != nil {
@@ -280,6 +285,12 @@ func (s *AncestralKiChamberService) ResolveBattleResult(
 	}
 
 	run.Victories++
+	if xpReward > 0 {
+		run.AccumulatedXP += xpReward
+	}
+	if goldReward > 0 {
+		run.AccumulatedGold += goldReward
+	}
 	if run.Victories >= ancestralKiChamberTotalBattles {
 		run.Status = domain.AncestralKiChamberRunStatusCompleted
 		run.FinishedAt = &now
@@ -298,13 +309,33 @@ func (s *AncestralKiChamberService) ResolveBattleResult(
 			}
 		}
 
+		xpPayout := int(math.Floor(float64(run.AccumulatedXP) * ancestralKiChamberSuccessPct))
+		goldPayout := int(math.Floor(float64(run.AccumulatedGold) * ancestralKiChamberSuccessPct))
+		if xpPayout > 0 {
+			player.XP += xpPayout
+		}
+		if goldPayout > 0 {
+			player.Gold += goldPayout
+		}
+		if xpPayout > 0 || goldPayout > 0 {
+			if err := s.playerRepo.Update(player); err != nil {
+				return view.GameResponse{}, err
+			}
+		}
+
 		return view.GameResponse{
 			Text: fmt.Sprintf(
 				"Camara concluida!\n\n"+
 					"Voce venceu as %d batalhas do nivel %d.\n"+
+					"Recompensa de conclusao: %d XP e %d Gold (40%% do acumulado da run).\n"+
+					"Acumulado da run: %d XP e %d Gold.\n"+
 					"Proximo nivel desbloqueado.\n\nVolte ao menu da Camara para iniciar o proximo desafio.",
 				ancestralKiChamberTotalBattles,
 				run.ChamberLevel,
+				xpPayout,
+				goldPayout,
+				run.AccumulatedXP,
+				run.AccumulatedGold,
 			),
 			MenuKey: "ANCESTRAL_KI_CHAMBER_MENU",
 			Image: &view.Image{
@@ -365,7 +396,7 @@ func (s *AncestralKiChamberService) AbandonRun(userID int64) (view.GameResponse,
 
 func GetChamberMonsterLevelRange(playerLevel int, chamberLevel int) (int, int) {
 	if chamberLevel <= 1 {
-		min := playerLevel - 1
+		min := playerLevel - 2
 		if min < 1 {
 			min = 1
 		}
@@ -403,6 +434,17 @@ func (s *AncestralKiChamberService) pickMonsterForRun(
 	}
 
 	minLv, maxLv := GetChamberMonsterLevelRange(player.Level, run.ChamberLevel)
+	inRangeMonsters := make([]domain.Monster, 0, len(allowedMonsters))
+	for _, m := range allowedMonsters {
+		baseLv := int(m.Level)
+		if baseLv >= minLv && baseLv <= maxLv {
+			inRangeMonsters = append(inRangeMonsters, m)
+		}
+	}
+	if len(inRangeMonsters) == 0 {
+		return nil, 0, gorm.ErrRecordNotFound
+	}
+
 	targetLevel := minLv
 	if maxLv > minLv {
 		targetLevel = minLv + s.rng.Intn((maxLv-minLv)+1)
@@ -410,7 +452,7 @@ func (s *AncestralKiChamberService) pickMonsterForRun(
 
 	closestIdx := 0
 	closestDiff := int(^uint(0) >> 1)
-	for i, m := range allowedMonsters {
+	for i, m := range inRangeMonsters {
 		diff := int(math.Abs(float64(int(m.Level) - targetLevel)))
 		if diff < closestDiff {
 			closestDiff = diff
@@ -418,7 +460,7 @@ func (s *AncestralKiChamberService) pickMonsterForRun(
 		}
 	}
 
-	scaled := scaleChamberMonster(allowedMonsters[closestIdx], targetLevel)
+	scaled := scaleChamberMonster(inRangeMonsters[closestIdx], targetLevel)
 	if scaled.RegionID == 0 {
 		scaled.RegionID = player.RegionID
 	}

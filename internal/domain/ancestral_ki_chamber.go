@@ -26,11 +26,13 @@ func (AncestralKiChamberProgress) TableName() string {
 type AncestralKiChamberRun struct {
 	ID uint `gorm:"primaryKey;autoIncrement"`
 
-	PlayerID      int64  `gorm:"not null;index"`
-	ChamberLevel  int    `gorm:"not null"`
-	CurrentBattle int    `gorm:"not null;default:1"`
-	Victories     int    `gorm:"not null;default:0"`
-	Status        string `gorm:"size:20;not null;default:ACTIVE"`
+	PlayerID        int64  `gorm:"not null;index"`
+	ChamberLevel    int    `gorm:"not null"`
+	CurrentBattle   int    `gorm:"not null;default:1"`
+	Victories       int    `gorm:"not null;default:0"`
+	AccumulatedXP   int    `gorm:"not null;default:0"`
+	AccumulatedGold int    `gorm:"not null;default:0"`
+	Status          string `gorm:"size:20;not null;default:ACTIVE"`
 
 	StartedAt  time.Time
 	FinishedAt *time.Time

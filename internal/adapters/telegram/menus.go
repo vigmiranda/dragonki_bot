@@ -346,7 +346,7 @@ func ancestralKiChamberMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("Niveis 6 a 10", "ancestral_ki_levels_6_10"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Voltar", "menu_events"),
+			tgbotapi.NewInlineKeyboardButtonData("Voltar", "action_menu"),
 		),
 	)
 
