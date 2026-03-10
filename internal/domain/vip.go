@@ -5,7 +5,7 @@ import "time"
 type VIPConfig struct {
 	ID                      uint      `gorm:"primaryKey;autoIncrement"`
 	Enabled                 bool      `gorm:"not null;default:false"`
-	VIPPriceKiCrystals      int       `gorm:"not null;default:10"`
+	VIPPriceKiCrystals      int       `gorm:"column:vip_price_ki_crystals;not null;default:10"`
 	DurationDays            int       `gorm:"not null;default:7"`
 	XPBonusPercent          float64   `gorm:"not null;default:0"`
 	GoldBonusPercent        float64   `gorm:"not null;default:0"`
