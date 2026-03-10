@@ -101,9 +101,11 @@ func (s *BattleService) resolveBattleOutcome(
 	state *battleState,
 	xpReceived int,
 	moneyReceived int,
+	vipBonusXP int,
+	vipBonusGold int,
 ) (*battleOutcome, error) {
 	if player.HP > 0 {
-		return s.resolveWinOutcome(player, monster, state, xpReceived, moneyReceived)
+		return s.resolveWinOutcome(player, monster, state, xpReceived, moneyReceived, vipBonusXP, vipBonusGold)
 	}
 	return s.resolveLoseOutcome(player, region, state), nil
 }
@@ -114,6 +116,8 @@ func (s *BattleService) resolveWinOutcome(
 	state *battleState,
 	xpReceived int,
 	moneyReceived int,
+	vipBonusXP int,
+	vipBonusGold int,
 ) (*battleOutcome, error) {
 	goodNews := ""
 	reachedMaxLevel := false
@@ -169,20 +173,31 @@ func (s *BattleService) resolveWinOutcome(
 		player.FormBattlesLeft--
 	}
 
+	xpLine := fmt.Sprintf("⚔️ +%d XP\n", xpReceived)
+	goldLine := fmt.Sprintf("💰 +%d Gold\n", moneyReceived)
+	if vipBonusXP > 0 {
+		xpBase := xpReceived - vipBonusXP
+		xpLine = fmt.Sprintf("⚔️ +%d XP (base %d + VIP %d)\n", xpReceived, xpBase, vipBonusXP)
+	}
+	if vipBonusGold > 0 {
+		goldBase := moneyReceived - vipBonusGold
+		goldLine = fmt.Sprintf("💰 +%d Gold (base %d + VIP %d)\n", moneyReceived, goldBase, vipBonusGold)
+	}
+
 	msg := fmt.Sprintf(
 		"🏆 Vitória! %s \n"+
 			"%s"+
 			"Você recebeu de dano: %d\n"+
-			"⚔️ +%d XP\n"+
-			"💰 +%d Gold\n"+
+			"%s"+
+			"%s"+
 			"❤️ HP: %d/%d\n"+
 			"⚡️ Energia: %d/%d\n"+
 			"💪 Level: %d\n",
 		player.Name,
 		goodNews,
 		state.atkTotalMonster,
-		xpReceived,
-		moneyReceived,
+		xpLine,
+		goldLine,
 		player.HP,
 		player.MaxHP,
 		player.Energy,

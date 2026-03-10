@@ -223,13 +223,19 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 	state := initBattleState(player, monster, stats)
 	s.executeCombat(player, monster, state)
 
-	xpReceived := clamp(CalculateXPReward(player.Level, int(monster.Level)), monster.MinXP, monster.MaxXP)
-	moneyReceived := randBetweenInclusive(s.rng, monster.MinMoney, monster.MaxMoney)
+	xpBase := clamp(CalculateXPReward(player.Level, int(monster.Level)), monster.MinXP, monster.MaxXP)
+	goldBase := randBetweenInclusive(s.rng, monster.MinMoney, monster.MaxMoney)
+	xpReceived := xpBase
+	moneyReceived := goldBase
+	vipBonusXP := 0
+	vipBonusGold := 0
 	if s.vipService != nil {
 		xpReceived, moneyReceived = s.vipService.ApplyBattleBonuses(int64(player.ID), xpReceived, moneyReceived)
+		vipBonusXP = xpReceived - xpBase
+		vipBonusGold = moneyReceived - goldBase
 	}
 
-	outcome, err := s.resolveBattleOutcome(player, monster, region, state, xpReceived, moneyReceived)
+	outcome, err := s.resolveBattleOutcome(player, monster, region, state, xpReceived, moneyReceived, vipBonusXP, vipBonusGold)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
