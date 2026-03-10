@@ -136,3 +136,41 @@ go run ./cmd/worker
 ```bash
 go test ./internal/application ./internal/adapters/postgres ./internal/adapters/telegram ./cmd/bot ./cmd/worker
 ```
+
+Teste de integracao Postgres com validacao real de persistencia:
+
+```bash
+$env:TEST_DATABASE_URL="postgres://dragonki:dragonki@localhost:5432/postgres?sslmode=disable"
+go test ./internal/adapters/postgres -run Integration
+```
+
+O teste cria um banco temporario, aplica as migrations, valida escrita/leitura real e remove o banco ao final.
+
+## Git Hooks
+
+Para rodar testes automaticamente antes de cada `git push`, configure o repositorio para usar os hooks versionados:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+O hook `pre-push` executa:
+
+```bash
+go test ./...
+```
+
+E, se `TEST_DATABASE_URL` estiver definida, tambem executa:
+
+```bash
+go test ./internal/adapters/postgres -run Integration -count=1
+```
+
+Exemplo de ambiente local para incluir as integracoes no `pre-push`:
+
+```bash
+$env:TEST_DATABASE_URL="postgres://dragonki:dragonki@localhost:5432/postgres?sslmode=disable"
+git push
+```
+
+Por seguranca, o hook e os testes de integracao recusam executar se `TEST_DATABASE_URL` apontar para um host que nao pareca local/efemero, como `localhost`, `127.0.0.1`, `postgres`, `dragonki_postgres`, `*.local` ou `*.internal`.
