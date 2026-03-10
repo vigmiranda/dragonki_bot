@@ -171,3 +171,57 @@ func TestTransformService_Transform_Success(t *testing.T) {
 		t.Fatalf("expected 2 updates (pre and final), got %d", len(repo.updatedPlayers))
 	}
 }
+
+func TestTransformService_TransformSingleBattle_Success(t *testing.T) {
+	player := basePlayer()
+	player.Gender = "MAN"
+	player.Class.Skin = "basic"
+	player.Level = 10
+	player.Energy = 2
+	player.FormBattlesLeft = 0
+	player.HP = player.MaxHP
+	player.LastEnergyAt = time.Now().UTC()
+
+	repo := &fakePlayerRepo{
+		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+	}
+	svc := &TransformService{PlayerRepository: repo}
+
+	resp, err := svc.TransformSingleBattle(1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if player.Form != "Ki Awakened" || player.FormBattlesLeft != 1 || player.Energy != 1 {
+		t.Fatalf("unexpected transformed state: form=%s battles=%d energy=%d", player.Form, player.FormBattlesLeft, player.Energy)
+	}
+	if resp.MenuKey != "POST_BATTLE_WIN_MENU" {
+		t.Fatalf("expected POST_BATTLE_WIN_MENU, got %q", resp.MenuKey)
+	}
+}
+
+func TestTransformService_TransformSingleBattle_InsufficientEnergy(t *testing.T) {
+	player := basePlayer()
+	player.Gender = "MAN"
+	player.Class.Skin = "basic"
+	player.Level = 10
+	player.Energy = 0
+	player.FormBattlesLeft = 0
+	player.HP = player.MaxHP
+	player.LastEnergyAt = time.Now().UTC()
+
+	repo := &fakePlayerRepo{
+		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+	}
+	svc := &TransformService{PlayerRepository: repo}
+
+	resp, err := svc.TransformSingleBattle(1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(resp.Text, "Energia insuficiente") {
+		t.Fatalf("expected insufficient energy text, got %q", resp.Text)
+	}
+	if resp.MenuKey != "POST_BATTLE_WIN_MENU" {
+		t.Fatalf("expected POST_BATTLE_WIN_MENU, got %q", resp.MenuKey)
+	}
+}

@@ -129,3 +129,56 @@ func (s *TransformService) Transform(userID int64) (view.GameResponse, error) {
 
 	return viewResponse, nil
 }
+
+func (s *TransformService) TransformSingleBattle(userID int64) (view.GameResponse, error) {
+	cfg := resolveAppConfig(s.cfg)
+
+	player, err := s.PlayerRepository.GetOrCreate(userID)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+
+	if err := applyPassivePlayerUpdates(s.PlayerRepository, player, cfg.EnergyRegenDuration); err != nil {
+		return view.GameResponse{}, err
+	}
+
+	msg := "❌ Transformação desbloqueia no nível 5."
+	img := &view.Image{
+		Type: view.ImageAsset,
+		Path: fmt.Sprintf("assets/skins/%s/%s/tired.png", domain.ConvertLowCase(player.Gender), player.Class.Skin),
+	}
+	menu := "POST_BATTLE_WIN_MENU"
+
+	if player.Level < 5 {
+		// keep default message
+	} else if player.FormBattlesLeft > 0 {
+		msg = fmt.Sprintf(
+			"🔥 Você já está transformado!\nRestam %d batalha(s).",
+			player.FormBattlesLeft,
+		)
+		img.Path = fmt.Sprintf("assets/skins/%s/%s/ki_awakened.png",
+			domain.ConvertLowCase(player.Gender),
+			player.Class.Skin)
+	} else if player.Energy < 1 {
+		msg = "⚡ Energia insuficiente para a transformação rápida."
+		img.Path = fmt.Sprintf("assets/skins/%s_tired.png", domain.ConvertLowCase(player.Gender))
+	} else {
+		player.Form = "Ki Awakened"
+		player.FormBattlesLeft = 1
+		player.Energy--
+		msg = "🔥 Transformação de duelo ativada!\nCusto: 1 energia | Duração: 1 batalha."
+		img.Path = fmt.Sprintf("assets/skins/%s/%s/ki_awakened.png",
+			domain.ConvertLowCase(player.Gender),
+			player.Class.Skin)
+	}
+
+	if err := s.PlayerRepository.Update(player); err != nil {
+		return view.GameResponse{}, err
+	}
+
+	return view.GameResponse{
+		Text:    msg,
+		Image:   img,
+		MenuKey: menu,
+	}, nil
+}

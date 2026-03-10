@@ -100,6 +100,9 @@ func mapMenu(
 		}
 		return battleMenu(monster)
 
+	case "POST_BATTLE_WIN_MENU":
+		return postBattleWinMenu()
+
 	default:
 		return mainMenu()
 	}

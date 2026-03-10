@@ -1,6 +1,12 @@
 package telegram
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/vigmiranda/dragonki/internal/application/view"
+	"github.com/vigmiranda/dragonki/internal/domain"
+)
 
 func (h *Handler) handleBattle(action string, userID int64, params map[string]string) InputTelegram {
 	switch action {
@@ -27,6 +33,155 @@ func (h *Handler) handleBattle(action string, userID int64, params map[string]st
 			break
 		}
 		return ToTelegramResponse(gameResp, true, "action_hunt")
+	case "action_battle_open_potions":
+		monsterID, ok := parseMonsterID(params)
+		if !ok {
+			break
+		}
+		page := 1
+		if pageStr, ok := params["page"]; ok {
+			if parsed, parseErr := strconv.Atoi(pageStr); parseErr == nil && parsed > 0 {
+				page = parsed
+			}
+		}
+		gameResp, err := h.inventoryService.ListItemsByUserAndTypePage(userID, domain.ItemConsumable, page)
+		if err != nil {
+			fmt.Printf("action_battle_open_potions -> %v\\n", err)
+			break
+		}
+		if gameResp.MenuParams == nil {
+			gameResp.MenuParams = map[string]any{}
+		}
+		gameResp.MenuParams["paginationAction"] = fmt.Sprintf("action_battle_open_potions?monsterID=%d", monsterID)
+		gameResp.MenuParams["backAction"] = fmt.Sprintf("action_battle_menu?monsterID=%d", monsterID)
+		gameResp.MenuParams["itemAction"] = fmt.Sprintf("action_battle_use_item?monsterID=%d", monsterID)
+		return ToTelegramResponse(gameResp, true, action)
+	case "action_battle_use_item":
+		monsterID, ok := parseMonsterID(params)
+		if !ok {
+			break
+		}
+		id, convErr := strconv.Atoi(params["inventoryItemID"])
+		if convErr != nil || id <= 0 {
+			break
+		}
+		gameResp, err := h.inventoryService.UseItem(userID, uint(id))
+		if err != nil {
+			fmt.Printf("action_battle_use_item -> %v\\n", err)
+			break
+		}
+		_ = gameResp
+		duelResp, duelErr := h.battleService.OpenCurrentDuel(userID, monsterID)
+		if duelErr != nil {
+			fmt.Printf("action_battle_use_item(open_duel) -> %v\\n", duelErr)
+			break
+		}
+		return ToTelegramResponse(duelResp, true, action)
+	case "action_battle_transform":
+		monsterID, ok := parseMonsterID(params)
+		if !ok {
+			break
+		}
+		gameResp, err := h.transformService.TransformSingleBattle(userID)
+		if err != nil {
+			fmt.Printf("action_battle_transform -> %v\\n", err)
+			break
+		}
+		_ = gameResp
+		duelResp, duelErr := h.battleService.OpenCurrentDuel(userID, monsterID)
+		if duelErr != nil {
+			fmt.Printf("action_battle_transform(open_duel) -> %v\\n", duelErr)
+			break
+		}
+		return ToTelegramResponse(duelResp, true, action)
+	case "action_battle_menu":
+		monsterID, ok := parseMonsterID(params)
+		if !ok {
+			break
+		}
+		gameResp, err := h.battleService.OpenCurrentDuel(userID, monsterID)
+		if err != nil {
+			fmt.Printf("action_battle_menu -> %v\\n", err)
+			break
+		}
+		return ToTelegramResponse(gameResp, true, action)
+	case "action_post_battle_open_potions":
+		page := 1
+		if pageStr, ok := params["page"]; ok {
+			if parsed, parseErr := strconv.Atoi(pageStr); parseErr == nil && parsed > 0 {
+				page = parsed
+			}
+		}
+		gameResp, err := h.inventoryService.ListItemsByUserAndTypePage(userID, domain.ItemConsumable, page)
+		if err != nil {
+			fmt.Printf("action_post_battle_open_potions -> %v\\n", err)
+			break
+		}
+		if gameResp.MenuParams == nil {
+			gameResp.MenuParams = map[string]any{}
+		}
+		gameResp.MenuParams["paginationAction"] = "action_post_battle_open_potions"
+		gameResp.MenuParams["backAction"] = "action_post_battle_menu"
+		gameResp.MenuParams["itemAction"] = "action_post_battle_use_item"
+		return ToTelegramResponse(gameResp, true, action)
+	case "action_post_battle_use_item":
+		id, convErr := strconv.Atoi(params["inventoryItemID"])
+		if convErr != nil || id <= 0 {
+			break
+		}
+		gameResp, err := h.inventoryService.UseItem(userID, uint(id))
+		if err != nil {
+			fmt.Printf("action_post_battle_use_item -> %v\\n", err)
+			break
+		}
+		gameResp.MenuKey = "POST_BATTLE_WIN_MENU"
+		return ToTelegramResponse(gameResp, true, action)
+	case "action_post_battle_transform":
+		gameResp, err := h.transformService.TransformSingleBattle(userID)
+		if err != nil {
+			fmt.Printf("action_post_battle_transform -> %v\\n", err)
+			break
+		}
+		return ToTelegramResponse(gameResp, true, action)
+	case "action_post_battle_menu":
+		return ToTelegramResponse(postBattleMenuResponse(), true, action)
 	}
 	return InputTelegram{}
+}
+
+func battleMenuResponse(monsterID int64) view.GameResponse {
+	return view.GameResponse{
+		Text:    "Duelo em andamento. Escolha sua acao.",
+		MenuKey: "BATTLE_MENU",
+		Image: &view.Image{
+			Type: view.ImageAsset,
+			Path: "assets/npcs/mestre_kalunga.png",
+		},
+		MenuParams: map[string]any{
+			"monsterID": monsterID,
+		},
+	}
+}
+
+func postBattleMenuResponse() view.GameResponse {
+	return view.GameResponse{
+		Text:    "Escolha sua proxima acao.",
+		MenuKey: "POST_BATTLE_WIN_MENU",
+		Image: &view.Image{
+			Type: view.ImageAsset,
+			Path: "assets/npcs/mestre_kalunga.png",
+		},
+	}
+}
+
+func parseMonsterID(params map[string]string) (int64, bool) {
+	raw := params["monsterID"]
+	if raw == "" {
+		return 0, false
+	}
+	monsterID, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || monsterID <= 0 {
+		return 0, false
+	}
+	return monsterID, true
 }

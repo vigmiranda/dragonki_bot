@@ -208,7 +208,11 @@ func PotionMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 		if action == "" {
 			action = "use_item"
 		}
-		callback := fmt.Sprintf("%s?inventoryItemID=%d", action, item.ID)
+		separator := "?"
+		if strings.Contains(action, "?") {
+			separator = "&"
+		}
+		callback := fmt.Sprintf("%s%sinventoryItemID=%d", action, separator, item.ID)
 		if isEquipment {
 			callback = fmt.Sprintf("equip_item?inventoryItemID=%d", item.ID)
 		}

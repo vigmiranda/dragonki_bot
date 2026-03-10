@@ -216,7 +216,7 @@ func (s *BattleService) resolveWinOutcome(
 				state.skin,
 			),
 		},
-		menu:          menuMain,
+		menu:          menuPostWin,
 		resultBattle:  "WIN",
 		xpReceived:    xpReceived,
 		moneyReceived: moneyReceived,
