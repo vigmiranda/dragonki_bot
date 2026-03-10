@@ -1021,9 +1021,12 @@ func TestAurumKarunLuck_WinAndEscape(t *testing.T) {
 			monster := &domain.Monster{MonsterID: 99, Name: "Aurum", MaxMoney: 80}
 			region := &domain.Region{Tag: "PLAINS"}
 
-			_, err := svc.AurumKarunLuck(monster, region, player)
+			resp, err := svc.AurumKarunLuck(monster, region, player)
 			if err != nil {
 				t.Fatalf("unexpected err: %v", err)
+			}
+			if resp.MenuKey != menuPostWin {
+				t.Fatalf("expected post-win menu %q, got %q", menuPostWin, resp.MenuKey)
 			}
 			if battleRepo.logs[0].Result != tc.wantResult {
 				t.Fatalf("expected result %q, got %q", tc.wantResult, battleRepo.logs[0].Result)

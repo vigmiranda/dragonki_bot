@@ -19,6 +19,7 @@ const (
 	menuBattle    = "BATTLE_MENU"
 	menuEnergy    = "ENERGY_MENU"
 	menuChoiceCls = "CHOICE_CLASS"
+	menuPostWin   = "POST_BATTLE_WIN_MENU"
 
 	formKiAwakened = "Ki Awakened"
 	formBase       = "Base"
@@ -142,7 +143,7 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 						"Voce\n"+
 						"💪 <b>Lv:</b> %d\n"+
 						"❤️ <b>HP:</b> %d/%d\n"+
-						"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</b> %d  🏃🏻<b>VEL:</b> %d\n"+
+						"⚔️<b>ATK:</b>%d 🛡️<b>DEF:</b>%d  🏃🏻<b>VEL:</b>%d\n"+
 						"Bonus Equip: ATK %+d | DEF %+d | VEL %+d\n\n"+
 						"%s \n"+
 						"💪 <b>Lv:</b> %d\n"+
@@ -181,6 +182,82 @@ func (s *BattleService) GetBattle(userID int64) (view.GameResponse, error) {
 	}
 
 	return viewResponse, nil
+}
+
+func (s *BattleService) OpenCurrentDuel(userID int64, monsterID int64) (view.GameResponse, error) {
+	player, err := s.playerRepo.GetOrCreate(userID)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+	monster, err := s.monsterRepo.GetByMonsterID(monsterID)
+	if err != nil {
+		return view.GameResponse{}, err
+	}
+
+	previewPlayer := *player
+	if previewPlayer.Form == formKiAwakened {
+		domain.KiAwakened(&previewPlayer)
+	}
+
+	stats, statsErr := calculateEffectivePlayerStats(&previewPlayer, s.inventoryRepository)
+	if statsErr != nil {
+		log.Printf("open current duel equipment bonus unavailable | playerID=%d | err=%v", previewPlayer.ID, statsErr)
+		stats = effectivePlayerStats{
+			ATK:       previewPlayer.ATK,
+			DEF:       previewPlayer.DEF,
+			Speed:     previewPlayer.Speed,
+			MaxHP:     previewPlayer.MaxHP,
+			MaxEnergy: previewPlayer.MaxEnergy,
+		}
+	}
+
+	return s.buildDuelPreviewResponse(&previewPlayer, monster, stats), nil
+}
+
+func (s *BattleService) buildDuelPreviewResponse(player *domain.Player, monster *domain.Monster, stats effectivePlayerStats) view.GameResponse {
+	transformInfo := ""
+	if player.Form == formKiAwakened && player.FormBattlesLeft > 0 {
+		transformInfo = fmt.Sprintf("Estado: Transformado (restam %d batalha(s))\n", player.FormBattlesLeft)
+	}
+
+	msg := fmt.Sprintf(
+		"🐉<b>%s apareceu!</b>\n\n"+
+			"Voce\n"+
+			"💪 <b>Lv:</b> %d\n"+
+			"❤️ <b>HP:</b> %d/%d\n"+
+			"⚔️<b>ATK:</b>%d 🛡️<b>DEF:</b>%d  🏃🏻<b>VEL:</b>%d\n"+
+			"Bonus Equip: ATK %+d | DEF %+d | VEL %+d\n"+
+			"%s\n"+
+			"%s \n"+
+			"💪 <b>Lv:</b> %d\n"+
+			"❤️ <b>HP:</b> %d\n"+
+			"⚔️ <b>ATK:</b> %d  🛡️<b>DEF:</> %d\n",
+		monster.Name,
+		player.Level,
+		player.HP,
+		player.MaxHP,
+		stats.ATK,
+		stats.DEF,
+		stats.Speed,
+		stats.Bonus.ATK,
+		stats.Bonus.DEF,
+		stats.Bonus.Speed,
+		transformInfo,
+		monster.Name,
+		monster.Level,
+		monster.HP,
+		monster.ATK,
+		monster.DEF,
+	)
+
+	return view.GameResponse{
+		Text:    msg,
+		Image:   &view.Image{Type: view.ImageAsset, Path: fmt.Sprintf("assets/monsters/map_%d/%s.png", monster.RegionID, monster.Tag)},
+		MenuKey: menuBattle,
+		MenuParams: map[string]any{
+			"monsterID": monster.MonsterID,
+		},
+	}
 }
 
 func (s *BattleService) Battle(userID int64, params map[string]string) (view.GameResponse, error) {
@@ -292,7 +369,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 				if evolveImg != nil {
 					img = evolveImg
 				}
-				menu = menuMain
+				menu = menuPostWin
 				menuParams = map[string]any{}
 			}
 		}
@@ -352,7 +429,7 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 	viewResponse := view.GameResponse{
 		Text:    txt,
 		Image:   img,
-		MenuKey: menuMain,
+		MenuKey: menuPostWin,
 	}
 
 	battleLog := &domain.BattleLog{

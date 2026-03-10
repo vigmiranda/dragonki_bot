@@ -97,8 +97,12 @@ func energyMenu() *tgbotapi.InlineKeyboardMarkup {
 func battleMenu(monsterID int64) *tgbotapi.InlineKeyboardMarkup {
 	menu := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar ", fmt.Sprintf("action_fight?monsterID=%d", monsterID)),
-			tgbotapi.NewInlineKeyboardButtonData("🏃🏻 Escapar ", fmt.Sprintf("action_escape?monsterID=%d", monsterID)),
+			tgbotapi.NewInlineKeyboardButtonData("🧪 Usar Pocao", fmt.Sprintf("action_battle_open_potions?monsterID=%d&page=1", monsterID)),
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar", fmt.Sprintf("action_battle_transform?monsterID=%d", monsterID)),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⚔️ Atacar", fmt.Sprintf("action_fight?monsterID=%d", monsterID)),
+			tgbotapi.NewInlineKeyboardButtonData("🏃🏻 Escapar", fmt.Sprintf("action_escape?monsterID=%d", monsterID)),
 		),
 	)
 	return &menu
@@ -425,6 +429,22 @@ func ancestralKiChamberPostWinMenu() *tgbotapi.InlineKeyboardMarkup {
 	)
 	return &menu
 }
+func postBattleWinMenu() *tgbotapi.InlineKeyboardMarkup {
+	menu := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⚔️ Cacar Novamente", "action_hunt"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🧪 Usar Pocao", "action_post_battle_open_potions?page=1"),
+			tgbotapi.NewInlineKeyboardButtonData("🔥 Transformar", "action_post_battle_transform"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Menu Principal", "action_menu"),
+		),
+	)
+	return &menu
+}
+
 func getenvIntDefault(key string, def int) int {
 	raw := os.Getenv(key)
 	if raw == "" {
