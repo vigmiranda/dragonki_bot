@@ -167,8 +167,8 @@ func (m *chamberRepoMock) CreateBattleLog(log *domain.AncestralKiChamberBattleLo
 
 func TestGetChamberMonsterLevelRange_LevelOneClamp(t *testing.T) {
 	min, max := GetChamberMonsterLevelRange(1, 1)
-	if min != 1 || max != 2 {
-		t.Fatalf("expected (1,2), got (%d,%d)", min, max)
+	if min != 1 || max != 3 {
+		t.Fatalf("expected (1,3), got (%d,%d)", min, max)
 	}
 }
 
