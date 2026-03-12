@@ -420,7 +420,11 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatal("expected paid_at to be set")
 	}
 
-	initialGold := firstPlayer.Gold
+	reloadedFirstPlayer, err = playerRepo.GetOrCreate(firstPlayer.UserID)
+	if err != nil {
+		t.Fatalf("reload first player before gold payout: %v", err)
+	}
+	initialGold := reloadedFirstPlayer.Gold
 	if err := repo.AddGoldToPlayer(int64(firstPlayer.ID), reward.Gold); err != nil {
 		t.Fatalf("add gold to player: %v", err)
 	}
