@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type InventoryPostgres struct {
@@ -211,16 +213,107 @@ func (r *InventoryPostgres) CountEquipmentItemsBySlot(playerID int64) (map[domai
 }
 
 func (r *InventoryPostgres) CreateOrUpdateInventory(userID int64, itemID uint, amount int) error {
+	return createOrUpdateInventoryWithDB(r.db, userID, itemID, amount)
+}
+
+func (r *InventoryPostgres) PurchaseItem(playerID int64, itemID uint, amount int, price int) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var player domain.Player
+		if err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", playerID).
+			Take(&player).Error; err != nil {
+			return err
+		}
+
+		if player.Gold < price {
+			return domain.ErrInventoryInsufficientGold
+		}
+
+		if err := createOrUpdateInventoryWithDB(tx, playerID, itemID, amount); err != nil {
+			return err
+		}
+
+		return tx.
+			Model(&domain.Player{}).
+			Where("id = ?", playerID).
+			Updates(map[string]any{
+				"gold":        gorm.Expr("gold - ?", price),
+				"last_update": time.Now().UTC(),
+			}).Error
+	})
+}
+
+func (r *InventoryPostgres) SellInventoryItem(playerID int64, inventoryItemID uint, goldValue int) (*domain.InventoryItem, error) {
+	var soldItem domain.InventoryItem
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var player domain.Player
+		if err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", playerID).
+			Take(&player).Error; err != nil {
+			return err
+		}
+
+		var equipment domain.PlayerEquipment
+		err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("player_id = ?", playerID).
+			Take(&equipment).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		if equipmentUsesInventoryItem(&equipment, inventoryItemID) {
+			return domain.ErrInventoryItemEquipped
+		}
+
+		if err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Joins("JOIN inventories ON inventories.id = inventory_items.inventory_id").
+			Preload("Item").
+			Where("inventory_items.id = ?", inventoryItemID).
+			Where("inventories.player_id = ?", playerID).
+			First(&soldItem).Error; err != nil {
+			return err
+		}
+
+		if soldItem.Quantity <= 0 || soldItem.Item.Type != domain.ItemEquipment {
+			return domain.ErrInventoryItemNotSellable
+		}
+
+		soldItem.Quantity--
+		if err := tx.Save(&soldItem).Error; err != nil {
+			return err
+		}
+
+		return tx.
+			Model(&domain.Player{}).
+			Where("id = ?", playerID).
+			Updates(map[string]any{
+				"gold":        gorm.Expr("gold + ?", goldValue),
+				"last_update": time.Now().UTC(),
+			}).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &soldItem, nil
+}
+
+func createOrUpdateInventoryWithDB(db *gorm.DB, userID int64, itemID uint, amount int) error {
 	var item domain.Item
-	if err := r.db.First(&item, itemID).Error; err != nil {
+	if err := db.First(&item, itemID).Error; err != nil {
 		return err
 	}
 
 	var inventory domain.Inventory
-	err := r.db.Where("player_id = ?", userID).First(&inventory).Error
+	err := db.Where("player_id = ?", userID).First(&inventory).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		inventory = domain.Inventory{PlayerID: userID}
-		if err := r.db.Create(&inventory).Error; err != nil {
+		if err := db.Create(&inventory).Error; err != nil {
 			return err
 		}
 	} else if err != nil {
@@ -230,16 +323,16 @@ func (r *InventoryPostgres) CreateOrUpdateInventory(userID int64, itemID uint, a
 	switch item.Type {
 	case domain.ItemConsumable:
 		var invItem domain.InventoryItem
-		err := r.db.Where("inventory_id = ? AND code = ?", inventory.ID, item.Code).First(&invItem).Error
+		err := db.Where("inventory_id = ? AND code = ?", inventory.ID, item.Code).First(&invItem).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			invItem = domain.InventoryItem{InventoryID: inventory.ID, ItemID: item.ID, Code: item.Code, Quantity: amount}
-			return r.db.Create(&invItem).Error
+			return db.Create(&invItem).Error
 		}
 		if err != nil {
 			return err
 		}
 		invItem.Quantity += amount
-		return r.db.Save(&invItem).Error
+		return db.Save(&invItem).Error
 
 	case domain.ItemEquipment:
 		if amount < 1 {
@@ -247,7 +340,7 @@ func (r *InventoryPostgres) CreateOrUpdateInventory(userID int64, itemID uint, a
 		}
 		for i := 0; i < amount; i++ {
 			invItem := domain.InventoryItem{InventoryID: inventory.ID, ItemID: item.ID, Code: item.Code, Quantity: 1}
-			if err := r.db.Create(&invItem).Error; err != nil {
+			if err := db.Create(&invItem).Error; err != nil {
 				return err
 			}
 		}
@@ -255,7 +348,7 @@ func (r *InventoryPostgres) CreateOrUpdateInventory(userID int64, itemID uint, a
 
 	case domain.ItemKey:
 		invItem := domain.InventoryItem{InventoryID: inventory.ID, ItemID: item.ID, Code: item.Code, Quantity: 1}
-		return r.db.Create(&invItem).Error
+		return db.Create(&invItem).Error
 
 	default:
 		return fmt.Errorf("tipo de item invalido: %s", item.Type)
@@ -299,6 +392,34 @@ func (r *InventoryPostgres) GetOrCreatePlayerEquipment(playerID int64) (*domain.
 
 func (r *InventoryPostgres) UpdatePlayerEquipment(equipment *domain.PlayerEquipment) error {
 	return r.db.Save(equipment).Error
+}
+
+func (r *InventoryPostgres) SavePlayerAndInventoryItem(player *domain.Player, item *domain.InventoryItem) error {
+	if player == nil || item == nil {
+		return gorm.ErrInvalidData
+	}
+
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(item).Error; err != nil {
+			return err
+		}
+
+		return updatePlayerWithTx(tx, player)
+	})
+}
+
+func (r *InventoryPostgres) SavePlayerAndEquipment(player *domain.Player, equipment *domain.PlayerEquipment) error {
+	if player == nil || equipment == nil {
+		return gorm.ErrInvalidData
+	}
+
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(equipment).Error; err != nil {
+			return err
+		}
+
+		return updatePlayerWithTx(tx, player)
+	})
 }
 
 func (r *InventoryPostgres) getEquippedInventoryItemIDs(playerID int64) ([]uint, error) {
@@ -422,5 +543,72 @@ func (r *InventoryPostgres) attachEquipmentByInventoryItem(invItem *domain.Inven
 		return nil
 	}
 	invItem.Item.Equipment = &equipment
+	return nil
+}
+
+func equipmentUsesInventoryItem(equipment *domain.PlayerEquipment, inventoryItemID uint) bool {
+	if equipment == nil || inventoryItemID == 0 {
+		return false
+	}
+
+	for _, ptr := range []*uint{
+		equipment.WeaponInventoryItemID,
+		equipment.ArmorInventoryItemID,
+		equipment.GlovesInventoryItemID,
+		equipment.HelmetInventoryItemID,
+		equipment.BootsInventoryItemID,
+		equipment.RingInventoryItemID,
+		equipment.AmuletInventoryItemID,
+		equipment.AccessoryInventoryItemID,
+	} {
+		if ptr != nil && *ptr == inventoryItemID {
+			return true
+		}
+	}
+	return false
+}
+
+func updatePlayerWithTx(tx *gorm.DB, player *domain.Player) error {
+	if tx == nil || player == nil {
+		return gorm.ErrInvalidData
+	}
+
+	updates := map[string]any{
+		"name":              player.Name,
+		"gender":            player.Gender,
+		"class_id":          player.ClassID,
+		"level":             player.Level,
+		"xp":                player.XP,
+		"hp":                player.HP,
+		"max_hp":            player.MaxHP,
+		"atk":               player.ATK,
+		"def":               player.DEF,
+		"speed":             player.Speed,
+		"energy":            player.Energy,
+		"max_energy":        player.MaxEnergy,
+		"gold":              player.Gold,
+		"ki_crystals":       player.KiCrystals,
+		"region_id":         player.RegionID,
+		"last_energy_at":    player.LastEnergyAt,
+		"form":              player.Form,
+		"form_battles_left": player.FormBattlesLeft,
+		"onboarding_step":   player.OnboardingStep,
+		"last_update":       time.Now().UTC(),
+		"user_id_telegram":  player.UserIDTelegram,
+		"name_telegram":     player.NameTelegram,
+		"user_name":         player.UserName,
+		"dodge_accumulator": player.DodgeAccumulator,
+	}
+
+	result := tx.
+		Model(&domain.Player{}).
+		Where("id = ?", player.ID).
+		Updates(updates)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
 	return nil
 }

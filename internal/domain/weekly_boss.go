@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 const (
 	WeeklyBossStatusActive   = "active"
@@ -36,9 +39,10 @@ func (WeeklyBoss) TableName() string {
 type WeeklyBossAttack struct {
 	ID uint `gorm:"primaryKey;autoIncrement"`
 
-	BossID   uint      `gorm:"not null;index:uq_weekly_boss_attacks_daily,unique"`
-	PlayerID int64     `gorm:"not null;index:uq_weekly_boss_attacks_daily,unique"`
-	AttackAt time.Time `gorm:"column:attack_date;type:date;not null;index:uq_weekly_boss_attacks_daily,unique"`
+	BossID   uint      `gorm:"not null;index:uq_weekly_boss_attacks_daily_seq,unique"`
+	PlayerID int64     `gorm:"not null;index:uq_weekly_boss_attacks_daily_seq,unique"`
+	AttackAt time.Time `gorm:"column:attack_date;type:date;not null;index:uq_weekly_boss_attacks_daily_seq,unique"`
+	DailySeq int       `gorm:"not null;default:1;index:uq_weekly_boss_attacks_daily_seq,unique"`
 	Damage   int64     `gorm:"not null"`
 
 	CreatedAt time.Time `gorm:"not null"`
@@ -47,6 +51,11 @@ type WeeklyBossAttack struct {
 func (WeeklyBossAttack) TableName() string {
 	return "weekly_boss_attacks"
 }
+
+var (
+	ErrWeeklyBossAttackLimitReached   = errors.New("weekly boss attack limit reached")
+	ErrWeeklyBossInsufficientResource = errors.New("weekly boss insufficient resources")
+)
 
 type WeeklyBossContribution struct {
 	ID uint `gorm:"primaryKey;autoIncrement"`

@@ -11,13 +11,13 @@ import (
 
 func (h *Handler) handleInventory(action string, userID int64, params map[string]string) InputTelegram {
 	switch action {
-	case "open_inventory":
+	case "menu_inventory_scope", "open_inventory":
 		gameResp, err := h.inventoryService.Open(userID)
 		if err != nil {
 			fmt.Printf("to_exchange -> %v\\n", err)
 			break
 		}
-		return ToTelegramResponse(gameResp, true, "to_exchange")
+		return ToTelegramResponse(gameResp, true, action)
 
 	case "open_inventory_potions":
 		page := 1
@@ -31,7 +31,7 @@ func (h *Handler) handleInventory(action string, userID int64, params map[string
 			fmt.Printf("open_inventory_potions -> %v\\n", err)
 			break
 		}
-		return ToTelegramResponse(gameResp, true, "to_exchange")
+		return ToTelegramResponse(gameResp, true, action)
 
 	case "open_inventory_equipaments":
 		gameResp, err := h.inventoryService.OpenEquipmentTypes(userID)
@@ -39,14 +39,14 @@ func (h *Handler) handleInventory(action string, userID int64, params map[string
 			fmt.Printf("open_inventory_equipaments -> %v\\n", err)
 			break
 		}
-		return ToTelegramResponse(gameResp, true, "to_exchange")
+		return ToTelegramResponse(gameResp, true, action)
 	case "open_inventory_equipped":
 		gameResp, err := h.inventoryService.ViewEquippedItems(userID)
 		if err != nil {
 			fmt.Printf("open_inventory_equipped -> %v\\n", err)
 			break
 		}
-		return ToTelegramResponse(gameResp, true, "to_exchange")
+		return ToTelegramResponse(gameResp, true, action)
 	case "open_inventory_equipaments_type":
 		slot := params["slot"]
 		page := 1
@@ -60,7 +60,7 @@ func (h *Handler) handleInventory(action string, userID int64, params map[string
 			fmt.Printf("open_inventory_equipaments_type -> %v\\n", err)
 			break
 		}
-		return ToTelegramResponse(gameResp, true, "to_exchange")
+		return ToTelegramResponse(gameResp, true, action)
 	case "use_item", "equip_item":
 		idStr := params["inventoryItemID"]
 		id, convErr := strconv.Atoi(idStr)

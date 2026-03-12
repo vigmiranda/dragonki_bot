@@ -104,12 +104,6 @@ func (s *AncestralKiChamberService) StartRun(userID int64, chamberLevel int) (vi
 		return chamberErrorResponse("Nivel da camara invalido."), nil
 	}
 
-	if _, err := s.repo.GetActiveRunByPlayer(int64(player.ID)); err == nil {
-		return chamberErrorResponse("Voce ja possui uma run ativa na camara."), nil
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return view.GameResponse{}, err
-	}
-
 	progress, err := s.repo.GetOrCreateProgress(int64(player.ID))
 	if err != nil {
 		return view.GameResponse{}, err
@@ -123,28 +117,20 @@ func (s *AncestralKiChamberService) StartRun(userID int64, chamberLevel int) (vi
 		return chamberErrorResponse("Este nivel ainda esta bloqueado. Conclua os niveis anteriores."), nil
 	}
 
-	if player.Energy < ancestralKiChamberEntryEnergyCost || player.Gold < ancestralKiChamberEntryGoldCost {
-		return chamberErrorResponse("Recursos insuficientes para entrar na camara."), nil
-	}
-
-	player.Energy -= ancestralKiChamberEntryEnergyCost
-	player.Gold -= ancestralKiChamberEntryGoldCost
-	if err := s.playerRepo.Update(player); err != nil {
-		return view.GameResponse{}, err
-	}
-
-	now := time.Now().UTC()
-	run := &domain.AncestralKiChamberRun{
-		PlayerID:      int64(player.ID),
-		ChamberLevel:  chamberLevel,
-		CurrentBattle: 1,
-		Victories:     0,
-		Status:        domain.AncestralKiChamberRunStatusActive,
-		StartedAt:     now,
-		CreatedAt:     now,
-		UpdatedAt:     now,
-	}
-	if err := s.repo.CreateRun(run); err != nil {
+	run, err := s.repo.StartRunIfEligible(
+		int64(player.ID),
+		chamberLevel,
+		ancestralKiChamberEntryEnergyCost,
+		ancestralKiChamberEntryGoldCost,
+		time.Now().UTC(),
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrAncestralKiChamberRunActive):
+			return chamberErrorResponse("Voce ja possui uma run ativa na camara."), nil
+		case errors.Is(err, domain.ErrAncestralKiChamberInsufficientResource):
+			return chamberErrorResponse("Recursos insuficientes para entrar na camara."), nil
+		}
 		return view.GameResponse{}, err
 	}
 
@@ -251,78 +237,29 @@ func (s *AncestralKiChamberService) ResolveBattleResult(
 		return view.GameResponse{}, err
 	}
 
-	run, err := s.repo.GetActiveRunByPlayer(int64(player.ID))
+	resolution, err := s.repo.ResolveBattleResult(
+		int64(player.ID),
+		monsterID,
+		monsterLevel,
+		won,
+		xpReward,
+		goldReward,
+		ancestralKiChamberTotalBattles,
+		ancestralKiChamberSuccessPct,
+		time.Now().UTC(),
+	)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return chamberErrorResponse("Voce nao possui run ativa na camara."), nil
 		}
 		return view.GameResponse{}, err
 	}
+	run := resolution.Run
 
-	result := "LOSE"
-	if won {
-		result = "WIN"
-	}
-	if err := s.repo.CreateBattleLog(&domain.AncestralKiChamberBattleLog{
-		ChamberRunID: run.ID,
-		BattleNumber: run.CurrentBattle,
-		MonsterID:    monsterID,
-		MonsterLevel: monsterLevel,
-		Result:       result,
-		CreatedAt:    time.Now().UTC(),
-	}); err != nil {
-		return view.GameResponse{}, err
-	}
-
-	now := time.Now().UTC()
 	if !won {
-		run.Status = domain.AncestralKiChamberRunStatusFailed
-		run.FinishedAt = &now
-		if err := s.repo.UpdateRun(run); err != nil {
-			return view.GameResponse{}, err
-		}
 		return chamberErrorResponse("Voce foi derrotado. A run da camara foi encerrada.\n\nTente novamente a partir da batalha 1."), nil
 	}
-
-	run.Victories++
-	if xpReward > 0 {
-		run.AccumulatedXP += xpReward
-	}
-	if goldReward > 0 {
-		run.AccumulatedGold += goldReward
-	}
 	if run.Victories >= ancestralKiChamberTotalBattles {
-		run.Status = domain.AncestralKiChamberRunStatusCompleted
-		run.FinishedAt = &now
-		if err := s.repo.UpdateRun(run); err != nil {
-			return view.GameResponse{}, err
-		}
-
-		progress, err := s.repo.GetOrCreateProgress(int64(player.ID))
-		if err != nil {
-			return view.GameResponse{}, err
-		}
-		if run.ChamberLevel > progress.HighestCompletedLevel {
-			progress.HighestCompletedLevel = run.ChamberLevel
-			if err := s.repo.UpdateProgress(progress); err != nil {
-				return view.GameResponse{}, err
-			}
-		}
-
-		xpPayout := int(math.Floor(float64(run.AccumulatedXP) * ancestralKiChamberSuccessPct))
-		goldPayout := int(math.Floor(float64(run.AccumulatedGold) * ancestralKiChamberSuccessPct))
-		if xpPayout > 0 {
-			player.XP += xpPayout
-		}
-		if goldPayout > 0 {
-			player.Gold += goldPayout
-		}
-		if xpPayout > 0 || goldPayout > 0 {
-			if err := s.playerRepo.Update(player); err != nil {
-				return view.GameResponse{}, err
-			}
-		}
-
 		return view.GameResponse{
 			Text: fmt.Sprintf(
 				"Camara concluida!\n\n"+
@@ -332,8 +269,8 @@ func (s *AncestralKiChamberService) ResolveBattleResult(
 					"Proximo nivel desbloqueado.\n\nVolte ao menu da Camara para iniciar o proximo desafio.",
 				ancestralKiChamberTotalBattles,
 				run.ChamberLevel,
-				xpPayout,
-				goldPayout,
+				resolution.XPPayout,
+				resolution.GoldPayout,
 				run.AccumulatedXP,
 				run.AccumulatedGold,
 			),
@@ -343,11 +280,6 @@ func (s *AncestralKiChamberService) ResolveBattleResult(
 				Path: "assets/npcs/mestre_kalunga.png",
 			},
 		}, nil
-	}
-
-	run.CurrentBattle++
-	if err := s.repo.UpdateRun(run); err != nil {
-		return view.GameResponse{}, err
 	}
 
 	return view.GameResponse{
@@ -369,18 +301,11 @@ func (s *AncestralKiChamberService) AbandonRun(userID int64) (view.GameResponse,
 		return view.GameResponse{}, err
 	}
 
-	run, err := s.repo.GetActiveRunByPlayer(int64(player.ID))
+	_, err = s.repo.AbandonActiveRun(int64(player.ID), time.Now().UTC())
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return chamberErrorResponse("Voce nao possui run ativa para abandonar."), nil
 		}
-		return view.GameResponse{}, err
-	}
-
-	now := time.Now().UTC()
-	run.Status = domain.AncestralKiChamberRunStatusAbandoned
-	run.FinishedAt = &now
-	if err := s.repo.UpdateRun(run); err != nil {
 		return view.GameResponse{}, err
 	}
 
@@ -400,7 +325,7 @@ func GetChamberMonsterLevelRange(playerLevel int, chamberLevel int) (int, int) {
 		if min < 1 {
 			min = 1
 		}
-		return min, playerLevel + 1
+		return min, playerLevel + 2
 	}
 	return playerLevel, playerLevel + chamberLevel
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type BattlePostgresRepo struct {
@@ -24,6 +25,14 @@ func (r *BattlePostgresRepo) SaveBattleLog(ctx context.Context, battleLog *domai
 
 func (r *BattlePostgresRepo) SaveBattleLogAndPlayer(ctx context.Context, battleLog *domain.BattleLog, player *domain.Player) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var existingPlayer domain.Player
+		if err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", player.ID).
+			Take(&existingPlayer).Error; err != nil {
+			return err
+		}
+
 		if err := tx.Save(battleLog).Error; err != nil {
 			return err
 		}
@@ -55,11 +64,17 @@ func (r *BattlePostgresRepo) SaveBattleLogAndPlayer(ctx context.Context, battleL
 			"dodge_accumulator": player.DodgeAccumulator,
 		}
 
-		return tx.
+		result := tx.
 			Model(&domain.Player{}).
 			Where("id = ?", player.ID).
-			Updates(updates).
-			Error
+			Updates(updates)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
 	})
 }
 

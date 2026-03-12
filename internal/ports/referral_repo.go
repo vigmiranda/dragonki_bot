@@ -7,6 +7,7 @@ type ReferralRepository interface {
 	GetByReferredPlayerID(referredPlayerID int64) (*domain.Referral, error)
 	MarkRewarded(referralID uint) error
 	GrantReward(referrerPlayerID int64, gold int, kiCrystals int) error
+	GrantRewardIfPending(referralID uint, referrerPlayerID int64, gold int, kiCrystals int) (bool, error)
 	CountByReferrer(referrerPlayerID int64) (pending int64, rewarded int64, err error)
 	GetPlayerUserIDByPlayerID(playerID int64) (int64, error)
 }

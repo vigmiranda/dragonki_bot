@@ -13,6 +13,7 @@ type fakeReferralRepo struct {
 	createCalls         int
 	grantCalls          int
 	markCalls           int
+	grantIfPendingCalls int
 	lastGrantReferrerID int64
 	lastGrantGold       int
 	lastGrantKi         int
@@ -54,6 +55,20 @@ func (f *fakeReferralRepo) GrantReward(referrerPlayerID int64, gold int, kiCryst
 	f.lastGrantGold = gold
 	f.lastGrantKi = kiCrystals
 	return nil
+}
+
+func (f *fakeReferralRepo) GrantRewardIfPending(referralID uint, referrerPlayerID int64, gold int, kiCrystals int) (bool, error) {
+	f.grantIfPendingCalls++
+	if f.referral == nil || f.referral.ID != referralID || f.referral.Status != domain.ReferralStatusPending {
+		return false, nil
+	}
+	f.grantCalls++
+	f.markCalls++
+	f.lastGrantReferrerID = referrerPlayerID
+	f.lastGrantGold = gold
+	f.lastGrantKi = kiCrystals
+	f.referral.Status = domain.ReferralStatusRewarded
+	return true, nil
 }
 
 func (f *fakeReferralRepo) CountByReferrer(referrerPlayerID int64) (int64, int64, error) {
@@ -129,8 +144,8 @@ func TestReferralService_ProcessLevelUp_RewardOnlyOnce(t *testing.T) {
 	if first == nil || !first.Granted {
 		t.Fatalf("expected granted reward on first level up")
 	}
-	if repo.grantCalls != 1 || repo.markCalls != 1 {
-		t.Fatalf("expected one reward+mark call, got grant=%d mark=%d", repo.grantCalls, repo.markCalls)
+	if repo.grantIfPendingCalls != 1 || repo.grantCalls != 1 || repo.markCalls != 1 {
+		t.Fatalf("expected one atomic reward call, got atomic=%d grant=%d mark=%d", repo.grantIfPendingCalls, repo.grantCalls, repo.markCalls)
 	}
 
 	second, err := svc.ProcessLevelUp(33, 8)
@@ -140,7 +155,7 @@ func TestReferralService_ProcessLevelUp_RewardOnlyOnce(t *testing.T) {
 	if second != nil {
 		t.Fatalf("expected nil result on second level up (already rewarded)")
 	}
-	if repo.grantCalls != 1 || repo.markCalls != 1 {
-		t.Fatalf("expected reward to run once only, got grant=%d mark=%d", repo.grantCalls, repo.markCalls)
+	if repo.grantIfPendingCalls != 1 || repo.grantCalls != 1 || repo.markCalls != 1 {
+		t.Fatalf("expected reward to run once only, got atomic=%d grant=%d mark=%d", repo.grantIfPendingCalls, repo.grantCalls, repo.markCalls)
 	}
 }

@@ -3,6 +3,8 @@ package telegram
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -16,6 +18,7 @@ import (
 type tgSentMessage struct {
 	chatID string
 	text   string
+	path   string
 }
 
 type fakePlayerRepoTG struct {
@@ -64,6 +67,10 @@ func (f *fakeReferralRepoTG) GrantReward(referrerPlayerID int64, gold int, kiCry
 	return nil
 }
 
+func (f *fakeReferralRepoTG) GrantRewardIfPending(referralID uint, referrerPlayerID int64, gold int, kiCrystals int) (bool, error) {
+	return false, nil
+}
+
 func (f *fakeReferralRepoTG) CountByReferrer(referrerPlayerID int64) (pending int64, rewarded int64, err error) {
 	return 0, 0, nil
 }
@@ -73,6 +80,8 @@ func (f *fakeReferralRepoTG) GetPlayerUserIDByPlayerID(playerID int64) (int64, e
 }
 
 func TestHandleUpdate_StartWithReferral_SendsMessagesToReferredAndReferrer(t *testing.T) {
+	ensureTelegramTestAsset(t, "assets/npcs/mestre_kalunga.png")
+
 	var mu sync.Mutex
 	sent := make([]tgSentMessage, 0, 2)
 
@@ -90,12 +99,20 @@ func TestHandleUpdate_StartWithReferral_SendsMessagesToReferredAndReferrer(t *te
 			sent = append(sent, tgSentMessage{
 				chatID: r.FormValue("chat_id"),
 				text:   r.FormValue("text"),
+				path:   r.URL.Path,
 			})
 			mu.Unlock()
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"ok":true,"result":{"message_id":1,"date":0,"chat":{"id":1,"type":"private"},"text":"ok"}}`))
 			return
 		case strings.HasSuffix(r.URL.Path, "/sendPhoto"):
+			mu.Lock()
+			sent = append(sent, tgSentMessage{
+				chatID: r.FormValue("chat_id"),
+				text:   r.FormValue("caption"),
+				path:   r.URL.Path,
+			})
+			mu.Unlock()
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"ok":true,"result":{"message_id":2,"date":0,"chat":{"id":1,"type":"private"},"caption":"ok"}}`))
 			return
@@ -142,6 +159,8 @@ func TestHandleUpdate_StartWithReferral_SendsMessagesToReferredAndReferrer(t *te
 		nil,
 		application.NewReferralService(referralRepo, playerRepo, bot.Self.UserName),
 		nil,
+		nil,
+		nil,
 	)
 
 	h.HandleUpdate(tgbotapi.Update{
@@ -158,21 +177,21 @@ func TestHandleUpdate_StartWithReferral_SendsMessagesToReferredAndReferrer(t *te
 	defer mu.Unlock()
 
 	if len(sent) < 2 {
-		t.Fatalf("expected at least 2 sendMessage calls, got %d", len(sent))
+		t.Fatalf("expected at least 2 telegram deliveries, got %d", len(sent))
 	}
 
-	var hasReferredMsg bool
+	var hasReferredPanel bool
 	var hasReferrerMsg bool
 	for _, m := range sent {
-		if m.chatID == "200" && strings.Contains(m.text, "Convite registrado com sucesso") {
-			hasReferredMsg = true
+		if m.chatID == "200" && strings.HasSuffix(m.path, "/sendPhoto") && strings.Contains(m.text, "Convite registrado com sucesso") {
+			hasReferredPanel = true
 		}
-		if m.chatID == "999" && strings.Contains(m.text, "novo jogador entrou pelo seu link") {
+		if m.chatID == "999" && strings.HasSuffix(m.path, "/sendMessage") && strings.Contains(m.text, "novo jogador entrou pelo seu link") {
 			hasReferrerMsg = true
 		}
 	}
-	if !hasReferredMsg {
-		t.Fatalf("expected confirmation message to referred player")
+	if !hasReferredPanel {
+		t.Fatalf("expected referral notice on referred player panel")
 	}
 	if !hasReferrerMsg {
 		t.Fatalf("expected notification message to referrer")
@@ -180,6 +199,8 @@ func TestHandleUpdate_StartWithReferral_SendsMessagesToReferredAndReferrer(t *te
 }
 
 func TestHandleUpdate_StartWithReferral_DuplicateDoesNotSendReferralMessages(t *testing.T) {
+	ensureTelegramTestAsset(t, "assets/npcs/mestre_kalunga.png")
+
 	var mu sync.Mutex
 	sent := make([]tgSentMessage, 0, 1)
 
@@ -197,12 +218,20 @@ func TestHandleUpdate_StartWithReferral_DuplicateDoesNotSendReferralMessages(t *
 			sent = append(sent, tgSentMessage{
 				chatID: r.FormValue("chat_id"),
 				text:   r.FormValue("text"),
+				path:   r.URL.Path,
 			})
 			mu.Unlock()
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"ok":true,"result":{"message_id":1,"date":0,"chat":{"id":1,"type":"private"},"text":"ok"}}`))
 			return
 		case strings.HasSuffix(r.URL.Path, "/sendPhoto"):
+			mu.Lock()
+			sent = append(sent, tgSentMessage{
+				chatID: r.FormValue("chat_id"),
+				text:   r.FormValue("caption"),
+				path:   r.URL.Path,
+			})
+			mu.Unlock()
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"ok":true,"result":{"message_id":2,"date":0,"chat":{"id":1,"type":"private"},"caption":"ok"}}`))
 			return
@@ -256,6 +285,8 @@ func TestHandleUpdate_StartWithReferral_DuplicateDoesNotSendReferralMessages(t *
 		nil,
 		application.NewReferralService(referralRepo, playerRepo, bot.Self.UserName),
 		nil,
+		nil,
+		nil,
 	)
 
 	h.HandleUpdate(tgbotapi.Update{
@@ -270,7 +301,27 @@ func TestHandleUpdate_StartWithReferral_DuplicateDoesNotSendReferralMessages(t *
 
 	mu.Lock()
 	defer mu.Unlock()
-	if len(sent) != 0 {
-		t.Fatalf("expected no referral sendMessage on duplicate referral, got %d", len(sent))
+	for _, m := range sent {
+		if m.chatID == "999" && strings.Contains(m.text, "novo jogador entrou pelo seu link") {
+			t.Fatalf("expected no referrer notification on duplicate referral")
+		}
+		if m.chatID == "200" && strings.Contains(m.text, "Convite registrado com sucesso") {
+			t.Fatalf("expected no referral confirmation on duplicate referral")
+		}
 	}
+}
+
+func ensureTelegramTestAsset(t *testing.T, relativePath string) {
+	t.Helper()
+
+	dir := filepath.Dir(relativePath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("create asset dir %s: %v", dir, err)
+	}
+	if err := os.WriteFile(relativePath, []byte("dragonki"), 0o644); err != nil {
+		t.Fatalf("write asset %s: %v", relativePath, err)
+	}
+	t.Cleanup(func() {
+		_ = os.Remove(relativePath)
+	})
 }

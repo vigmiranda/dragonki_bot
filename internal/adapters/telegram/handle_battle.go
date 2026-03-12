@@ -3,6 +3,7 @@ package telegram
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
 	"github.com/vigmiranda/dragonki/internal/domain"
@@ -52,6 +53,7 @@ func (h *Handler) handleBattle(action string, userID int64, params map[string]st
 		if gameResp.MenuParams == nil {
 			gameResp.MenuParams = map[string]any{}
 		}
+		gameResp.Text = battlePotionListText(gameResp, false)
 		gameResp.MenuParams["paginationAction"] = fmt.Sprintf("action_battle_open_potions?monsterID=%d", monsterID)
 		gameResp.MenuParams["backAction"] = fmt.Sprintf("action_battle_menu?monsterID=%d", monsterID)
 		gameResp.MenuParams["itemAction"] = fmt.Sprintf("action_battle_use_item?monsterID=%d", monsterID)
@@ -70,12 +72,12 @@ func (h *Handler) handleBattle(action string, userID int64, params map[string]st
 			fmt.Printf("action_battle_use_item -> %v\\n", err)
 			break
 		}
-		_ = gameResp
 		duelResp, duelErr := h.battleService.OpenCurrentDuel(userID, monsterID)
 		if duelErr != nil {
 			fmt.Printf("action_battle_use_item(open_duel) -> %v\\n", duelErr)
 			break
 		}
+		duelResp = mergeBattleNotice(gameResp, duelResp)
 		return ToTelegramResponse(duelResp, true, action)
 	case "action_battle_transform":
 		monsterID, ok := parseMonsterID(params)
@@ -87,12 +89,12 @@ func (h *Handler) handleBattle(action string, userID int64, params map[string]st
 			fmt.Printf("action_battle_transform -> %v\\n", err)
 			break
 		}
-		_ = gameResp
 		duelResp, duelErr := h.battleService.OpenCurrentDuel(userID, monsterID)
 		if duelErr != nil {
 			fmt.Printf("action_battle_transform(open_duel) -> %v\\n", duelErr)
 			break
 		}
+		duelResp = mergeBattleNotice(gameResp, duelResp)
 		return ToTelegramResponse(duelResp, true, action)
 	case "action_battle_menu":
 		monsterID, ok := parseMonsterID(params)
@@ -120,6 +122,7 @@ func (h *Handler) handleBattle(action string, userID int64, params map[string]st
 		if gameResp.MenuParams == nil {
 			gameResp.MenuParams = map[string]any{}
 		}
+		gameResp.Text = battlePotionListText(gameResp, true)
 		gameResp.MenuParams["paginationAction"] = "action_post_battle_open_potions"
 		gameResp.MenuParams["backAction"] = "action_post_battle_menu"
 		gameResp.MenuParams["itemAction"] = "action_post_battle_use_item"
@@ -134,15 +137,16 @@ func (h *Handler) handleBattle(action string, userID int64, params map[string]st
 			fmt.Printf("action_post_battle_use_item -> %v\\n", err)
 			break
 		}
-		gameResp.MenuKey = "POST_BATTLE_WIN_MENU"
-		return ToTelegramResponse(gameResp, true, action)
+		menuResp := mergeBattleNotice(gameResp, postBattleMenuResponse())
+		return ToTelegramResponse(menuResp, true, action)
 	case "action_post_battle_transform":
 		gameResp, err := h.transformService.TransformSingleBattle(userID)
 		if err != nil {
 			fmt.Printf("action_post_battle_transform -> %v\\n", err)
 			break
 		}
-		return ToTelegramResponse(gameResp, true, action)
+		menuResp := mergeBattleNotice(gameResp, postBattleMenuResponse())
+		return ToTelegramResponse(menuResp, true, action)
 	case "action_post_battle_menu":
 		return ToTelegramResponse(postBattleMenuResponse(), true, action)
 	}
@@ -184,4 +188,65 @@ func parseMonsterID(params map[string]string) (int64, bool) {
 		return 0, false
 	}
 	return monsterID, true
+}
+
+func mergeBattleNotice(notice view.GameResponse, duel view.GameResponse) view.GameResponse {
+	noticeText := strings.TrimSpace(notice.Text)
+	if noticeText == "" {
+		return duel
+	}
+	if strings.TrimSpace(duel.Text) == "" {
+		duel.Text = noticeText
+		return duel
+	}
+	duel.Text = fmt.Sprintf("%s\n\n%s", noticeText, duel.Text)
+	return duel
+}
+
+func battlePotionListText(gameResp view.GameResponse, postBattle bool) string {
+	page := menuParamInt(gameResp.MenuParams, "page", 1)
+	totalPages := menuParamInt(gameResp.MenuParams, "totalPages", 1)
+
+	if postBattle {
+		return fmt.Sprintf(
+			"Recupere-se antes da proxima cacada.\nEscolha uma pocao para usar.\n\nPagina %d/%d.",
+			page,
+			totalPages,
+		)
+	}
+
+	return fmt.Sprintf(
+		"Duelo em andamento.\nEscolha uma pocao para usar e voltar ao combate.\n\nPagina %d/%d.",
+		page,
+		totalPages,
+	)
+}
+
+func menuParamInt(params map[string]any, key string, fallback int) int {
+	if params == nil {
+		return fallback
+	}
+	raw, ok := params[key]
+	if !ok {
+		return fallback
+	}
+	switch v := raw.(type) {
+	case int:
+		if v > 0 {
+			return v
+		}
+	case int64:
+		if v > 0 {
+			return int(v)
+		}
+	case float64:
+		if v > 0 {
+			return int(v)
+		}
+	case string:
+		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+			return parsed
+		}
+	}
+	return fallback
 }

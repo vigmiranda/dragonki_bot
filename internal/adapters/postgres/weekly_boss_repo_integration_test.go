@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -93,6 +94,28 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatalf("unexpected attack count: got %d want 1", count)
 	}
 
+	secondAttackSameDay := &domain.WeeklyBossAttack{
+		BossID:    boss.ID,
+		PlayerID:  int64(firstPlayer.ID),
+		AttackAt:  attackDate,
+		Damage:    100,
+		CreatedAt: now.Add(30 * time.Second),
+	}
+	if err := repo.CreateAttack(secondAttackSameDay); err != nil {
+		t.Fatalf("create second same-day attack: %v", err)
+	}
+	if secondAttackSameDay.DailySeq != 2 {
+		t.Fatalf("expected second same-day attack daily seq 2, got %d", secondAttackSameDay.DailySeq)
+	}
+
+	count, err = repo.CountPlayerAttacksOnDate(boss.ID, int64(firstPlayer.ID), attackDate)
+	if err != nil {
+		t.Fatalf("count player attacks on date after second attack: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("unexpected attack count after second same-day attack: got %d want 2", count)
+	}
+
 	if err := repo.AddContributionDamage(boss.ID, int64(firstPlayer.ID), 250, now); err != nil {
 		t.Fatalf("add first player contribution: %v", err)
 	}
@@ -103,12 +126,71 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatalf("add second player contribution: %v", err)
 	}
 
+	reloadedFirstPlayer, err := playerRepo.GetOrCreate(firstPlayer.UserID)
+	if err != nil {
+		t.Fatalf("reload first player before execute attack: %v", err)
+	}
+	reloadedFirstPlayer.Energy = 20
+	reloadedFirstPlayer.Gold = 1000
+	reloadedFirstPlayer.HP = 90
+	if err := playerRepo.Update(reloadedFirstPlayer); err != nil {
+		t.Fatalf("seed first player resources before execute attack: %v", err)
+	}
+
+	executedBoss, totalDamage, err := repo.ExecuteAttack(
+		boss.ID,
+		int64(firstPlayer.ID),
+		80,
+		3,
+		5,
+		200,
+		now.Add(2*time.Minute),
+	)
+	if err != nil {
+		t.Fatalf("execute attack atomically: %v", err)
+	}
+	if executedBoss.ID != boss.ID {
+		t.Fatalf("unexpected executed boss id: got %d want %d", executedBoss.ID, boss.ID)
+	}
+	if totalDamage != 455 {
+		t.Fatalf("unexpected total damage after execute attack: got %d want 455", totalDamage)
+	}
+
+	reloadedFirstPlayer, err = playerRepo.GetOrCreate(firstPlayer.UserID)
+	if err != nil {
+		t.Fatalf("reload first player after execute attack: %v", err)
+	}
+	if reloadedFirstPlayer.Energy != 15 || reloadedFirstPlayer.Gold != 800 || reloadedFirstPlayer.HP != 1 {
+		t.Fatalf("unexpected first player state after execute attack: energy=%d gold=%d hp=%d", reloadedFirstPlayer.Energy, reloadedFirstPlayer.Gold, reloadedFirstPlayer.HP)
+	}
+
+	count, err = repo.CountPlayerAttacksOnDate(boss.ID, int64(firstPlayer.ID), attackDate)
+	if err != nil {
+		t.Fatalf("count player attacks after execute attack: %v", err)
+	}
+	if count != 3 {
+		t.Fatalf("unexpected attack count after execute attack: got %d want 3", count)
+	}
+
+	_, _, err = repo.ExecuteAttack(
+		boss.ID,
+		int64(firstPlayer.ID),
+		50,
+		3,
+		5,
+		200,
+		now.Add(3*time.Minute),
+	)
+	if !errors.Is(err, domain.ErrWeeklyBossAttackLimitReached) {
+		t.Fatalf("expected daily limit error on fourth attack, got %v", err)
+	}
+
 	firstContribution, err := repo.GetContribution(boss.ID, int64(firstPlayer.ID))
 	if err != nil {
 		t.Fatalf("get first player contribution: %v", err)
 	}
-	if firstContribution.TotalDamage != 375 {
-		t.Fatalf("unexpected first player total damage: got %d want 375", firstContribution.TotalDamage)
+	if firstContribution.TotalDamage != 455 {
+		t.Fatalf("unexpected first player total damage: got %d want 455", firstContribution.TotalDamage)
 	}
 
 	ranking, err := repo.ListTopContributions(boss.ID, 2)
@@ -118,7 +200,7 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 	if len(ranking) != 2 {
 		t.Fatalf("unexpected ranking size: got %d want 2", len(ranking))
 	}
-	if ranking[0].PlayerID != int64(firstPlayer.ID) || ranking[0].TotalDamage != 375 {
+	if ranking[0].PlayerID != int64(firstPlayer.ID) || ranking[0].TotalDamage != 455 {
 		t.Fatalf("unexpected first ranking row: %+v", ranking[0])
 	}
 	if ranking[0].PlayerName != "Alpha" {
@@ -128,7 +210,7 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatalf("unexpected second ranking row: %+v", ranking[1])
 	}
 
-	damagedBoss, err := repo.ApplyDamage(boss.ID, 999, now.Add(3*time.Minute))
+	damagedBoss, err := repo.ApplyDamage(boss.ID, 919, now.Add(3*time.Minute))
 	if err != nil {
 		t.Fatalf("apply damage without defeat: %v", err)
 	}
@@ -169,6 +251,19 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatalf("unexpected reward position: got %d want 1", reward.Position)
 	}
 
+	seededItem := domain.Item{
+		Code:        "IT_WEEKLY_BOSS_PAYOUT_POTION",
+		Name:        "Weekly Boss Reward Potion",
+		Description: "Consumable reward for weekly boss integration test",
+		Type:        domain.ItemConsumable,
+		Rarity:      "COMMON",
+		Amount:      1,
+		Price:       1,
+	}
+	if err := testDB.DB.Create(&seededItem).Error; err != nil {
+		t.Fatalf("create consumable reward item: %v", err)
+	}
+
 	payout := &domain.WeeklyBossPayout{
 		BossID:    boss.ID,
 		PlayerID:  int64(firstPlayer.ID),
@@ -202,6 +297,101 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatal("expected duplicate payout creation to be ignored")
 	}
 
+	thirdPlayer, err := playerRepo.GetOrCreate(730003)
+	if err != nil {
+		t.Fatalf("create third player: %v", err)
+	}
+	initialThirdGold := thirdPlayer.Gold
+	atomicPayout := &domain.WeeklyBossPayout{
+		BossID:    boss.ID,
+		PlayerID:  int64(thirdPlayer.ID),
+		Position:  3,
+		GoldPaid:  321,
+		Status:    domain.WeeklyBossPayoutPending,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	created, err = repo.CreateAndPayPayoutIfNotExists(atomicPayout, []domain.WeeklyBossRewardItem{
+		{ItemID: seededItem.ID, Quantity: 2},
+	}, now.Add(4*time.Minute))
+	if err != nil {
+		t.Fatalf("create and pay payout if not exists: %v", err)
+	}
+	if !created {
+		t.Fatal("expected atomic payout creation to insert row")
+	}
+
+	var atomicPaidPayout domain.WeeklyBossPayout
+	if err := testDB.DB.Where("id = ?", atomicPayout.ID).First(&atomicPaidPayout).Error; err != nil {
+		t.Fatalf("load atomic paid payout: %v", err)
+	}
+	if atomicPaidPayout.Status != domain.WeeklyBossPayoutPaid {
+		t.Fatalf("unexpected atomic payout status: %s", atomicPaidPayout.Status)
+	}
+	if atomicPaidPayout.PaidAt == nil {
+		t.Fatal("expected atomic payout paid_at to be set")
+	}
+
+	reloadedThirdPlayer, err := playerRepo.GetOrCreate(thirdPlayer.UserID)
+	if err != nil {
+		t.Fatalf("reload third player after atomic payout: %v", err)
+	}
+	if reloadedThirdPlayer.Gold != initialThirdGold+321 {
+		t.Fatalf("unexpected third player gold after atomic payout: got %d want %d", reloadedThirdPlayer.Gold, initialThirdGold+321)
+	}
+
+	var inventory domain.Inventory
+	if err := testDB.DB.Where("player_id = ?", thirdPlayer.ID).First(&inventory).Error; err != nil {
+		t.Fatalf("load third player inventory: %v", err)
+	}
+	var inventoryItem domain.InventoryItem
+	if err := testDB.DB.Where("inventory_id = ? AND item_id = ?", inventory.ID, seededItem.ID).First(&inventoryItem).Error; err != nil {
+		t.Fatalf("load rewarded inventory item: %v", err)
+	}
+	if inventoryItem.Quantity != 2 {
+		t.Fatalf("unexpected rewarded inventory item quantity: got %d want 2", inventoryItem.Quantity)
+	}
+
+	fourthPlayer, err := playerRepo.GetOrCreate(730004)
+	if err != nil {
+		t.Fatalf("create fourth player: %v", err)
+	}
+	initialFourthGold := fourthPlayer.Gold
+	failedAtomicPayout := &domain.WeeklyBossPayout{
+		BossID:    boss.ID,
+		PlayerID:  int64(fourthPlayer.ID),
+		Position:  2,
+		GoldPaid:  654,
+		Status:    domain.WeeklyBossPayoutPending,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	created, err = repo.CreateAndPayPayoutIfNotExists(failedAtomicPayout, []domain.WeeklyBossRewardItem{
+		{ItemID: 999999, Quantity: 1},
+	}, now.Add(4*time.Minute))
+	if err == nil {
+		t.Fatal("expected atomic payout with invalid item to fail")
+	}
+	if created {
+		t.Fatal("expected failed atomic payout to rollback creation")
+	}
+
+	var failedAtomicCount int64
+	if err := testDB.DB.Model(&domain.WeeklyBossPayout{}).Where("boss_id = ? AND player_id = ?", boss.ID, int64(fourthPlayer.ID)).Count(&failedAtomicCount).Error; err != nil {
+		t.Fatalf("count failed atomic payout rows: %v", err)
+	}
+	if failedAtomicCount != 0 {
+		t.Fatalf("expected no payout row after atomic rollback, got %d", failedAtomicCount)
+	}
+
+	reloadedFourthPlayer, err := playerRepo.GetOrCreate(fourthPlayer.UserID)
+	if err != nil {
+		t.Fatalf("reload fourth player after failed atomic payout: %v", err)
+	}
+	if reloadedFourthPlayer.Gold != initialFourthGold {
+		t.Fatalf("unexpected fourth player gold after failed atomic payout: got %d want %d", reloadedFourthPlayer.Gold, initialFourthGold)
+	}
+
 	if err := repo.MarkPayoutFailed(payout.ID, "queue timeout"); err != nil {
 		t.Fatalf("mark payout failed: %v", err)
 	}
@@ -230,12 +420,16 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatal("expected paid_at to be set")
 	}
 
-	initialGold := firstPlayer.Gold
+	reloadedFirstPlayer, err = playerRepo.GetOrCreate(firstPlayer.UserID)
+	if err != nil {
+		t.Fatalf("reload first player before gold payout: %v", err)
+	}
+	initialGold := reloadedFirstPlayer.Gold
 	if err := repo.AddGoldToPlayer(int64(firstPlayer.ID), reward.Gold); err != nil {
 		t.Fatalf("add gold to player: %v", err)
 	}
 
-	reloadedFirstPlayer, err := playerRepo.GetOrCreate(firstPlayer.UserID)
+	reloadedFirstPlayer, err = playerRepo.GetOrCreate(firstPlayer.UserID)
 	if err != nil {
 		t.Fatalf("reload first player after gold payout: %v", err)
 	}

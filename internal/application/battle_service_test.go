@@ -67,8 +67,21 @@ type fakeInventoryRepo struct {
 		itemID   uint
 		amount   int
 	}
+	purchaseCalls []struct {
+		playerID int64
+		itemID   uint
+		amount   int
+		price    int
+	}
+	sellCalls []struct {
+		playerID        int64
+		inventoryItemID uint
+		goldValue       int
+	}
 	updateInventoryCalls   []*domain.InventoryItem
 	updateFn               func(item *domain.InventoryItem) error
+	purchaseFn             func(playerID int64, itemID uint, amount int, price int) error
+	sellFn                 func(playerID int64, inventoryItemID uint, goldValue int) (*domain.InventoryItem, error)
 	listByTypeFn           func(playerID int64, itemType domain.ItemType, page int, pageSize int) ([]domain.InventoryItem, int64, error)
 	listEquipmentBySlotFn  func(playerID int64, slot domain.EquipmentSlot, page int, pageSize int) ([]domain.InventoryItem, int64, error)
 	countEquipmentBySlotFn func(playerID int64) (map[domain.EquipmentSlot]int64, error)
@@ -76,7 +89,17 @@ type fakeInventoryRepo struct {
 	getOrCreateEquipFn     func(playerID int64) (*domain.PlayerEquipment, error)
 	updateEquipFn          func(equipment *domain.PlayerEquipment) error
 	updateEquipCalls       []*domain.PlayerEquipment
-	err                    error
+	savePlayerEquipFn      func(player *domain.Player, equipment *domain.PlayerEquipment) error
+	savePlayerEquipCalls   []struct {
+		player    *domain.Player
+		equipment *domain.PlayerEquipment
+	}
+	savePlayerItemFn    func(player *domain.Player, item *domain.InventoryItem) error
+	savePlayerItemCalls []struct {
+		player *domain.Player
+		item   *domain.InventoryItem
+	}
+	err error
 }
 
 func (f *fakeInventoryRepo) UpdateInventoryItem(item *domain.InventoryItem) error {
@@ -94,6 +117,31 @@ func (f *fakeInventoryRepo) CreateOrUpdateInventory(userID int64, itemID uint, a
 		amount   int
 	}{playerID: userID, itemID: itemID, amount: amount})
 	return f.err
+}
+
+func (f *fakeInventoryRepo) PurchaseItem(playerID int64, itemID uint, amount int, price int) error {
+	f.purchaseCalls = append(f.purchaseCalls, struct {
+		playerID int64
+		itemID   uint
+		amount   int
+		price    int
+	}{playerID: playerID, itemID: itemID, amount: amount, price: price})
+	if f.purchaseFn != nil {
+		return f.purchaseFn(playerID, itemID, amount, price)
+	}
+	return f.err
+}
+
+func (f *fakeInventoryRepo) SellInventoryItem(playerID int64, inventoryItemID uint, goldValue int) (*domain.InventoryItem, error) {
+	f.sellCalls = append(f.sellCalls, struct {
+		playerID        int64
+		inventoryItemID uint
+		goldValue       int
+	}{playerID: playerID, inventoryItemID: inventoryItemID, goldValue: goldValue})
+	if f.sellFn != nil {
+		return f.sellFn(playerID, inventoryItemID, goldValue)
+	}
+	return nil, f.err
 }
 
 func (f *fakeInventoryRepo) ListItemsByUserAndType(playerID int64, itemType domain.ItemType, page int, pageSize int) ([]domain.InventoryItem, int64, error) {
@@ -137,6 +185,28 @@ func (f *fakeInventoryRepo) UpdatePlayerEquipment(equipment *domain.PlayerEquipm
 		return f.updateEquipFn(equipment)
 	}
 	return nil
+}
+
+func (f *fakeInventoryRepo) SavePlayerAndEquipment(player *domain.Player, equipment *domain.PlayerEquipment) error {
+	f.savePlayerEquipCalls = append(f.savePlayerEquipCalls, struct {
+		player    *domain.Player
+		equipment *domain.PlayerEquipment
+	}{player: player, equipment: equipment})
+	if f.savePlayerEquipFn != nil {
+		return f.savePlayerEquipFn(player, equipment)
+	}
+	return f.err
+}
+
+func (f *fakeInventoryRepo) SavePlayerAndInventoryItem(player *domain.Player, item *domain.InventoryItem) error {
+	f.savePlayerItemCalls = append(f.savePlayerItemCalls, struct {
+		player *domain.Player
+		item   *domain.InventoryItem
+	}{player: player, item: item})
+	if f.savePlayerItemFn != nil {
+		return f.savePlayerItemFn(player, item)
+	}
+	return f.err
 }
 
 type fakePlayerRepo struct {

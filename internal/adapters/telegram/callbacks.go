@@ -1,10 +1,14 @@
 package telegram
 
 import (
+	"context"
 	"log"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/adapters/telegram/utils"
+	"github.com/vigmiranda/dragonki/internal/bootstrap"
+	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
 func (h *Handler) handleCallback(update tgbotapi.Update) {
@@ -20,15 +24,59 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 	action, params := utils.ParseCallbackData(data)
 	inputTelegram := InputTelegram{}
 	log.Printf("Callback recebido | action=%s | params=%v", action, params)
+	now := time.Now().UTC()
+	bootstrap.IncAppMetric("telegram.callback.received_total")
 
-	if action == "to_exchange" {
-		h.clearPixCodeMessage(userID, chatID)
+	if h.callbackReceipts != nil && shouldGuardTelegramCallback(action) && cb.ID != "" {
+		reserved, err := h.callbackReceipts.Reserve(context.Background(), &domain.TelegramCallbackReceipt{
+			CallbackID: cb.ID,
+			UserID:     userID,
+			ChatID:     chatID,
+			MessageID:  messageID,
+			Action:     action,
+			RawData:    data,
+			ReceivedAt: now,
+		})
+		if err != nil {
+			log.Printf("callback receipt reserve error | action=%s | callbackID=%s | err=%v", action, cb.ID, err)
+			bootstrap.IncAppMetric("telegram.callback.receipt_reserve_error_total")
+		} else if !reserved {
+			log.Printf("duplicate callback receipt ignored | action=%s | callbackID=%s | chatID=%d | messageID=%d | userID=%d", action, cb.ID, chatID, messageID, userID)
+			bootstrap.IncAppMetric("telegram.callback.duplicate_receipt_total")
+			_, _ = h.presenter.Render(newAckCallbackRender(cb.ID))
+			return
+		}
+	}
+
+	if h.callbackDedupes != nil && shouldGuardTelegramCallback(action) && messageID > 0 {
+		dedupeKey, windowStart := telegramCallbackSemanticDedupeKey(chatID, messageID, userID, action, params, now, telegramCallbackGuardTTL)
+		reserved, err := h.callbackDedupes.Reserve(context.Background(), &domain.TelegramCallbackDedupe{
+			DedupeKey:   dedupeKey,
+			Action:      action,
+			WindowStart: windowStart,
+		})
+		if err != nil {
+			log.Printf("callback dedupe reserve error | action=%s | key=%s | err=%v", action, dedupeKey, err)
+			bootstrap.IncAppMetric("telegram.callback.semantic_reserve_error_total")
+		} else if !reserved {
+			log.Printf("duplicate semantic callback ignored | action=%s | chatID=%d | messageID=%d | userID=%d", action, chatID, messageID, userID)
+			bootstrap.IncAppMetric("telegram.callback.duplicate_semantic_total")
+			_, _ = h.presenter.Render(newAckCallbackRender(cb.ID))
+			return
+		}
+	}
+
+	if h.callbackGuard != nil && !h.callbackGuard.TryReserve(chatID, messageID, userID, action, params) {
+		log.Printf("duplicate callback ignored | action=%s | params=%v | chatID=%d | messageID=%d | userID=%d", action, params, chatID, messageID, userID)
+		bootstrap.IncAppMetric("telegram.callback.duplicate_local_total")
+		_, _ = h.presenter.Render(newAckCallbackRender(cb.ID))
+		return
 	}
 
 	switch action {
 	case "to_start", "select_man", "select_woman":
 		inputTelegram = h.handleOnboarding(action, userID)
-	case "action_menu", "menu_adventure", "menu_character", "menu_inventory_scope", "menu_economy", "menu_events":
+	case "action_menu", "menu_adventure", "menu_character", "menu_economy", "menu_events":
 		inputTelegram = h.handleMenu(action, userID)
 	case "list_map", "to_region":
 		inputTelegram = h.handleMap(action, userID, params)
@@ -54,7 +102,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		inputTelegram = h.handleAncestralKiChamber(action, userID, params)
 	case "open_referral":
 		inputTelegram = h.handleReferral(action, userID)
-	case "open_inventory", "open_inventory_potions", "open_inventory_equipaments", "open_inventory_equipaments_type", "open_inventory_equipped", "use_item", "equip_item", "unequip_item", "unequip_all":
+	case "menu_inventory_scope", "open_inventory", "open_inventory_potions", "open_inventory_equipaments", "open_inventory_equipaments_type", "open_inventory_equipped", "use_item", "equip_item", "unequip_item", "unequip_all":
 		inputTelegram = h.handleInventory(action, userID, params)
 	case "action_buy_ki", "action_copy_pix_code":
 		inputTelegram = h.handlePayment(action, userID)
@@ -70,7 +118,7 @@ func (h *Handler) handleCallback(update tgbotapi.Update) {
 		}
 	}
 
-	h.editPanel(chatID, messageID, inputTelegram)
+	_, _ = h.presenter.Render(newEditPanelRender(chatID, messageID, inputTelegram))
 
-	h.bot.Request(tgbotapi.NewCallback(cb.ID, ""))
+	_, _ = h.presenter.Render(newAckCallbackRender(cb.ID))
 }

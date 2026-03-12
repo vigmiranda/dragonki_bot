@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
+	"github.com/vigmiranda/dragonki/internal/bootstrap"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"gorm.io/gorm"
 )
@@ -196,6 +197,8 @@ func TestPaymentService_HandleBuyKi_ConfigAmount(t *testing.T) {
 }
 
 func TestPaymentService_ConfirmPayment_SettleError(t *testing.T) {
+	bootstrap.ResetAppMetricsForTesting()
+
 	expectedErr := errors.New("settle fail")
 	svc := &PaymentService{
 		paymentRepository: &fakePaymentRepo{
@@ -208,6 +211,9 @@ func TestPaymentService_ConfirmPayment_SettleError(t *testing.T) {
 	err := svc.ConfirmPayment(context.Background(), 9)
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("expected settle error, got %v", err)
+	}
+	if got := bootstrap.SnapshotAppMetrics()["payments.confirm.error_total"]; got != 1 {
+		t.Fatalf("expected confirm error counter 1, got %d", got)
 	}
 }
 
@@ -251,6 +257,8 @@ func TestPaymentService_HandleCopyPixCode_Success(t *testing.T) {
 }
 
 func TestPaymentService_ConfirmPayment_AlreadySettled_IsIdempotent(t *testing.T) {
+	bootstrap.ResetAppMetricsForTesting()
+
 	repo := &fakePaymentRepo{
 		settlePendingFn: func(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error) {
 			return false, nil
@@ -268,9 +276,14 @@ func TestPaymentService_ConfirmPayment_AlreadySettled_IsIdempotent(t *testing.T)
 	if repo.settleCalls != 1 {
 		t.Fatalf("expected one settle call, got %d", repo.settleCalls)
 	}
+	if got := bootstrap.SnapshotAppMetrics()["payments.confirm.idempotent_total"]; got != 1 {
+		t.Fatalf("expected confirm idempotent counter 1, got %d", got)
+	}
 }
 
 func TestPaymentService_ConfirmPayment_Success(t *testing.T) {
+	bootstrap.ResetAppMetricsForTesting()
+
 	repo := &fakePaymentRepo{
 		settlePendingFn: func(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error) {
 			if partnerID != 99 {
@@ -296,5 +309,8 @@ func TestPaymentService_ConfirmPayment_Success(t *testing.T) {
 	}
 	if repo.lastPartnerID != 99 || repo.lastKiCrystalsMul != 3 {
 		t.Fatalf("unexpected settle payload: partnerID=%d mult=%d", repo.lastPartnerID, repo.lastKiCrystalsMul)
+	}
+	if got := bootstrap.SnapshotAppMetrics()["payments.confirm.settled_total"]; got != 1 {
+		t.Fatalf("expected confirm settled counter 1, got %d", got)
 	}
 }

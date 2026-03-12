@@ -118,3 +118,94 @@ func TestPaymentRepoIntegration_SaveGetLatestPendingAndSettleOnce(t *testing.T) 
 		t.Fatalf("unexpected ki crystals after second settlement: got %d want 36", reloadedPlayer.KiCrystals)
 	}
 }
+
+func TestPaymentRepoIntegration_Save_IsIdempotentByPaymentID(t *testing.T) {
+	testDB := newIntegrationTestDB(t)
+
+	paymentRepo := NewPaymentRepo(testDB.DB)
+	ctx := context.Background()
+
+	payment := &domain.Payment{
+		ID:           "pay-duplicate-safe",
+		PlayerID:     880001,
+		Amount:       7,
+		Status:       domain.PaymentPending,
+		QRCode:       "qr-1",
+		QRCodeBase64: "base64-1",
+		PartnerId:    123456,
+		CreatedAt:    time.Now().UTC(),
+		LastUpdate:   time.Now().UTC(),
+	}
+	if err := paymentRepo.Save(ctx, payment); err != nil {
+		t.Fatalf("save first payment: %v", err)
+	}
+
+	duplicate := &domain.Payment{
+		ID:           payment.ID,
+		PlayerID:     payment.PlayerID,
+		Amount:       99,
+		Status:       domain.PaymentApproved,
+		QRCode:       "qr-2",
+		QRCodeBase64: "base64-2",
+		PartnerId:    999999,
+		CreatedAt:    time.Now().UTC(),
+		LastUpdate:   time.Now().UTC(),
+	}
+	if err := paymentRepo.Save(ctx, duplicate); err != nil {
+		t.Fatalf("save duplicate payment: %v", err)
+	}
+
+	var count int64
+	if err := testDB.DB.Model(&domain.Payment{}).Where("id = ?", payment.ID).Count(&count).Error; err != nil {
+		t.Fatalf("count payments by id: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected one payment row after duplicate save, got %d", count)
+	}
+
+	var persisted domain.Payment
+	if err := testDB.DB.Where("id = ?", payment.ID).First(&persisted).Error; err != nil {
+		t.Fatalf("load persisted payment: %v", err)
+	}
+	if persisted.Amount != payment.Amount || persisted.Status != payment.Status || persisted.PartnerId != payment.PartnerId {
+		t.Fatalf("expected original payment to remain unchanged after duplicate save, got %+v", persisted)
+	}
+}
+
+func TestPaymentRepoIntegration_SettleRollbackWhenPlayerMissing(t *testing.T) {
+	testDB := newIntegrationTestDB(t)
+
+	paymentRepo := NewPaymentRepo(testDB.DB)
+	ctx := context.Background()
+
+	payment := &domain.Payment{
+		ID:           "pay-missing-player",
+		PlayerID:     999999,
+		Amount:       5,
+		Status:       domain.PaymentPending,
+		QRCode:       "qr-missing-player",
+		QRCodeBase64: "base64-missing-player",
+		PartnerId:    555000,
+		CreatedAt:    time.Now().UTC(),
+		LastUpdate:   time.Now().UTC(),
+	}
+	if err := paymentRepo.Save(ctx, payment); err != nil {
+		t.Fatalf("save payment fixture: %v", err)
+	}
+
+	settledNow, err := paymentRepo.SettlePendingByPartnerID(ctx, payment.PartnerId, 3)
+	if err == nil {
+		t.Fatal("expected settlement to fail when player is missing")
+	}
+	if settledNow {
+		t.Fatal("expected settlement flag to remain false on rollback")
+	}
+
+	var persisted domain.Payment
+	if err := testDB.DB.Where("id = ?", payment.ID).First(&persisted).Error; err != nil {
+		t.Fatalf("load persisted payment after rollback: %v", err)
+	}
+	if persisted.Status != domain.PaymentPending {
+		t.Fatalf("expected payment status to rollback to pending, got %q", persisted.Status)
+	}
+}

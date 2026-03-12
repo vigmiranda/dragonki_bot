@@ -18,7 +18,12 @@ func NewPaymentRepo(db *gorm.DB) *PaymentRepo {
 }
 
 func (r *PaymentRepo) Save(ctx context.Context, p *domain.Payment) error {
-	return r.db.WithContext(ctx).Create(&p).Error
+	return r.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},
+			DoNothing: true,
+		}).
+		Create(p).Error
 }
 
 func (r *PaymentRepo) SettlePendingByPartnerID(ctx context.Context, partnerID int64, kiCrystalsMult int) (bool, error) {

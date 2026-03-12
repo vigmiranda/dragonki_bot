@@ -16,6 +16,17 @@ func SetFeatureFlagResolver(resolver func(name string) (enabled bool, found bool
 	featureFlagResolver = resolver
 }
 
+func WithFeatureFlagResolver(resolver func(name string) (enabled bool, found bool)) func() {
+	featureFlagResolverMu.Lock()
+	previous := featureFlagResolver
+	featureFlagResolver = resolver
+	featureFlagResolverMu.Unlock()
+
+	return func() {
+		SetFeatureFlagResolver(previous)
+	}
+}
+
 func IsFeatureEnabled(name string, defaultValue bool) bool {
 	normalizedName := normalizeFeatureName(name)
 	if normalizedName == "" {

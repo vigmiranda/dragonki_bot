@@ -32,10 +32,11 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 
 	status, err := h.onboardingService.HasCompletedOnboarding(update.Message.Chat.ID, userID, nameTelegram, userName)
 	if err != nil {
-		h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Erro interno"))
+		_, _ = h.presenter.Render(newTextRender(update.Message.Chat.ID, "Erro interno"))
 		return
 	}
 	messageText := strings.TrimSpace(update.Message.Text)
+	referralNotice := ""
 	if strings.HasPrefix(messageText, "/start") {
 		if h.referralService != nil {
 			player, playerErr := h.onboardingService.Onboarding(update.Message.Chat.ID)
@@ -44,16 +45,13 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 				if refErr != nil {
 					log.Printf("referral register failed | chatID=%d | playerID=%d | err=%v", update.Message.Chat.ID, player.ID, refErr)
 				} else if registerResult != nil && registerResult.Linked {
-					h.bot.Send(tgbotapi.NewMessage(
-						update.Message.Chat.ID,
-						"Convite registrado com sucesso! Ao atingir nivel "+
-							formatInt(registerResult.RequiredLevel)+
-							", seu convidador recebe "+
-							formatInt(registerResult.RewardGold)+" Gold e "+
-							formatInt(registerResult.RewardKiCrystal)+" Ki Crystal(s).",
-					))
+					referralNotice = "Convite registrado com sucesso! Ao atingir nivel " +
+						formatInt(registerResult.RequiredLevel) +
+						", seu convidador recebe " +
+						formatInt(registerResult.RewardGold) + " Gold e " +
+						formatInt(registerResult.RewardKiCrystal) + " Ki Crystal(s)."
 					if registerResult.ReferrerUserID > 0 && registerResult.ReferrerUserID != update.Message.Chat.ID {
-						h.bot.Send(tgbotapi.NewMessage(
+						_, _ = h.presenter.Render(newTextRender(
 							registerResult.ReferrerUserID,
 							"Um novo jogador entrou pelo seu link de indicacao! "+
 								"Recompensa ao atingir nivel "+
@@ -65,9 +63,9 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 		}
 		switch status {
 		case "DONE":
-			h.newPanel(update.Message.Chat.ID, "OLD_PLAYER")
+			_, _ = h.presenter.Render(newMainPanelRender(update.Message.Chat.ID, "OLD_PLAYER", referralNotice))
 		default:
-			h.sendInitialPanel(update.Message.Chat.ID)
+			_, _ = h.presenter.Render(newInitialPanelRender(update.Message.Chat.ID, referralNotice))
 		}
 
 		return
@@ -75,10 +73,10 @@ func (h *Handler) HandleUpdate(update tgbotapi.Update) {
 	if status == "CHOOSING_NAME" {
 		_, err := h.handleNameInput(update.Message.Chat.ID, update.Message.Text)
 		if err != nil {
-			h.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Erro interno"))
+			_, _ = h.presenter.Render(newTextRender(update.Message.Chat.ID, "Erro interno"))
 			return
 		}
-		h.newPanel(update.Message.Chat.ID, "NEW_PLAYER")
+		_, _ = h.presenter.Render(newMainPanelRender(update.Message.Chat.ID, "NEW_PLAYER", ""))
 	}
 
 	h.handleCallback(update)

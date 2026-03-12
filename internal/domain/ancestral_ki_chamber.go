@@ -1,6 +1,14 @@
 package domain
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+var (
+	ErrAncestralKiChamberRunActive            = errors.New("ancestral ki chamber active run exists")
+	ErrAncestralKiChamberInsufficientResource = errors.New("ancestral ki chamber insufficient resources")
+)
 
 const (
 	AncestralKiChamberRunStatusActive    = "ACTIVE"
@@ -59,4 +67,11 @@ type AncestralKiChamberBattleLog struct {
 
 func (AncestralKiChamberBattleLog) TableName() string {
 	return "ancestral_ki_chamber_battle_logs"
+}
+
+type AncestralKiChamberResolution struct {
+	Run        *AncestralKiChamberRun
+	Progress   *AncestralKiChamberProgress
+	XPPayout   int
+	GoldPayout int
 }

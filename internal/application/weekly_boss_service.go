@@ -129,13 +129,13 @@ func (s *WeeklyBossService) Open(userID int64) (view.GameResponse, error) {
 	}
 
 	text := fmt.Sprintf(
-		"👑 <b>Big Boss da Semana</b>\n\n"+
+		"ðŸ‘‘ <b>Big Boss da Semana</b>\n\n"+
 			"Nome: %s\n"+
 			"HP: %d / %d\n\n"+
 			"Tempo restante: %s\n"+
 			"Seu dano total: %d\n"+
 			"Ataques hoje: %d/%d (%s)\n\n"+
-			"Custo do ataque: -%d⚡ e -%d💰",
+			"Custo do ataque: -%dâš¡ e -%dðŸ’°",
 		boss.Name,
 		boss.CurrentHP,
 		boss.MaxHP,
@@ -178,30 +178,7 @@ func (s *WeeklyBossService) Attack(userID int64) (view.GameResponse, error) {
 		return view.GameResponse{}, err
 	}
 
-	if player.Energy < weeklyBossAttackEnergyCost || player.Gold < weeklyBossAttackGoldCost {
-		return view.GameResponse{
-			Text: fmt.Sprintf(
-				"Recursos insuficientes para atacar o Big Boss.\nPrecisa de %d⚡ e %d💰.",
-				weeklyBossAttackEnergyCost, weeklyBossAttackGoldCost,
-			),
-			Image:   &view.Image{Type: view.ImageAsset, Path: "assets/npcs/mestre_kalunga_insta.png"},
-			MenuKey: "BIG_BOSS_MENU",
-		}, nil
-	}
-
-	attacksToday, err := s.bossRepo.CountPlayerAttacksOnDate(boss.ID, int64(player.ID), now)
-	if err != nil {
-		return view.GameResponse{}, err
-	}
 	attackLimit := s.dailyAttackLimit(int64(player.ID))
-	if attacksToday >= int64(attackLimit) {
-		return view.GameResponse{
-			Text:    "Voce ja atingiu seu limite diario de ataques no Big Boss.\nVolte amanha para atacar novamente.",
-			Image:   &view.Image{Type: view.ImageAsset, Path: "assets/npcs/mestre_kalunga_insta.png"},
-			MenuKey: "BIG_BOSS_MENU",
-		}, nil
-	}
-
 	stats, statsErr := calculateEffectivePlayerStats(player, s.inventoryRepo)
 	if statsErr != nil {
 		stats = effectivePlayerStats{
@@ -214,38 +191,36 @@ func (s *WeeklyBossService) Attack(userID int64) (view.GameResponse, error) {
 	}
 
 	damage := simulateWeeklyBossFight(player.HP, stats.ATK, stats.DEF, stats.Speed, boss.ATK, s.rng)
-
-	attackDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	if err := s.bossRepo.CreateAttack(&domain.WeeklyBossAttack{
-		BossID:   boss.ID,
-		PlayerID: int64(player.ID),
-		AttackAt: attackDate,
-		Damage:   damage,
-	}); err != nil {
-		if isDailyAttackUniqueViolation(err) {
+	updatedBoss, totalDamage, err := s.bossRepo.ExecuteAttack(
+		boss.ID,
+		int64(player.ID),
+		damage,
+		attackLimit,
+		weeklyBossAttackEnergyCost,
+		weeklyBossAttackGoldCost,
+		now,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrWeeklyBossInsufficientResource):
+			return view.GameResponse{
+				Text: fmt.Sprintf(
+					"Recursos insuficientes para atacar o Big Boss.\nPrecisa de %dâš¡ e %dðŸ’°.",
+					weeklyBossAttackEnergyCost,
+					weeklyBossAttackGoldCost,
+				),
+				Image:   &view.Image{Type: view.ImageAsset, Path: "assets/npcs/mestre_kalunga_insta.png"},
+				MenuKey: "BIG_BOSS_MENU",
+			}, nil
+		case errors.Is(err, domain.ErrWeeklyBossAttackLimitReached):
 			return view.GameResponse{
 				Text:    "Voce ja atingiu seu limite diario de ataques no Big Boss.\nVolte amanha para atacar novamente.",
 				Image:   &view.Image{Type: view.ImageAsset, Path: "assets/npcs/mestre_kalunga_insta.png"},
 				MenuKey: "BIG_BOSS_MENU",
 			}, nil
+		default:
+			return view.GameResponse{}, err
 		}
-		return view.GameResponse{}, err
-	}
-
-	updatedBoss, err := s.bossRepo.ApplyDamage(boss.ID, damage, now)
-	if err != nil {
-		return view.GameResponse{}, err
-	}
-
-	if err := s.bossRepo.AddContributionDamage(boss.ID, int64(player.ID), damage, now); err != nil {
-		return view.GameResponse{}, err
-	}
-
-	player.HP = 1
-	player.Energy -= weeklyBossAttackEnergyCost
-	player.Gold -= weeklyBossAttackGoldCost
-	if err := s.playerRepo.Update(player); err != nil {
-		return view.GameResponse{}, err
 	}
 
 	rewardMessage := ""
@@ -270,20 +245,14 @@ func (s *WeeklyBossService) Attack(userID int64) (view.GameResponse, error) {
 		}
 	}
 
-	totalDamage := damage
-	contribution, err := s.bossRepo.GetContribution(boss.ID, int64(player.ID))
-	if err == nil && contribution != nil {
-		totalDamage = contribution.TotalDamage
-	}
-
 	return view.GameResponse{
 		Text: fmt.Sprintf(
-			"⚔️ Voce enfrentou %s!\n\n"+
-				"💥 Dano causado: %d\n"+
-				"🩸 HP restante do Boss: %d\n"+
-				"💀 Voce foi derrotado.\n"+
-				"📊 Seu dano total nesta semana: %d\n\n"+
-				"Custo aplicado: -%d⚡ e -%d💰%s",
+			"âš”ï¸ Voce enfrentou %s!\n\n"+
+				"ðŸ’¥ Dano causado: %d\n"+
+				"ðŸ©¸ HP restante do Boss: %d\n"+
+				"ðŸ’€ Voce foi derrotado.\n"+
+				"ðŸ“Š Seu dano total nesta semana: %d\n\n"+
+				"Custo aplicado: -%dâš¡ e -%dðŸ’°%s",
 			boss.Name,
 			damage,
 			updatedBoss.CurrentHP,
@@ -321,7 +290,7 @@ func (s *WeeklyBossService) Ranking() (view.GameResponse, error) {
 	}
 
 	var b strings.Builder
-	b.WriteString("🏆 <b>Ranking Big Boss</b>\n\n")
+	b.WriteString("ðŸ† <b>Ranking Big Boss</b>\n\n")
 	if len(rows) == 0 {
 		b.WriteString("Nenhum dano registrado nesta semana.")
 	} else {
@@ -411,15 +380,6 @@ func (s *WeeklyBossService) dailyAttackLimit(playerID int64) int {
 	return limit
 }
 
-func isDailyAttackUniqueViolation(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "uq_weekly_boss_attacks_daily") ||
-		(strings.Contains(msg, "unique") && strings.Contains(msg, "attack_date"))
-}
-
 func isoWeekKey(at time.Time) string {
 	year, week := at.UTC().ISOWeek()
 	return fmt.Sprintf("%04d-W%02d", year, week)
@@ -471,38 +431,12 @@ func (s *WeeklyBossService) distributeDefeatRewards(bossID uint, at time.Time) e
 			Status:   domain.WeeklyBossPayoutPending,
 		}
 
-		created, createErr := s.bossRepo.CreatePayoutIfNotExists(payout)
+		created, createErr := s.bossRepo.CreateAndPayPayoutIfNotExists(payout, reward.Items, at)
 		if createErr != nil {
 			return createErr
 		}
 		if !created {
 			continue
-		}
-
-		if reward.Gold > 0 {
-			if goldErr := s.bossRepo.AddGoldToPlayer(row.PlayerID, reward.Gold); goldErr != nil {
-				_ = s.bossRepo.MarkPayoutFailed(payout.ID, goldErr.Error())
-				return goldErr
-			}
-		}
-
-		for _, itemReward := range reward.Items {
-			if itemReward.ItemID == 0 || itemReward.Quantity <= 0 {
-				continue
-			}
-			if s.inventoryRepo == nil {
-				err := errors.New("inventory repository not configured for item payouts")
-				_ = s.bossRepo.MarkPayoutFailed(payout.ID, err.Error())
-				return err
-			}
-			if invErr := s.inventoryRepo.CreateOrUpdateInventory(row.PlayerID, itemReward.ItemID, itemReward.Quantity); invErr != nil {
-				_ = s.bossRepo.MarkPayoutFailed(payout.ID, invErr.Error())
-				return invErr
-			}
-		}
-
-		if paidErr := s.bossRepo.MarkPayoutPaid(payout.ID, at); paidErr != nil {
-			return paidErr
 		}
 	}
 

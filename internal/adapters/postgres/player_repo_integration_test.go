@@ -3,6 +3,8 @@ package postgres
 import (
 	"testing"
 	"time"
+
+	"github.com/vigmiranda/dragonki/internal/domain"
 )
 
 func TestPlayerPostgresRepoIntegration_PersistsAndReadsFromDatabase(t *testing.T) {
@@ -72,5 +74,57 @@ func TestPlayerPostgresRepoIntegration_PersistsAndReadsFromDatabase(t *testing.T
 	}
 	if persisted.UserName != "integration_hero" || persisted.NameTelegram != "Integration Hero TG" {
 		t.Fatalf("unexpected persisted telegram data: %+v", persisted)
+	}
+}
+
+func TestPlayerPostgresRepoIntegration_ClassEvolutionChain_Level15To35To50(t *testing.T) {
+	testDB := newIntegrationTestDB(t)
+	repo := NewPlayerPostgresRepo(testDB.DB)
+
+	classes := []domain.Class{
+		{ID: 101, Name: "Blade Monk", BaseClass: "Blade Monk", Tier: domain.TierBase, MinLevel: 1, Skin: "basic"},
+		{ID: 102, Name: "Ki Vanguard", BaseClass: "Blade Monk", Tier: domain.TierAdvanced, MinLevel: 15, Skin: "ki_vanguard"},
+		{ID: 103, Name: "Wind Striker", BaseClass: "Blade Monk", Tier: domain.TierAdvanced, MinLevel: 15, Skin: "wind_striker"},
+		{ID: 104, Name: "Earth Sentinel", BaseClass: "Blade Monk", Tier: domain.TierAdvanced, MinLevel: 15, Skin: "earth_sentinel"},
+		{ID: 105, Name: "Storm Vanguard", BaseClass: "Ki Vanguard", Tier: domain.TierElite, MinLevel: 35, Skin: "storm_vanguard"},
+		{ID: 106, Name: "Tempest Avatar", BaseClass: "Storm Vanguard", Tier: domain.TierMaster, MinLevel: 50, Skin: "tempest_avatar"},
+	}
+
+	for _, class := range classes {
+		if err := testDB.DB.Create(&class).Error; err != nil {
+			t.Fatalf("create class fixture %s: %v", class.Name, err)
+		}
+	}
+
+	level15Classes, err := repo.GetClassesByLvl(15)
+	if err != nil {
+		t.Fatalf("get classes by level 15: %v", err)
+	}
+	if len(level15Classes) != 3 {
+		t.Fatalf("expected 3 class choices at level 15, got %d", len(level15Classes))
+	}
+
+	advancedClass, err := repo.FindClassEvolutionByBaseClassAndLevel("Blade Monk", 15)
+	if err != nil {
+		t.Fatalf("find advanced class evolution: %v", err)
+	}
+	if advancedClass.Name != "Ki Vanguard" {
+		t.Fatalf("unexpected first advanced evolution at level 15: %q", advancedClass.Name)
+	}
+
+	level35Class, err := repo.FindClassEvolutionByBaseClassAndLevel("Ki Vanguard", 35)
+	if err != nil {
+		t.Fatalf("find elite class evolution: %v", err)
+	}
+	if level35Class.Name != "Storm Vanguard" {
+		t.Fatalf("unexpected evolution at level 35: %q", level35Class.Name)
+	}
+
+	level50Class, err := repo.FindClassEvolutionByBaseClassAndLevel("Storm Vanguard", 50)
+	if err != nil {
+		t.Fatalf("find master class evolution: %v", err)
+	}
+	if level50Class.Name != "Tempest Avatar" {
+		t.Fatalf("unexpected evolution at level 50: %q", level50Class.Name)
 	}
 }
