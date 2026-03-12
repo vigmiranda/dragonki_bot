@@ -251,12 +251,17 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatalf("unexpected reward position: got %d want 1", reward.Position)
 	}
 
-	var seededItem domain.Item
-	if err := testDB.DB.
-		Where("type = ?", domain.ItemConsumable).
-		Order("id ASC").
-		First(&seededItem).Error; err != nil {
-		t.Fatalf("load seeded consumable item: %v", err)
+	seededItem := domain.Item{
+		Code:        "IT_WEEKLY_BOSS_PAYOUT_POTION",
+		Name:        "Weekly Boss Reward Potion",
+		Description: "Consumable reward for weekly boss integration test",
+		Type:        domain.ItemConsumable,
+		Rarity:      "COMMON",
+		Amount:      1,
+		Price:       1,
+	}
+	if err := testDB.DB.Create(&seededItem).Error; err != nil {
+		t.Fatalf("create consumable reward item: %v", err)
 	}
 
 	payout := &domain.WeeklyBossPayout{

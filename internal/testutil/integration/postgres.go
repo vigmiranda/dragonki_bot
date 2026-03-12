@@ -15,6 +15,7 @@ import (
 	"github.com/vigmiranda/dragonki/internal/domain"
 	pgdriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type PostgresDB struct {
@@ -56,6 +57,7 @@ func NewPostgresDB(t *testing.T, opts PostgresOptions) *PostgresDB {
 	databaseURL := WithDatabaseName(t, testDBURL, dbName)
 	gormDB, err := gorm.Open(pgdriver.Open(databaseURL), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
+		Logger:                                   logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		t.Fatalf("open gorm db: %v", err)
