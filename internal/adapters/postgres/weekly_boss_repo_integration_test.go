@@ -210,7 +210,7 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatalf("unexpected second ranking row: %+v", ranking[1])
 	}
 
-	damagedBoss, err := repo.ApplyDamage(boss.ID, 999, now.Add(3*time.Minute))
+	damagedBoss, err := repo.ApplyDamage(boss.ID, 919, now.Add(3*time.Minute))
 	if err != nil {
 		t.Fatalf("apply damage without defeat: %v", err)
 	}
