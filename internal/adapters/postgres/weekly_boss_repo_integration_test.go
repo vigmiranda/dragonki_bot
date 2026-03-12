@@ -252,8 +252,11 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 	}
 
 	var seededItem domain.Item
-	if err := testDB.DB.Select("id").First(&seededItem).Error; err != nil {
-		t.Fatalf("load seeded item: %v", err)
+	if err := testDB.DB.
+		Where("type = ?", domain.ItemConsumable).
+		Order("id ASC").
+		First(&seededItem).Error; err != nil {
+		t.Fatalf("load seeded consumable item: %v", err)
 	}
 
 	payout := &domain.WeeklyBossPayout{
