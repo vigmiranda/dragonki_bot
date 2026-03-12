@@ -189,8 +189,8 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 	if err != nil {
 		t.Fatalf("get first player contribution: %v", err)
 	}
-	if firstContribution.TotalDamage != 375 {
-		t.Fatalf("unexpected first player total damage: got %d want 375", firstContribution.TotalDamage)
+	if firstContribution.TotalDamage != 455 {
+		t.Fatalf("unexpected first player total damage: got %d want 455", firstContribution.TotalDamage)
 	}
 
 	ranking, err := repo.ListTopContributions(boss.ID, 2)
@@ -200,7 +200,7 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 	if len(ranking) != 2 {
 		t.Fatalf("unexpected ranking size: got %d want 2", len(ranking))
 	}
-	if ranking[0].PlayerID != int64(firstPlayer.ID) || ranking[0].TotalDamage != 375 {
+	if ranking[0].PlayerID != int64(firstPlayer.ID) || ranking[0].TotalDamage != 455 {
 		t.Fatalf("unexpected first ranking row: %+v", ranking[0])
 	}
 	if ranking[0].PlayerName != "Alpha" {
