@@ -62,4 +62,5 @@ go.work.sum
 /$out
 /coverage
 /tmp
-/docs/gorm
+/docs/historico/gorm
+/tests/load/k6/results/

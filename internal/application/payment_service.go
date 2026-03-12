@@ -7,6 +7,7 @@ import (
 	"html"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
+	"github.com/vigmiranda/dragonki/internal/bootstrap"
 	"github.com/vigmiranda/dragonki/internal/domain"
 	"github.com/vigmiranda/dragonki/internal/ports"
 	"gorm.io/gorm"
@@ -49,7 +50,7 @@ func (s *PaymentService) HandleBuyKi(userID int64) (view.GameResponse, error) {
 	}
 
 	msg := fmt.Sprintf(
-		"PIX gerado com sucesso!\n\n1) Toque em \"Copiar codigo PIX\".\n2) Cole no app do seu banco e finalize o pagamento.\n\nPagamento ID: <code>%s</code>",
+		"PIX gerado com sucesso!\n\n1) Toque em \"Copiar codigo PIX\" para exibir o codigo neste painel.\n2) Cole no app do seu banco e finalize o pagamento.\n\nPagamento ID: <code>%s</code>",
 		html.EscapeString(payment.ID),
 	)
 
@@ -85,22 +86,23 @@ func (s *PaymentService) HandleCopyPixCode(userID int64) (view.GameResponse, err
 		),
 		Image:   &view.Image{Type: view.ImageAsset, Path: "assets/ki_crystals.png"},
 		MenuKey: "PIX_PAYMENT_MENU",
-		MenuParams: map[string]any{
-			"pixCode": payment.QRCode,
-		},
 	}, nil
 }
 
 func (s *PaymentService) ConfirmPayment(ctx context.Context, paymentID int64) error {
 	cfg := resolveAppConfig(s.cfg)
 	kiCrystalsMult := cfg.KiCrystalsMult
+	bootstrap.IncAppMetric("payments.confirm.attempt_total")
 
 	settledNow, err := s.paymentRepository.SettlePendingByPartnerID(ctx, paymentID, kiCrystalsMult)
 	if err != nil {
+		bootstrap.IncAppMetric("payments.confirm.error_total")
 		return err
 	}
 	if !settledNow {
+		bootstrap.IncAppMetric("payments.confirm.idempotent_total")
 		return nil
 	}
+	bootstrap.IncAppMetric("payments.confirm.settled_total")
 	return nil
 }

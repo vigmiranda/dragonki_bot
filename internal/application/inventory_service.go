@@ -297,10 +297,7 @@ func (s *InventoryService) UnequipItem(playerID int64, rawSlot string) (view.Gam
 		}
 	}
 
-	if err := s.InventoryRepository.UpdatePlayerEquipment(playerEquipment); err != nil {
-		return view.GameResponse{}, err
-	}
-	if err := s.PlayerRepository.Update(player); err != nil {
+	if err := s.InventoryRepository.SavePlayerAndEquipment(player, playerEquipment); err != nil {
 		return view.GameResponse{}, err
 	}
 
@@ -385,10 +382,7 @@ func (s *InventoryService) UnequipAll(playerID int64) (view.GameResponse, error)
 	playerEquipment.AmuletInventoryItemID = nil
 	playerEquipment.AccessoryInventoryItemID = nil
 
-	if err := s.InventoryRepository.UpdatePlayerEquipment(playerEquipment); err != nil {
-		return view.GameResponse{}, err
-	}
-	if err := s.PlayerRepository.Update(player); err != nil {
+	if err := s.InventoryRepository.SavePlayerAndEquipment(player, playerEquipment); err != nil {
 		return view.GameResponse{}, err
 	}
 
@@ -538,11 +532,7 @@ func (s *InventoryService) UseItem(playerID int64, inventoryItemID uint) (view.G
 	}
 
 	invItem.Quantity--
-	err = s.InventoryRepository.UpdateInventoryItem(invItem)
-	if err != nil {
-		return view.GameResponse{}, err
-	}
-	err = s.PlayerRepository.Update(player)
+	err = s.InventoryRepository.SavePlayerAndInventoryItem(player, invItem)
 	if err != nil {
 		return view.GameResponse{}, err
 	}
@@ -761,12 +751,8 @@ func (s *InventoryService) EquipItem(player *domain.Player, invItem *domain.Inve
 		return view.GameResponse{}, fmt.Errorf("nao foi possivel equipar no slot %s", slot)
 	}
 
-	if err := s.InventoryRepository.UpdatePlayerEquipment(playerEquipment); err != nil {
-		log.Printf("equip_item update player_equipment error | playerID=%d | err=%v", player.ID, err)
-		return view.GameResponse{}, err
-	}
-	if err := s.PlayerRepository.Update(player); err != nil {
-		log.Printf("equip_item update player error | playerID=%d | err=%v", player.ID, err)
+	if err := s.InventoryRepository.SavePlayerAndEquipment(player, playerEquipment); err != nil {
+		log.Printf("equip_item save player+equipment error | playerID=%d | err=%v", player.ID, err)
 		return view.GameResponse{}, err
 	}
 	log.Printf("equip_item success | playerID=%d | inventoryItemID=%d | itemID=%d | slot=%s", player.ID, invItem.ID, item.ID, slot)

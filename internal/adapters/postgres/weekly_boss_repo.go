@@ -131,7 +131,151 @@ func (r *WeeklyBossPostgresRepo) CreateAttack(attack *domain.WeeklyBossAttack) e
 	if attack == nil {
 		return gorm.ErrInvalidData
 	}
-	return r.db.Create(attack).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if attack.DailySeq <= 0 {
+			var count int64
+			if err := tx.
+				Model(&domain.WeeklyBossAttack{}).
+				Where("boss_id = ?", attack.BossID).
+				Where("player_id = ?", attack.PlayerID).
+				Where("attack_date = ?", attack.AttackAt.UTC().Format("2006-01-02")).
+				Count(&count).Error; err != nil {
+				return err
+			}
+			attack.DailySeq = int(count) + 1
+		}
+		return tx.Create(attack).Error
+	})
+}
+
+func (r *WeeklyBossPostgresRepo) ExecuteAttack(bossID uint, playerID int64, damage int64, attackLimit int, energyCost int, goldCost int, attackedAt time.Time) (*domain.WeeklyBoss, int64, error) {
+	if bossID == 0 || playerID == 0 {
+		return nil, 0, gorm.ErrInvalidData
+	}
+	if attackLimit < 1 {
+		attackLimit = 1
+	}
+	if damage < 0 {
+		damage = 0
+	}
+
+	attackDate := time.Date(attackedAt.UTC().Year(), attackedAt.UTC().Month(), attackedAt.UTC().Day(), 0, 0, 0, 0, time.UTC)
+	var updatedBoss domain.WeeklyBoss
+	var totalDamage int64
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		type playerState struct {
+			ID uint
+		}
+		var player playerState
+		if err := tx.
+			Raw(`SELECT id FROM players WHERE id = ? AND energy >= ? AND gold >= ? FOR UPDATE`, playerID, energyCost, goldCost).
+			Scan(&player).Error; err != nil {
+			return err
+		}
+		if player.ID == 0 {
+			return domain.ErrWeeklyBossInsufficientResource
+		}
+
+		var attacksToday int64
+		if err := tx.
+			Model(&domain.WeeklyBossAttack{}).
+			Where("boss_id = ?", bossID).
+			Where("player_id = ?", playerID).
+			Where("attack_date = ?", attackDate.Format("2006-01-02")).
+			Count(&attacksToday).Error; err != nil {
+			return err
+		}
+		if attacksToday >= int64(attackLimit) {
+			return domain.ErrWeeklyBossAttackLimitReached
+		}
+
+		attack := &domain.WeeklyBossAttack{
+			BossID:   bossID,
+			PlayerID: playerID,
+			AttackAt: attackDate,
+			DailySeq: int(attacksToday) + 1,
+			Damage:   damage,
+		}
+		if err := tx.Create(attack).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Exec(`
+			UPDATE weekly_bosses
+			   SET current_hp = GREATEST(current_hp - ?, 0),
+			       updated_at = ?
+			 WHERE id = ?`, damage, attackedAt, bossID).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Exec(`
+			UPDATE weekly_bosses
+			   SET status = ?, defeated_at = COALESCE(defeated_at, ?), updated_at = ?
+			 WHERE id = ? AND current_hp = 0 AND status <> ?`,
+			domain.WeeklyBossStatusDefeated, attackedAt, attackedAt, bossID, domain.WeeklyBossStatusDefeated,
+		).Error; err != nil {
+			return err
+		}
+
+		entry := domain.WeeklyBossContribution{
+			BossID:       bossID,
+			PlayerID:     playerID,
+			TotalDamage:  damage,
+			LastAttackAt: attackedAt,
+		}
+		if err := tx.
+			Clauses(clause.OnConflict{
+				Columns: []clause.Column{
+					{Name: "boss_id"},
+					{Name: "player_id"},
+				},
+				DoUpdates: clause.Assignments(map[string]any{
+					"total_damage": clause.Expr{
+						SQL:  "weekly_boss_contributions.total_damage + ?",
+						Vars: []any{damage},
+					},
+					"last_attack_at": attackedAt,
+					"updated_at":     attackedAt,
+				}),
+			}).
+			Create(&entry).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Exec(`
+			UPDATE players
+			   SET hp = 1,
+			       energy = energy - ?,
+			       gold = gold - ?,
+			       last_update = ?
+			 WHERE id = ?`, energyCost, goldCost, attackedAt, playerID).Error; err != nil {
+			return err
+		}
+
+		if err := tx.
+			Model(&domain.WeeklyBoss{}).
+			Where("id = ?", bossID).
+			First(&updatedBoss).Error; err != nil {
+			return err
+		}
+
+		var contribution domain.WeeklyBossContribution
+		if err := tx.
+			Model(&domain.WeeklyBossContribution{}).
+			Where("boss_id = ?", bossID).
+			Where("player_id = ?", playerID).
+			First(&contribution).Error; err != nil {
+			return err
+		}
+		totalDamage = contribution.TotalDamage
+		return nil
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return &updatedBoss, totalDamage, nil
 }
 
 func (r *WeeklyBossPostgresRepo) GetContribution(bossID uint, playerID int64) (*domain.WeeklyBossContribution, error) {
@@ -226,6 +370,65 @@ func (r *WeeklyBossPostgresRepo) CreatePayoutIfNotExists(payout *domain.WeeklyBo
 		return false, res.Error
 	}
 	return res.RowsAffected > 0, nil
+}
+
+func (r *WeeklyBossPostgresRepo) CreateAndPayPayoutIfNotExists(payout *domain.WeeklyBossPayout, items []domain.WeeklyBossRewardItem, paidAt time.Time) (bool, error) {
+	if payout == nil {
+		return false, gorm.ErrInvalidData
+	}
+
+	created := false
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		res := tx.
+			Clauses(clause.OnConflict{DoNothing: true}).
+			Create(payout)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return nil
+		}
+
+		if payout.GoldPaid > 0 {
+			if err := tx.Exec(`
+				UPDATE players
+				   SET gold = gold + ?,
+				       last_update = ?
+				 WHERE id = ?`,
+				payout.GoldPaid, paidAt, payout.PlayerID,
+			).Error; err != nil {
+				return err
+			}
+		}
+
+		for _, itemReward := range items {
+			if itemReward.ItemID == 0 || itemReward.Quantity <= 0 {
+				continue
+			}
+			if err := createOrUpdateInventoryWithDB(tx, payout.PlayerID, itemReward.ItemID, itemReward.Quantity); err != nil {
+				return err
+			}
+		}
+
+		if err := tx.
+			Model(&domain.WeeklyBossPayout{}).
+			Where("id = ?", payout.ID).
+			Updates(map[string]any{
+				"status":        domain.WeeklyBossPayoutPaid,
+				"error_message": "",
+				"paid_at":       paidAt,
+				"updated_at":    paidAt,
+			}).Error; err != nil {
+			return err
+		}
+
+		created = true
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return created, nil
 }
 
 func (r *WeeklyBossPostgresRepo) MarkPayoutPaid(payoutID uint, paidAt time.Time) error {

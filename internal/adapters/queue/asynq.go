@@ -12,6 +12,7 @@ import (
 
 	"github.com/hibiken/asynq"
 	"github.com/vigmiranda/dragonki/internal/application"
+	"github.com/vigmiranda/dragonki/internal/bootstrap"
 )
 
 type AsynqBigBossQueue struct {
@@ -41,11 +42,14 @@ func (q *AsynqBigBossQueue) Close() error {
 }
 
 func (q *AsynqBigBossQueue) EnqueueBigBossRewardDistribution(payload application.BigBossRewardsTaskPayload) error {
+	start := time.Now().UTC()
 	if q == nil || q.client == nil {
+		bootstrap.IncAppMetric("worker.big_boss.enqueue_error_total")
 		return errors.New("queue client not configured")
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
+		bootstrap.IncAppMetric("worker.big_boss.enqueue_error_total")
 		return err
 	}
 	task := asynq.NewTask(application.BigBossRewardsTaskType, body)
@@ -57,13 +61,24 @@ func (q *AsynqBigBossQueue) EnqueueBigBossRewardDistribution(payload application
 		asynq.TaskID(fmt.Sprintf("boss_reward_%d", payload.BossID)),
 	)
 	if err != nil && strings.Contains(strings.ToLower(err.Error()), "task id conflicts") {
+		bootstrap.IncAppMetric("worker.big_boss.enqueue_idempotent_total")
+		bootstrap.AddAppMetric("worker.big_boss.enqueue_duration_ms_total", time.Since(start).Milliseconds())
 		return nil
 	}
+	if err != nil {
+		bootstrap.IncAppMetric("worker.big_boss.enqueue_error_total")
+		bootstrap.AddAppMetric("worker.big_boss.enqueue_duration_ms_total", time.Since(start).Milliseconds())
+		return err
+	}
+	bootstrap.IncAppMetric("worker.big_boss.enqueue_total")
+	bootstrap.AddAppMetric("worker.big_boss.enqueue_duration_ms_total", time.Since(start).Milliseconds())
 	return err
 }
 
 type BigBossTaskHandler struct {
-	service *application.WeeklyBossService
+	service interface {
+		ProcessRewardDistribution(bossID uint) error
+	}
 }
 
 func NewBigBossTaskHandler(service *application.WeeklyBossService) *BigBossTaskHandler {
@@ -71,14 +86,30 @@ func NewBigBossTaskHandler(service *application.WeeklyBossService) *BigBossTaskH
 }
 
 func (h *BigBossTaskHandler) HandleDistributeRewardsTask(ctx context.Context, task *asynq.Task) error {
+	start := time.Now().UTC()
 	if h == nil || h.service == nil {
+		bootstrap.IncAppMetric("worker.big_boss.job_error_total")
 		return errors.New("big boss service not configured")
+	}
+	bootstrap.IncAppMetric("worker.big_boss.job_received_total")
+	if retryCount, ok := asynq.GetRetryCount(ctx); ok && retryCount > 0 {
+		bootstrap.IncAppMetric("worker.big_boss.job_retried_total")
+		bootstrap.AddAppMetric("worker.big_boss.job_retry_attempt_total", int64(retryCount))
 	}
 	var payload application.BigBossRewardsTaskPayload
 	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
+		bootstrap.IncAppMetric("worker.big_boss.job_invalid_payload_total")
+		bootstrap.AddAppMetric("worker.big_boss.job_duration_ms_total", time.Since(start).Milliseconds())
 		return err
 	}
-	return h.service.ProcessRewardDistribution(payload.BossID)
+	if err := h.service.ProcessRewardDistribution(payload.BossID); err != nil {
+		bootstrap.IncAppMetric("worker.big_boss.job_error_total")
+		bootstrap.AddAppMetric("worker.big_boss.job_duration_ms_total", time.Since(start).Milliseconds())
+		return err
+	}
+	bootstrap.IncAppMetric("worker.big_boss.job_success_total")
+	bootstrap.AddAppMetric("worker.big_boss.job_duration_ms_total", time.Since(start).Milliseconds())
+	return nil
 }
 
 func NewAsynqServer(redisURL string, concurrency int) (*asynq.Server, error) {

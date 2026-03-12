@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"fmt"
-	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vigmiranda/dragonki/internal/bootstrap"
@@ -30,20 +29,6 @@ func (h *Handler) handlePayment(action string, userID int64) InputTelegram {
 		if err != nil {
 			fmt.Printf("action_copy_pix_code -> %v\\n", err)
 			break
-		}
-		if gameResp.MenuParams != nil {
-			if rawCode, ok := gameResp.MenuParams["pixCode"]; ok {
-				pixCode := strings.TrimSpace(fmt.Sprint(rawCode))
-				if pixCode != "" {
-					msg := tgbotapi.NewMessage(userID, pixCode)
-					sentMsg, sendErr := h.bot.Send(msg)
-					if sendErr != nil {
-						fmt.Printf("action_copy_pix_code send plain message -> %v\\n", sendErr)
-					} else {
-						h.setPixCodeMessageID(userID, sentMsg.MessageID)
-					}
-				}
-			}
 		}
 		return ToTelegramResponse(gameResp, true, "action_copy_pix_code")
 	}

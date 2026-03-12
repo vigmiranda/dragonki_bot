@@ -192,7 +192,11 @@ func TestShopService_BuyItem_InsufficientGold(t *testing.T) {
 	player.ID = 9
 	player.Gold = 50
 
-	invRepo := &fakeInventoryRepo{}
+	invRepo := &fakeInventoryRepo{
+		purchaseFn: func(playerID int64, itemID uint, amount int, price int) error {
+			return domain.ErrInventoryInsufficientGold
+		},
+	}
 	playerRepo := &fakePlayerRepo{
 		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
 	}
@@ -217,8 +221,8 @@ func TestShopService_BuyItem_InsufficientGold(t *testing.T) {
 	if player.Gold != 50 {
 		t.Fatalf("expected unchanged gold, got %d", player.Gold)
 	}
-	if len(invRepo.createOrUpdateCalls) != 0 {
-		t.Fatalf("expected no inventory writes")
+	if len(invRepo.purchaseCalls) != 1 {
+		t.Fatalf("expected one purchase attempt, got %d", len(invRepo.purchaseCalls))
 	}
 	if len(playerRepo.updatedPlayers) != 0 {
 		t.Fatalf("expected no player update")
@@ -261,18 +265,18 @@ func TestShopService_BuyItem_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if player.Gold != 700 {
-		t.Fatalf("expected gold 700, got %d", player.Gold)
+	if player.Gold != 1000 {
+		t.Fatalf("expected no direct gold mutation, got %d", player.Gold)
 	}
-	if len(invRepo.createOrUpdateCalls) != 1 {
-		t.Fatalf("expected one inventory write, got %d", len(invRepo.createOrUpdateCalls))
+	if len(invRepo.purchaseCalls) != 1 {
+		t.Fatalf("expected one atomic purchase call, got %d", len(invRepo.purchaseCalls))
 	}
-	call := invRepo.createOrUpdateCalls[0]
-	if call.playerID != int64(player.ID) || call.itemID != 7 || call.amount != 2 {
-		t.Fatalf("unexpected inventory write: %+v", call)
+	call := invRepo.purchaseCalls[0]
+	if call.playerID != int64(player.ID) || call.itemID != 7 || call.amount != 2 || call.price != 300 {
+		t.Fatalf("unexpected atomic purchase call: %+v", call)
 	}
-	if len(playerRepo.updatedPlayers) != 1 {
-		t.Fatalf("expected one player update")
+	if len(playerRepo.updatedPlayers) != 0 {
+		t.Fatalf("expected no direct player update")
 	}
 	if !strings.Contains(resp.Text, "Obrigada") {
 		t.Fatalf("expected success message, got %q", resp.Text)
@@ -315,8 +319,11 @@ func TestShopService_BuyItem_EquipmentUsesCatalogPrice(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if player.Gold != 1300 {
-		t.Fatalf("expected gold 1300 (1600-300), got %d", player.Gold)
+	if len(invRepo.purchaseCalls) != 1 {
+		t.Fatalf("expected one atomic purchase call, got %d", len(invRepo.purchaseCalls))
+	}
+	if invRepo.purchaseCalls[0].price != 300 {
+		t.Fatalf("expected catalog price 300, got %d", invRepo.purchaseCalls[0].price)
 	}
 }
 
@@ -335,7 +342,9 @@ func TestShopService_BuyItem_CreateInventoryError(t *testing.T) {
 			},
 		},
 		InventoryRepository: &fakeInventoryRepo{
-			err: errors.New("inventory fail"),
+			purchaseFn: func(playerID int64, itemID uint, amount int, price int) error {
+				return errors.New("inventory fail")
+			},
 		},
 	}
 
@@ -345,7 +354,7 @@ func TestShopService_BuyItem_CreateInventoryError(t *testing.T) {
 	}
 }
 
-func TestShopService_BuyItem_UpdatePlayerError(t *testing.T) {
+func TestShopService_BuyItem_PurchaseError(t *testing.T) {
 	player := basePlayer()
 	player.ID = 8
 	player.Gold = 1000
@@ -353,16 +362,17 @@ func TestShopService_BuyItem_UpdatePlayerError(t *testing.T) {
 	svc := &ShopService{
 		PlayerRepository: &fakePlayerRepo{
 			getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
-			updateFn: func(player *domain.Player) error {
-				return errors.New("save player fail")
-			},
 		},
 		ItemRepository: &fakeItemsRepo{
 			getItemByIDFn: func(id int) (*domain.Item, error) {
 				return &domain.Item{ID: 2, Price: 200, Amount: 1}, nil
 			},
 		},
-		InventoryRepository: &fakeInventoryRepo{},
+		InventoryRepository: &fakeInventoryRepo{
+			purchaseFn: func(playerID int64, itemID uint, amount int, price int) error {
+				return errors.New("purchase fail")
+			},
+		},
 	}
 
 	_, err := svc.BuyItem(1, map[string]string{"itemID": "2"})
@@ -468,11 +478,14 @@ func TestShopService_SellItem_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if invItem.Quantity != 0 {
-		t.Fatalf("expected quantity=0 after sell, got %d", invItem.Quantity)
+	if invItem.Quantity != 1 {
+		t.Fatalf("expected no direct quantity mutation, got %d", invItem.Quantity)
 	}
-	if player.Gold != 300 {
-		t.Fatalf("expected gold=300 (100 + 40%% of 500), got %d", player.Gold)
+	if player.Gold != 100 {
+		t.Fatalf("expected no direct gold mutation, got %d", player.Gold)
+	}
+	if len(invRepo.sellCalls) != 1 {
+		t.Fatalf("expected one atomic sell call, got %d", len(invRepo.sellCalls))
 	}
 	if !strings.Contains(resp.Text, "vendido por 200 Gold") {
 		t.Fatalf("expected sell confirmation text, got %q", resp.Text)

@@ -170,11 +170,12 @@ func (s *ReferralService) ProcessLevelUp(referredPlayerID int64, newLevel int) (
 		return nil, nil
 	}
 
-	if err := s.referralRepo.GrantReward(referral.ReferrerPlayerID, s.rewardGold, s.rewardKiCrystal); err != nil {
+	granted, err := s.referralRepo.GrantRewardIfPending(referral.ID, referral.ReferrerPlayerID, s.rewardGold, s.rewardKiCrystal)
+	if err != nil {
 		return nil, err
 	}
-	if err := s.referralRepo.MarkRewarded(referral.ID); err != nil {
-		return nil, err
+	if !granted {
+		return nil, nil
 	}
 
 	referrerUserID, err := s.referralRepo.GetPlayerUserIDByPlayerID(referral.ReferrerPlayerID)

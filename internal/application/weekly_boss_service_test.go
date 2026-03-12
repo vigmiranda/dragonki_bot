@@ -11,26 +11,32 @@ import (
 )
 
 type weeklyBossRepoMock struct {
-	activeBoss      *domain.WeeklyBoss
-	activeErr       error
-	weekBoss        *domain.WeeklyBoss
-	weekErr         error
-	attacksToday    int64
-	attackedErr     error
-	contribution    *domain.WeeklyBossContribution
-	contributionErr error
-	createAttackErr error
-	applyBoss       *domain.WeeklyBoss
-	applyErr        error
-	addContribErr   error
-	rankRows        []domain.WeeklyBossRankingEntry
-	rankErr         error
-	createBossErr   error
-	expireErr       error
-	randomTemplate  *domain.WeeklyBossTemplate
-	randomErr       error
-	rewardByPos     map[int]*domain.WeeklyBossReward
-	payoutCreated   bool
+	activeBoss         *domain.WeeklyBoss
+	activeErr          error
+	weekBoss           *domain.WeeklyBoss
+	weekErr            error
+	attacksToday       int64
+	attackedErr        error
+	contribution       *domain.WeeklyBossContribution
+	contributionErr    error
+	createAttackErr    error
+	executeAttackErr   error
+	executeTotalDamage int64
+	applyBoss          *domain.WeeklyBoss
+	applyErr           error
+	addContribErr      error
+	rankRows           []domain.WeeklyBossRankingEntry
+	rankErr            error
+	createBossErr      error
+	expireErr          error
+	randomTemplate     *domain.WeeklyBossTemplate
+	randomErr          error
+	rewardByPos        map[int]*domain.WeeklyBossReward
+	payoutCreated      bool
+	payoutErr          error
+	payoutCreateCnt    int
+	paidPayouts        []domain.WeeklyBossPayout
+	paidItems          [][]domain.WeeklyBossRewardItem
 }
 
 func (m *weeklyBossRepoMock) GetActive(at time.Time) (*domain.WeeklyBoss, error) {
@@ -82,6 +88,22 @@ func (m *weeklyBossRepoMock) CountPlayerAttacksOnDate(bossID uint, playerID int6
 func (m *weeklyBossRepoMock) CreateAttack(attack *domain.WeeklyBossAttack) error {
 	return m.createAttackErr
 }
+func (m *weeklyBossRepoMock) ExecuteAttack(bossID uint, playerID int64, damage int64, attackLimit int, energyCost int, goldCost int, attackedAt time.Time) (*domain.WeeklyBoss, int64, error) {
+	if m.executeAttackErr != nil {
+		return nil, 0, m.executeAttackErr
+	}
+	updatedBoss := m.activeBoss
+	if m.applyBoss != nil {
+		updatedBoss = m.applyBoss
+	}
+	totalDamage := damage
+	if m.executeTotalDamage > 0 {
+		totalDamage = m.executeTotalDamage
+	} else if m.contribution != nil && m.contribution.TotalDamage > 0 {
+		totalDamage = m.contribution.TotalDamage
+	}
+	return updatedBoss, totalDamage, nil
+}
 func (m *weeklyBossRepoMock) GetContribution(bossID uint, playerID int64) (*domain.WeeklyBossContribution, error) {
 	if m.contributionErr != nil {
 		return nil, m.contributionErr
@@ -113,6 +135,25 @@ func (m *weeklyBossRepoMock) CreatePayoutIfNotExists(payout *domain.WeeklyBossPa
 		return false, nil
 	}
 	m.payoutCreated = true
+	m.payoutCreateCnt++
+	return true, nil
+}
+func (m *weeklyBossRepoMock) CreateAndPayPayoutIfNotExists(payout *domain.WeeklyBossPayout, items []domain.WeeklyBossRewardItem, paidAt time.Time) (bool, error) {
+	if m.payoutErr != nil {
+		return false, m.payoutErr
+	}
+	if payout != nil {
+		copyPayout := *payout
+		copyPayout.ID = 1
+		m.paidPayouts = append(m.paidPayouts, copyPayout)
+	}
+	copyItems := append([]domain.WeeklyBossRewardItem(nil), items...)
+	m.paidItems = append(m.paidItems, copyItems)
+	if m.payoutCreated {
+		return false, nil
+	}
+	m.payoutCreated = true
+	m.payoutCreateCnt++
 	return true, nil
 }
 func (m *weeklyBossRepoMock) MarkPayoutPaid(payoutID uint, paidAt time.Time) error { return nil }
@@ -282,8 +323,8 @@ func TestWeeklyBossService_EnsureCurrentWeeklyBoss_CreatesWhenMissing(t *testing
 
 func TestWeeklyBossService_Attack_PropagatesCreateAttackError(t *testing.T) {
 	repo := &weeklyBossRepoMock{
-		activeBoss:      &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 100, CurrentHP: 1000, MaxHP: 1000},
-		createAttackErr: errors.New("insert failed"),
+		activeBoss:       &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 100, CurrentHP: 1000, MaxHP: 1000},
+		executeAttackErr: errors.New("insert failed"),
 	}
 	playerRepo := &weeklyBossPlayerRepoMock{player: &domain.Player{ID: 1, Energy: 50, Gold: 1000, HP: 100, ATK: 20, DEF: 10, Speed: 10}}
 	svc := NewWeeklyBossService(repo, playerRepo, nil, nil)
@@ -306,11 +347,8 @@ func TestWeeklyBossService_Attack_SetsPlayerHPToOne(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
-	if playerRepo.updated == nil {
-		t.Fatalf("expected player update")
-	}
-	if playerRepo.updated.HP != 1 {
-		t.Fatalf("expected HP to be 1 after big boss duel, got %d", playerRepo.updated.HP)
+	if playerRepo.updated != nil {
+		t.Fatalf("expected player update to be handled inside boss repo transaction")
 	}
 }
 
@@ -361,22 +399,24 @@ func TestWeeklyBossService_Attack_DistributesRewardItemsToInventory(t *testing.T
 		},
 	}
 	playerRepo := &weeklyBossPlayerRepoMock{player: &domain.Player{ID: 1, HP: 120, Energy: 50, Gold: 1000, ATK: 20, DEF: 10, Speed: 10}}
-	invRepo := &weeklyBossInventoryRepoMock{}
-	svc := NewWeeklyBossService(repo, playerRepo, invRepo, nil)
+	svc := NewWeeklyBossService(repo, playerRepo, nil, nil)
 
 	_, err := svc.Attack(10)
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
 
-	if len(invRepo.calls) != 2 {
-		t.Fatalf("expected 2 inventory reward calls, got %d", len(invRepo.calls))
+	if len(repo.paidItems) != 1 {
+		t.Fatalf("expected 1 payout item batch, got %d", len(repo.paidItems))
 	}
-	if invRepo.calls[0].userID != 99 || invRepo.calls[0].itemID != 42 || invRepo.calls[0].amount != 2 {
-		t.Fatalf("unexpected first reward call: %+v", invRepo.calls[0])
+	if len(repo.paidItems[0]) != 2 {
+		t.Fatalf("expected 2 reward items, got %d", len(repo.paidItems[0]))
 	}
-	if invRepo.calls[1].userID != 99 || invRepo.calls[1].itemID != 51 || invRepo.calls[1].amount != 1 {
-		t.Fatalf("unexpected second reward call: %+v", invRepo.calls[1])
+	if repo.paidItems[0][0].ItemID != 42 || repo.paidItems[0][0].Quantity != 2 {
+		t.Fatalf("unexpected first reward item: %+v", repo.paidItems[0][0])
+	}
+	if repo.paidItems[0][1].ItemID != 51 || repo.paidItems[0][1].Quantity != 1 {
+		t.Fatalf("unexpected second reward item: %+v", repo.paidItems[0][1])
 	}
 }
 
@@ -404,5 +444,76 @@ func TestWeeklyBossService_Attack_EnqueuesRewardWhenQueueIsConfigured(t *testing
 	}
 	if !strings.Contains(resp.Text, "em processamento") {
 		t.Fatalf("expected queue processing message, got %q", resp.Text)
+	}
+}
+
+func TestWeeklyBossService_ProcessRewardDistribution_IsIdempotentWhenReprocessed(t *testing.T) {
+	repo := &weeklyBossRepoMock{
+		rankRows: []domain.WeeklyBossRankingEntry{
+			{PlayerID: 99, PlayerName: "Top1", TotalDamage: 5000},
+		},
+		rewardByPos: map[int]*domain.WeeklyBossReward{
+			1: {
+				ID:       1,
+				Position: 1,
+				Gold:     1000,
+				Enabled:  true,
+				Items: []domain.WeeklyBossRewardItem{
+					{RewardID: 1, ItemID: 42, Quantity: 1},
+				},
+			},
+		},
+	}
+	svc := NewWeeklyBossService(repo, &weeklyBossPlayerRepoMock{}, nil, nil)
+
+	if err := svc.ProcessRewardDistribution(1); err != nil {
+		t.Fatalf("unexpected err on first process: %v", err)
+	}
+	if err := svc.ProcessRewardDistribution(1); err != nil {
+		t.Fatalf("unexpected err on second process: %v", err)
+	}
+
+	if len(repo.paidPayouts) != 2 {
+		t.Fatalf("expected 2 payout attempts to reach repo, got %d", len(repo.paidPayouts))
+	}
+	if len(repo.paidItems) != 2 {
+		t.Fatalf("expected 2 payout item batches to reach repo, got %d", len(repo.paidItems))
+	}
+	if repo.payoutCreateCnt != 1 {
+		t.Fatalf("expected payout to be created once, got %d", repo.payoutCreateCnt)
+	}
+}
+
+func TestWeeklyBossService_Attack_ReturnsLimitMessageFromAtomicExecution(t *testing.T) {
+	repo := &weeklyBossRepoMock{
+		activeBoss:       &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 100, CurrentHP: 1000, MaxHP: 1000},
+		executeAttackErr: domain.ErrWeeklyBossAttackLimitReached,
+	}
+	playerRepo := &weeklyBossPlayerRepoMock{player: &domain.Player{ID: 1, Energy: 50, Gold: 1000, HP: 100, ATK: 20, DEF: 10, Speed: 10}}
+	svc := NewWeeklyBossService(repo, playerRepo, nil, nil)
+
+	resp, err := svc.Attack(10)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if !strings.Contains(resp.Text, "limite diario") {
+		t.Fatalf("expected limit message, got %q", resp.Text)
+	}
+}
+
+func TestWeeklyBossService_Attack_ReturnsResourceMessageFromAtomicExecution(t *testing.T) {
+	repo := &weeklyBossRepoMock{
+		activeBoss:       &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 100, CurrentHP: 1000, MaxHP: 1000},
+		executeAttackErr: domain.ErrWeeklyBossInsufficientResource,
+	}
+	playerRepo := &weeklyBossPlayerRepoMock{player: &domain.Player{ID: 1, Energy: 50, Gold: 1000, HP: 100, ATK: 20, DEF: 10, Speed: 10}}
+	svc := NewWeeklyBossService(repo, playerRepo, nil, nil)
+
+	resp, err := svc.Attack(10)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if !strings.Contains(resp.Text, "Recursos insuficientes") {
+		t.Fatalf("expected insufficient resources message, got %q", resp.Text)
 	}
 }

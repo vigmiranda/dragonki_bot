@@ -17,6 +17,7 @@ type WeeklyBossRepository interface {
 
 	CountPlayerAttacksOnDate(bossID uint, playerID int64, attackDate time.Time) (int64, error)
 	CreateAttack(attack *domain.WeeklyBossAttack) error
+	ExecuteAttack(bossID uint, playerID int64, damage int64, attackLimit int, energyCost int, goldCost int, attackedAt time.Time) (*domain.WeeklyBoss, int64, error)
 
 	GetContribution(bossID uint, playerID int64) (*domain.WeeklyBossContribution, error)
 	AddContributionDamage(bossID uint, playerID int64, damage int64, attackedAt time.Time) error
@@ -24,6 +25,7 @@ type WeeklyBossRepository interface {
 
 	GetRewardByPosition(position int) (*domain.WeeklyBossReward, error)
 	CreatePayoutIfNotExists(payout *domain.WeeklyBossPayout) (bool, error)
+	CreateAndPayPayoutIfNotExists(payout *domain.WeeklyBossPayout, items []domain.WeeklyBossRewardItem, paidAt time.Time) (bool, error)
 	MarkPayoutPaid(payoutID uint, paidAt time.Time) error
 	MarkPayoutFailed(payoutID uint, reason string) error
 	AddGoldToPlayer(playerID int64, gold int64) error

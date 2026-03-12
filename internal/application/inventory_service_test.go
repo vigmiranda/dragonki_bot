@@ -350,8 +350,11 @@ func TestInventoryService_UseItem_ApplyHPSmallAndPersist(t *testing.T) {
 	if inv.Quantity != 1 {
 		t.Fatalf("expected inventory qty decremented to 1, got %d", inv.Quantity)
 	}
-	if len(invRepo.updateInventoryCalls) != 1 || len(playerRepo.updatedPlayers) != 1 {
-		t.Fatalf("expected one inventory update and one player update")
+	if len(invRepo.savePlayerItemCalls) != 1 {
+		t.Fatalf("expected one atomic player+item save")
+	}
+	if len(invRepo.updateInventoryCalls) != 0 || len(playerRepo.updatedPlayers) != 0 {
+		t.Fatalf("expected no direct inventory/player updates")
 	}
 	if resp.Image == nil || !strings.Contains(resp.Image.Path, "assets/skins/man/basicplayer.png") {
 		t.Fatalf("unexpected image path: %+v", resp.Image)
@@ -393,9 +396,12 @@ func TestInventoryService_UseItem_ApplyEnergyLargeCap(t *testing.T) {
 	if inv.Quantity != 0 {
 		t.Fatalf("expected quantity 0, got %d", inv.Quantity)
 	}
+	if len(invRepo.savePlayerItemCalls) != 1 {
+		t.Fatalf("expected one atomic player+item save")
+	}
 }
 
-func TestInventoryService_UseItem_UpdateInventoryError(t *testing.T) {
+func TestInventoryService_UseItem_SavePlayerAndItemError(t *testing.T) {
 	player := basePlayer()
 	inv := &domain.InventoryItem{
 		ID:       1,
@@ -407,43 +413,14 @@ func TestInventoryService_UseItem_UpdateInventoryError(t *testing.T) {
 		getByUserFn: func(playerID int64, inventoryItemID uint) (*domain.InventoryItem, error) {
 			return inv, nil
 		},
-		updateFn: func(item *domain.InventoryItem) error {
-			return errors.New("save inv fail")
+		savePlayerItemFn: func(player *domain.Player, item *domain.InventoryItem) error {
+			return errors.New("save item+player fail")
 		},
 	}
 	svc := InventoryService{
 		PlayerRepository: &fakePlayerRepo{
 			getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
 		},
-		InventoryRepository: invRepo,
-	}
-	_, err := svc.UseItem(1, 1)
-	if err == nil {
-		t.Fatalf("expected error")
-	}
-}
-
-func TestInventoryService_UseItem_UpdatePlayerError(t *testing.T) {
-	player := basePlayer()
-	inv := &domain.InventoryItem{
-		ID:       1,
-		Code:     "POTION_HP_SMALL",
-		Quantity: 1,
-		Item:     domain.Item{Name: "Potion"},
-	}
-	invRepo := &fakeInventoryRepo{
-		getByUserFn: func(playerID int64, inventoryItemID uint) (*domain.InventoryItem, error) {
-			return inv, nil
-		},
-	}
-	playerRepo := &fakePlayerRepo{
-		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
-		updateFn: func(player *domain.Player) error {
-			return errors.New("save player fail")
-		},
-	}
-	svc := InventoryService{
-		PlayerRepository:    playerRepo,
 		InventoryRepository: invRepo,
 	}
 	_, err := svc.UseItem(1, 1)
@@ -601,14 +578,14 @@ func TestInventoryService_EquipItem_ReplacesSlotAndRecalculatesStats(t *testing.
 	if player.ATK != 110 || player.DEF != 46 || player.Speed != 23 || player.MaxHP != 205 {
 		t.Fatalf("unexpected recalculated stats: atk=%d def=%d spd=%d hp=%d", player.ATK, player.DEF, player.Speed, player.MaxHP)
 	}
-	if len(invRepo.updateEquipCalls) != 1 {
-		t.Fatalf("expected equipment update call")
+	if len(invRepo.savePlayerEquipCalls) != 1 {
+		t.Fatalf("expected atomic player+equipment save call")
 	}
-	if invRepo.updateEquipCalls[0].WeaponInventoryItemID == nil || *invRepo.updateEquipCalls[0].WeaponInventoryItemID != inv.ID {
+	if invRepo.savePlayerEquipCalls[0].equipment.WeaponInventoryItemID == nil || *invRepo.savePlayerEquipCalls[0].equipment.WeaponInventoryItemID != inv.ID {
 		t.Fatalf("expected weapon slot updated to new inventory item id")
 	}
-	if len(updatedPlayer.updatedPlayers) != 1 {
-		t.Fatalf("expected player update call")
+	if len(updatedPlayer.updatedPlayers) != 0 {
+		t.Fatalf("expected no direct player update call")
 	}
 	if !strings.Contains(resp.Text, "Espada Flamejante equipada") {
 		t.Fatalf("expected equip success text, got %q", resp.Text)
@@ -888,11 +865,11 @@ func TestInventoryService_UnequipItem_Success(t *testing.T) {
 	if player.ATK != 100 || player.DEF != 50 || player.Speed != 20 || player.MaxHP != 200 || player.MaxEnergy != 25 {
 		t.Fatalf("unexpected stats after unequip: atk=%d def=%d spd=%d hp=%d en=%d", player.ATK, player.DEF, player.Speed, player.MaxHP, player.MaxEnergy)
 	}
-	if len(invRepo.updateEquipCalls) != 1 {
-		t.Fatalf("expected one equipment update")
+	if len(invRepo.savePlayerEquipCalls) != 1 {
+		t.Fatalf("expected one atomic player+equipment save")
 	}
-	if len(playerRepo.updatedPlayers) != 1 {
-		t.Fatalf("expected one player update")
+	if len(playerRepo.updatedPlayers) != 0 {
+		t.Fatalf("expected no direct player update")
 	}
 	if !strings.Contains(resp.Text, "desequipado com sucesso") {
 		t.Fatalf("expected success message, got %q", resp.Text)
@@ -1007,11 +984,11 @@ func TestInventoryService_UnequipAll_Success(t *testing.T) {
 	if player.ATK != 100 || player.DEF != 50 || player.Speed != 25 || player.MaxHP != 200 || player.MaxEnergy != 26 {
 		t.Fatalf("unexpected stats after unequip all: atk=%d def=%d spd=%d hp=%d en=%d", player.ATK, player.DEF, player.Speed, player.MaxHP, player.MaxEnergy)
 	}
-	if len(invRepo.updateEquipCalls) != 1 {
-		t.Fatalf("expected one equipment update")
+	if len(invRepo.savePlayerEquipCalls) != 1 {
+		t.Fatalf("expected one atomic player+equipment save")
 	}
-	if len(playerRepo.updatedPlayers) != 1 {
-		t.Fatalf("expected one player update")
+	if len(playerRepo.updatedPlayers) != 0 {
+		t.Fatalf("expected no direct player update")
 	}
 	if !strings.Contains(resp.Text, "Todos os equipamentos foram desequipados") {
 		t.Fatalf("expected unequip-all message, got %q", resp.Text)

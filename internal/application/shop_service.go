@@ -1,6 +1,7 @@
 package application
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -163,14 +164,11 @@ func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.Game
 	price := equipmentPurchasePrice(item, priceMultiplier)
 	msg := "Kiara, a Mercadora\n\nVoce nao tem gold suficiente para este item.\n\n"
 
-	if player.Gold >= price {
-		if err := s.InventoryRepository.CreateOrUpdateInventory(int64(player.ID), item.ID, item.Amount); err != nil {
+	if err := s.InventoryRepository.PurchaseItem(int64(player.ID), item.ID, item.Amount, price); err != nil {
+		if !errors.Is(err, domain.ErrInventoryInsufficientGold) {
 			return view.GameResponse{}, err
 		}
-		player.Gold -= price
-		if err := s.PlayerRepository.Update(player); err != nil {
-			return view.GameResponse{}, err
-		}
+	} else {
 		msg = fmt.Sprintf("Kiara, a Mercadora\n\nObrigada pela compra. Volte sempre!\n\nItem: %s\n", item.Name)
 		msg += fmt.Sprintf("Requisitos: %s\n", itemRequirementText(item))
 		if bonusText := itemPositiveBonusText(item); bonusText != "" {
@@ -279,14 +277,20 @@ func (s *ShopService) SellItem(userID int64, params map[string]string) (view.Gam
 
 	_, sellMultiplier := s.vipMultipliers(int64(player.ID))
 	sellValue := equipmentSellPrice(&invItem.Item, sellMultiplier)
-	invItem.Quantity--
-	if err := s.InventoryRepository.UpdateInventoryItem(invItem); err != nil {
+	soldItem, err := s.InventoryRepository.SellInventoryItem(int64(player.ID), invItem.ID, sellValue)
+	if err != nil {
+		if errors.Is(err, domain.ErrInventoryItemNotSellable) || errors.Is(err, domain.ErrInventoryItemEquipped) {
+			listResp, listErr := s.ListSellEquipments(userID, page)
+			if listErr != nil {
+				return view.GameResponse{}, listErr
+			}
+			listResp.Text = "Kiara, a Mercadora\n\nNao foi possivel vender este item.\n\n" + listResp.Text
+			return listResp, nil
+		}
 		return view.GameResponse{}, err
 	}
-
-	player.Gold += sellValue
-	if err := s.PlayerRepository.Update(player); err != nil {
-		return view.GameResponse{}, err
+	if soldItem != nil {
+		invItem = soldItem
 	}
 
 	listResp, listErr := s.ListSellEquipments(userID, page)

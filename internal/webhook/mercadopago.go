@@ -64,6 +64,7 @@ func (w *MercadoPagoWebhook) authorize(r *http.Request) bool {
 
 func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+	bootstrap.IncAppMetric("payments.webhook.received_total")
 
 	audit := &domain.PaymentWebhookAudit{
 		ReceivedAt:       time.Now().UTC(),
@@ -77,6 +78,7 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 
 	body, readErr := io.ReadAll(r.Body)
 	if readErr != nil {
+		bootstrap.IncAppMetric("payments.webhook.read_error_total")
 		audit.RawBody = ""
 		finalizeWebhookAudit(r.Context(), w.auditStore, audit, "READ_ERROR", http.StatusBadRequest, readErr.Error())
 		wr.WriteHeader(http.StatusBadRequest)
@@ -87,6 +89,7 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	featureEnabled := bootstrap.IsFeatureEnabled("payments", true)
 	audit.FeatureEnabled = featureEnabled
 	if !featureEnabled {
+		bootstrap.IncAppMetric("payments.webhook.feature_disabled_total")
 		finalizeWebhookAudit(r.Context(), w.auditStore, audit, "FEATURE_DISABLED", http.StatusNotFound, "")
 		wr.WriteHeader(http.StatusNotFound)
 		return
@@ -94,6 +97,7 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 
 	audit.Authorized = w.authorize(r)
 	if !audit.Authorized {
+		bootstrap.IncAppMetric("payments.webhook.unauthorized_total")
 		finalizeWebhookAudit(r.Context(), w.auditStore, audit, "UNAUTHORIZED", http.StatusUnauthorized, "")
 		wr.WriteHeader(http.StatusUnauthorized)
 		return
@@ -109,6 +113,7 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 
 	if err := json.Unmarshal(body, &payload); err != nil {
 		log.Println("webhook decode error:", err)
+		bootstrap.IncAppMetric("payments.webhook.invalid_json_total")
 		finalizeWebhookAudit(r.Context(), w.auditStore, audit, "INVALID_JSON", http.StatusBadRequest, err.Error())
 		wr.WriteHeader(http.StatusBadRequest)
 		return
@@ -119,12 +124,14 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	audit.EventDataID = strings.TrimSpace(payload.Data.ID)
 
 	if payload.Type != "payment" {
+		bootstrap.IncAppMetric("payments.webhook.ignored_non_payment_total")
 		finalizeWebhookAudit(r.Context(), w.auditStore, audit, "IGNORED_NON_PAYMENT", http.StatusOK, "")
 		wr.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if payload.Action == "payment.created" {
+		bootstrap.IncAppMetric("payments.webhook.ignored_payment_created_total")
 		finalizeWebhookAudit(r.Context(), w.auditStore, audit, "IGNORED_PAYMENT_CREATED", http.StatusOK, "")
 		wr.WriteHeader(http.StatusOK)
 		return
@@ -133,6 +140,7 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 	partnerID, err := strconv.ParseInt(payload.Data.ID, 10, 64)
 	if err != nil {
 		log.Println("invalid payment id in webhook:", payload.Data.ID)
+		bootstrap.IncAppMetric("payments.webhook.invalid_payment_id_total")
 		finalizeWebhookAudit(r.Context(), w.auditStore, audit, "INVALID_PAYMENT_ID", http.StatusOK, err.Error())
 		wr.WriteHeader(http.StatusOK)
 		return
@@ -141,11 +149,13 @@ func (w *MercadoPagoWebhook) Handle(wr http.ResponseWriter, r *http.Request) {
 
 	if err := w.paymentService.ConfirmPayment(r.Context(), partnerID); err != nil {
 		log.Println("error confirming payment:", err)
+		bootstrap.IncAppMetric("payments.webhook.confirm_error_total")
 		finalizeWebhookAudit(r.Context(), w.auditStore, audit, "CONFIRM_ERROR", http.StatusInternalServerError, err.Error())
 		wr.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	bootstrap.IncAppMetric("payments.webhook.confirmed_total")
 	finalizeWebhookAudit(r.Context(), w.auditStore, audit, "CONFIRMED", http.StatusOK, "")
 	wr.WriteHeader(http.StatusOK)
 }

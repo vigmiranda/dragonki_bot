@@ -117,6 +117,7 @@ func TestMercadoPagoWebhook_Handle_InvalidPaymentID(t *testing.T) {
 func TestMercadoPagoWebhook_Handle_ConfirmError(t *testing.T) {
 	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
 	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+	bootstrap.ResetAppMetricsForTesting()
 
 	fake := &fakePaymentConfirmer{
 		confirmFn: func(ctx context.Context, paymentID int64) error { return errors.New("db fail") },
@@ -133,11 +134,15 @@ func TestMercadoPagoWebhook_Handle_ConfirmError(t *testing.T) {
 	if fake.callCount != 1 || fake.lastPayment != 123 {
 		t.Fatalf("unexpected confirm payload: calls=%d id=%d", fake.callCount, fake.lastPayment)
 	}
+	if got := bootstrap.SnapshotAppMetrics()["payments.webhook.confirm_error_total"]; got != 1 {
+		t.Fatalf("expected webhook confirm error counter 1, got %d", got)
+	}
 }
 
 func TestMercadoPagoWebhook_Handle_Success(t *testing.T) {
 	bootstrap.SetFeatureFlagResolver(func(name string) (bool, bool) { return true, true })
 	t.Cleanup(func() { bootstrap.SetFeatureFlagResolver(nil) })
+	bootstrap.ResetAppMetricsForTesting()
 
 	fake := &fakePaymentConfirmer{}
 	w := NewMercadoPagoWebhook(fake, "")
@@ -151,6 +156,9 @@ func TestMercadoPagoWebhook_Handle_Success(t *testing.T) {
 	}
 	if fake.callCount != 1 || fake.lastPayment != 456 {
 		t.Fatalf("unexpected confirm payload: calls=%d id=%d", fake.callCount, fake.lastPayment)
+	}
+	if got := bootstrap.SnapshotAppMetrics()["payments.webhook.confirmed_total"]; got != 1 {
+		t.Fatalf("expected webhook confirmed counter 1, got %d", got)
 	}
 }
 

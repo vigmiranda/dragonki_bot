@@ -61,12 +61,20 @@ func TestReferralPostgresRepoIntegration_PersistsCountsAndRewards(t *testing.T) 
 		t.Fatalf("unexpected counts before reward: pending=%d rewarded=%d", pending, rewarded)
 	}
 
-	if err := referralRepo.GrantReward(int64(referrer.ID), 1000, 2); err != nil {
-		t.Fatalf("grant reward: %v", err)
+	granted, err := referralRepo.GrantRewardIfPending(referral.ID, int64(referrer.ID), 1000, 2)
+	if err != nil {
+		t.Fatalf("grant reward if pending: %v", err)
+	}
+	if !granted {
+		t.Fatal("expected first reward grant to succeed")
 	}
 
-	if err := referralRepo.MarkRewarded(referral.ID); err != nil {
-		t.Fatalf("mark rewarded: %v", err)
+	granted, err = referralRepo.GrantRewardIfPending(referral.ID, int64(referrer.ID), 1000, 2)
+	if err != nil {
+		t.Fatalf("grant reward if pending second time: %v", err)
+	}
+	if granted {
+		t.Fatal("expected second reward grant to be ignored")
 	}
 
 	userID, err := referralRepo.GetPlayerUserIDByPlayerID(int64(referrer.ID))

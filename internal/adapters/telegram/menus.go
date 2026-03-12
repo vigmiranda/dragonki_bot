@@ -36,7 +36,7 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("🗺 Personagem", "menu_character"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("👤 Inventario", "menu_inventory_scope"),
+			tgbotapi.NewInlineKeyboardButtonData("👤 Inventario", "open_inventory"),
 			tgbotapi.NewInlineKeyboardButtonData("💰 Economia", "menu_economy"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -73,6 +73,9 @@ func inventoryMenu() *tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("📿 Equipamentos", "open_inventory_equipaments"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📿 Equipados", "open_inventory_equipped"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),

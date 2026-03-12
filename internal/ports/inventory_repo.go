@@ -9,6 +9,8 @@ type InventoryRepository interface {
 		itemID uint,
 		amount int,
 	) error
+	PurchaseItem(playerID int64, itemID uint, amount int, price int) error
+	SellInventoryItem(playerID int64, inventoryItemID uint, goldValue int) (*domain.InventoryItem, error)
 	ListItemsByUserAndType(
 		playerID int64,
 		itemType domain.ItemType,
@@ -28,4 +30,6 @@ type InventoryRepository interface {
 	) (*domain.InventoryItem, error)
 	GetOrCreatePlayerEquipment(playerID int64) (*domain.PlayerEquipment, error)
 	UpdatePlayerEquipment(equipment *domain.PlayerEquipment) error
+	SavePlayerAndInventoryItem(player *domain.Player, item *domain.InventoryItem) error
+	SavePlayerAndEquipment(player *domain.Player, equipment *domain.PlayerEquipment) error
 }

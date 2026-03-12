@@ -60,6 +60,56 @@ func (r *ReferralPostgresRepo) GrantReward(referrerPlayerID int64, gold int, kiC
 		Updates(updates).Error
 }
 
+func (r *ReferralPostgresRepo) GrantRewardIfPending(referralID uint, referrerPlayerID int64, gold int, kiCrystals int) (bool, error) {
+	if referralID == 0 {
+		return false, gorm.ErrInvalidData
+	}
+
+	now := time.Now().UTC()
+	granted := false
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		res := tx.
+			Model(&domain.Referral{}).
+			Where("id = ?", referralID).
+			Where("status = ?", domain.ReferralStatusPending).
+			Updates(map[string]any{
+				"status":       domain.ReferralStatusRewarded,
+				"completed_at": now,
+				"rewarded_at":  now,
+			})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return nil
+		}
+
+		updates := map[string]any{
+			"last_update": now,
+		}
+		if gold > 0 {
+			updates["gold"] = gorm.Expr("gold + ?", gold)
+		}
+		if kiCrystals > 0 {
+			updates["ki_crystals"] = gorm.Expr("ki_crystals + ?", kiCrystals)
+		}
+
+		if err := tx.
+			Model(&domain.Player{}).
+			Where("id = ?", referrerPlayerID).
+			Updates(updates).Error; err != nil {
+			return err
+		}
+
+		granted = true
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return granted, nil
+}
+
 func (r *ReferralPostgresRepo) CountByReferrer(referrerPlayerID int64) (int64, int64, error) {
 	var pending int64
 	if err := r.db.
