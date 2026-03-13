@@ -65,7 +65,7 @@ func (s *AncestralKiChamberService) Open(userID int64) (view.GameResponse, error
 
 	baseMsg := fmt.Sprintf(
 		"Camara do Ki Ancestral\n\n"+
-			"Custo de entrada: %d Energia e %d Gold\n"+
+			"Custo de entrada: %d⚡️ e %d💰\n"+
 			"Nivel maximo liberado: %d\n"+
 			"Cada nivel exige 5 vitorias consecutivas.",
 		ancestralKiChamberEntryEnergyCost,
@@ -476,7 +476,7 @@ func chamberErrorResponse(msg string) view.GameResponse {
 		MenuKey: "ANCESTRAL_KI_CHAMBER_MENU",
 		Image: &view.Image{
 			Type: view.ImageAsset,
-			Path: "assets/error.png",
+			Path: "assets/npcs/mestre_kalunga.png",
 		},
 	}
 }
