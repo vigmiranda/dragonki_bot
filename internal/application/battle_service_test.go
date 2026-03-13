@@ -36,6 +36,7 @@ func (s *fixedSource) Seed(seed int64) {
 
 type fakeMonsterRepo struct {
 	listByRegionFn    func(regionID int64) ([]domain.Monster, error)
+	listAllFn         func() ([]domain.Monster, error)
 	getByMonsterIDFn  func(monsterID int64) (*domain.Monster, error)
 	getMonsterDropsFn func(monsterID int) ([]domain.MonsterDrop, error)
 }
@@ -45,6 +46,16 @@ func (f *fakeMonsterRepo) ListByRegion(regionID int64) ([]domain.Monster, error)
 		return nil, nil
 	}
 	return f.listByRegionFn(regionID)
+}
+
+func (f *fakeMonsterRepo) ListAll() ([]domain.Monster, error) {
+	if f.listAllFn != nil {
+		return f.listAllFn()
+	}
+	if f.listByRegionFn != nil {
+		return f.listByRegionFn(0)
+	}
+	return nil, nil
 }
 
 func (f *fakeMonsterRepo) GetByMonsterID(monsterID int64) (*domain.Monster, error) {

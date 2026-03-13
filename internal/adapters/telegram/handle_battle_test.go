@@ -121,6 +121,8 @@ type fakeBattleMonsterRepo struct {
 
 func (f *fakeBattleMonsterRepo) ListByRegion(userID int64) ([]domain.Monster, error) { return nil, nil }
 
+func (f *fakeBattleMonsterRepo) ListAll() ([]domain.Monster, error) { return nil, nil }
+
 func (f *fakeBattleMonsterRepo) GetByMonsterID(monsterID int64) (*domain.Monster, error) {
 	if f.monster == nil || int64(f.monster.MonsterID) != monsterID {
 		return nil, nil

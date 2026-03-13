@@ -340,7 +340,7 @@ func (s *AncestralKiChamberService) pickMonsterForRun(
 	if s.monsterRepo == nil {
 		return nil, 0, gorm.ErrInvalidData
 	}
-	monsters, err := s.monsterRepo.ListByRegion(player.RegionID)
+	monsters, err := s.monsterRepo.ListAll()
 	if err != nil {
 		return nil, 0, err
 	}
