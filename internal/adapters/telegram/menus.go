@@ -41,7 +41,7 @@ func mainMenu() *tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🧳 Eventos", "menu_events"),
-			tgbotapi.NewInlineKeyboardButtonData("⛩ Rankings", "open_rank"),
+			tgbotapi.NewInlineKeyboardButtonData("🏆 Rankings", "open_rank"),
 		),
 	}
 
@@ -167,7 +167,7 @@ func adventureMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("🗺 Explorar", "list_map"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⛩ Treinamento", "to_training"),
+			tgbotapi.NewInlineKeyboardButtonData("⛩ Ki Hall", "to_training"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Voltar", "action_menu"),

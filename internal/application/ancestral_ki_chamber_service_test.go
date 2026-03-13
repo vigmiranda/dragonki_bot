@@ -441,7 +441,7 @@ func TestAncestralKiChamberService_ContinueRun_SkipsAurumKarun(t *testing.T) {
 	}
 }
 
-func TestAncestralKiChamberService_PickMonsterForRun_RespectsLevelRange(t *testing.T) {
+func TestAncestralKiChamberService_PickMonsterForRun_UsesOnlyLevelRange(t *testing.T) {
 	player := &domain.Player{ID: 10, Level: 10, RegionID: 1}
 	run := &domain.AncestralKiChamberRun{
 		ID:            90,
@@ -456,10 +456,10 @@ func TestAncestralKiChamberService_PickMonsterForRun_RespectsLevelRange(t *testi
 		&chamberRepoMock{},
 		&fakePlayerRepo{getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil }},
 		&fakeMonsterRepo{
-			listByRegionFn: func(regionID int64) ([]domain.Monster, error) {
+			listAllFn: func() ([]domain.Monster, error) {
 				return []domain.Monster{
 					{MonsterID: 1, Name: "SALAMORTH", Level: 35, HP: 100, ATK: 20, DEF: 10, RegionID: 1},
-					{MonsterID: 2, Name: "LOBO", Level: 10, HP: 50, ATK: 10, DEF: 5, RegionID: 1},
+					{MonsterID: 2, Name: "LOBO", Level: 10, HP: 50, ATK: 10, DEF: 5, RegionID: 99},
 				}, nil
 			},
 		},
@@ -472,6 +472,9 @@ func TestAncestralKiChamberService_PickMonsterForRun_RespectsLevelRange(t *testi
 	}
 	if monster.Name == "SALAMORTH" {
 		t.Fatalf("expected out-of-range monster to be ignored")
+	}
+	if monster.RegionID != 99 {
+		t.Fatalf("expected chamber selection to ignore player region, got monster region %d", monster.RegionID)
 	}
 }
 

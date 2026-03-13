@@ -54,6 +54,10 @@ func (s *battleMonsterRepoStub) ListByRegion(userID int64) ([]domain.Monster, er
 	return []domain.Monster{*s.monster}, nil
 }
 
+func (s *battleMonsterRepoStub) ListAll() ([]domain.Monster, error) {
+	return []domain.Monster{*s.monster}, nil
+}
+
 func (s *battleMonsterRepoStub) GetByMonsterID(monsterID int64) (*domain.Monster, error) {
 	return s.monster, nil
 }
