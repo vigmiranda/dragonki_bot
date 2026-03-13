@@ -64,3 +64,4 @@ go.work.sum
 /tmp
 /docs/historico/gorm
 /tests/load/k6/results/
+/db/dump/prod.dump

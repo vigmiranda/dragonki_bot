@@ -129,13 +129,13 @@ func (s *WeeklyBossService) Open(userID int64) (view.GameResponse, error) {
 	}
 
 	text := fmt.Sprintf(
-		"ðŸ‘‘ <b>Big Boss da Semana</b>\n\n"+
+		"👑<b>Big Boss da Semana</b>\n\n"+
 			"Nome: %s\n"+
 			"HP: %d / %d\n\n"+
 			"Tempo restante: %s\n"+
 			"Seu dano total: %d\n"+
 			"Ataques hoje: %d/%d (%s)\n\n"+
-			"Custo do ataque: -%dâš¡ e -%dðŸ’°",
+			"Custo do ataque: -%d⚡️ e -%d💰",
 		boss.Name,
 		boss.CurrentHP,
 		boss.MaxHP,
@@ -247,12 +247,12 @@ func (s *WeeklyBossService) Attack(userID int64) (view.GameResponse, error) {
 
 	return view.GameResponse{
 		Text: fmt.Sprintf(
-			"âš”ï¸ Voce enfrentou %s!\n\n"+
-				"ðŸ’¥ Dano causado: %d\n"+
-				"ðŸ©¸ HP restante do Boss: %d\n"+
-				"ðŸ’€ Voce foi derrotado.\n"+
-				"ðŸ“Š Seu dano total nesta semana: %d\n\n"+
-				"Custo aplicado: -%dâš¡ e -%dðŸ’°%s",
+			"⚔️ Voce enfrentou %s!\n\n"+
+				"💥 Dano causado: %d\n"+
+				"🩸 HP restante do Boss: %d\n"+
+				"💀 Voce foi derrotado.\n"+
+				"📊 Seu dano total nesta semana: %d\n\n"+
+				"Custo aplicado: -%d⚡ e -%d💰%s",
 			boss.Name,
 			damage,
 			updatedBoss.CurrentHP,
@@ -290,7 +290,7 @@ func (s *WeeklyBossService) Ranking() (view.GameResponse, error) {
 	}
 
 	var b strings.Builder
-	b.WriteString("ðŸ† <b>Ranking Big Boss</b>\n\n")
+	b.WriteString("🏆 <b>Ranking Big Boss</b>\n\n")
 	if len(rows) == 0 {
 		b.WriteString("Nenhum dano registrado nesta semana.")
 	} else {
