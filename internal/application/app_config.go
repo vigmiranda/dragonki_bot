@@ -31,8 +31,8 @@ func getAppConfig() appConfig {
 			MaxPlayerLevel:                     50,
 			KiCrystalsValue:                    1,
 			KiCrystalsMult:                     1,
-			WeeklyBossDamageMultAbove20Pct:     5,
-			WeeklyBossDamageMultAtOrBelow20Pct: 2,
+			WeeklyBossDamageMultAbove20Pct:     1,
+			WeeklyBossDamageMultAtOrBelow20Pct: 1,
 		}
 		if cfg.EnergyRegenTime == "" {
 			cfg.EnergyRegenTime = "10m"

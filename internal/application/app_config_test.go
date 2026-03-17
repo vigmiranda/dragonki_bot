@@ -14,6 +14,8 @@ func resetAppConfigForTest() {
 func TestGetAppConfig_Default(t *testing.T) {
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 
 	got := getAppConfig()
 	if got.EnergyRegenTime != "10m" {
@@ -33,6 +35,8 @@ func TestGetAppConfig_Default(t *testing.T) {
 func TestGetAppConfig_FromEnv(t *testing.T) {
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "7m")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 
 	got := getAppConfig()
 	if got.EnergyRegenTime != "7m" {
@@ -46,6 +50,8 @@ func TestGetAppConfig_FromEnv(t *testing.T) {
 func TestGetAppConfig_OnceBehavior(t *testing.T) {
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "9m")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 	first := getAppConfig()
 
 	t.Setenv("ENERGY_REGEN_TIME", "1m")
@@ -62,6 +68,8 @@ func TestGetAppConfig_OnceBehavior(t *testing.T) {
 func TestGetAppConfig_NumericMinutesAndInvalidFallback(t *testing.T) {
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "5")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 	got := getAppConfig()
 	if got.EnergyRegenTime != "5m" || got.EnergyRegenDuration != 5*time.Minute {
 		t.Fatalf("expected 5m/5m, got %q/%s", got.EnergyRegenTime, got.EnergyRegenDuration)
@@ -69,6 +77,8 @@ func TestGetAppConfig_NumericMinutesAndInvalidFallback(t *testing.T) {
 
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "invalid")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 	got = getAppConfig()
 	if got.EnergyRegenTime != "10m" || got.EnergyRegenDuration != 10*time.Minute {
 		t.Fatalf("expected fallback 10m/10m, got %q/%s", got.EnergyRegenTime, got.EnergyRegenDuration)
