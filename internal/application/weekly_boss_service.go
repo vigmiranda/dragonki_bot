@@ -190,7 +190,9 @@ func (s *WeeklyBossService) Attack(userID int64) (view.GameResponse, error) {
 		}
 	}
 
-	damage := simulateWeeklyBossFight(player.HP, stats.ATK, stats.DEF, stats.Speed, boss.ATK, s.rng)
+	cfg := getAppConfig()
+	baseDamage := simulateWeeklyBossFight(player.HP, stats.ATK, stats.DEF, stats.Speed, boss.ATK, s.rng)
+	damage := applyWeeklyBossDamageMultiplier(baseDamage, boss, cfg)
 	updatedBoss, totalDamage, err := s.bossRepo.ExecuteAttack(
 		boss.ID,
 		int64(player.ID),
@@ -264,6 +266,32 @@ func (s *WeeklyBossService) Attack(userID int64) (view.GameResponse, error) {
 		Image:   &view.Image{Type: view.ImageAsset, Path: weeklyBossImagePath(boss.Tag)},
 		MenuKey: "BIG_BOSS_MENU",
 	}, nil
+}
+
+func applyWeeklyBossDamageMultiplier(baseDamage int64, boss *domain.WeeklyBoss, cfg appConfig) int64 {
+	if baseDamage < 1 {
+		baseDamage = 1
+	}
+	if boss == nil || boss.MaxHP <= 0 {
+		return baseDamage
+	}
+
+	multiplier := cfg.WeeklyBossDamageMultAbove20Pct
+	if multiplier <= 0 {
+		multiplier = 1
+	}
+	if boss.CurrentHP*100 <= boss.MaxHP*20 {
+		multiplier = cfg.WeeklyBossDamageMultAtOrBelow20Pct
+		if multiplier <= 0 {
+			multiplier = 1
+		}
+	}
+
+	boostedDamage := int64(math.Round(float64(baseDamage) * multiplier))
+	if boostedDamage < 1 {
+		return 1
+	}
+	return boostedDamage
 }
 
 func (s *WeeklyBossService) Ranking() (view.GameResponse, error) {

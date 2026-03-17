@@ -8,12 +8,14 @@ import (
 )
 
 type appConfig struct {
-	EnergyRegenTime     string
-	EnergyRegenDuration time.Duration
-	LevelMult           int
-	MaxPlayerLevel      int
-	KiCrystalsValue     int
-	KiCrystalsMult      int
+	EnergyRegenTime                    string
+	EnergyRegenDuration                time.Duration
+	LevelMult                          int
+	MaxPlayerLevel                     int
+	KiCrystalsValue                    int
+	KiCrystalsMult                     int
+	WeeklyBossDamageMultAbove20Pct     float64
+	WeeklyBossDamageMultAtOrBelow20Pct float64
 }
 
 var (
@@ -24,11 +26,13 @@ var (
 func getAppConfig() appConfig {
 	cfgOnce.Do(func() {
 		cfg = appConfig{
-			EnergyRegenTime: os.Getenv("ENERGY_REGEN_TIME"),
-			LevelMult:       1,
-			MaxPlayerLevel:  50,
-			KiCrystalsValue: 1,
-			KiCrystalsMult:  1,
+			EnergyRegenTime:                    os.Getenv("ENERGY_REGEN_TIME"),
+			LevelMult:                          1,
+			MaxPlayerLevel:                     50,
+			KiCrystalsValue:                    1,
+			KiCrystalsMult:                     1,
+			WeeklyBossDamageMultAbove20Pct:     1,
+			WeeklyBossDamageMultAtOrBelow20Pct: 1,
 		}
 		if cfg.EnergyRegenTime == "" {
 			cfg.EnergyRegenTime = "10m"
@@ -61,6 +65,16 @@ func getAppConfig() appConfig {
 				cfg.MaxPlayerLevel = parsed
 			}
 		}
+		if v := os.Getenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT"); v != "" {
+			if parsed, err := strconv.ParseFloat(v, 64); err == nil && parsed > 0 {
+				cfg.WeeklyBossDamageMultAbove20Pct = parsed
+			}
+		}
+		if v := os.Getenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT"); v != "" {
+			if parsed, err := strconv.ParseFloat(v, 64); err == nil && parsed > 0 {
+				cfg.WeeklyBossDamageMultAtOrBelow20Pct = parsed
+			}
+		}
 	})
 	return cfg
 }
@@ -91,6 +105,12 @@ func resolveAppConfig(cfg appConfig) appConfig {
 	}
 	if cfg.KiCrystalsMult > 0 {
 		base.KiCrystalsMult = cfg.KiCrystalsMult
+	}
+	if cfg.WeeklyBossDamageMultAbove20Pct > 0 {
+		base.WeeklyBossDamageMultAbove20Pct = cfg.WeeklyBossDamageMultAbove20Pct
+	}
+	if cfg.WeeklyBossDamageMultAtOrBelow20Pct > 0 {
+		base.WeeklyBossDamageMultAtOrBelow20Pct = cfg.WeeklyBossDamageMultAtOrBelow20Pct
 	}
 	return base
 }

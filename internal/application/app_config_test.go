@@ -14,6 +14,8 @@ func resetAppConfigForTest() {
 func TestGetAppConfig_Default(t *testing.T) {
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 
 	got := getAppConfig()
 	if got.EnergyRegenTime != "10m" {
@@ -25,11 +27,16 @@ func TestGetAppConfig_Default(t *testing.T) {
 	if got.LevelMult != 1 || got.MaxPlayerLevel != 50 || got.KiCrystalsValue != 1 || got.KiCrystalsMult != 1 {
 		t.Fatalf("expected default numeric config values")
 	}
+	if got.WeeklyBossDamageMultAbove20Pct != 1 || got.WeeklyBossDamageMultAtOrBelow20Pct != 1 {
+		t.Fatalf("expected default weekly boss multipliers = 1, got %+v", got)
+	}
 }
 
 func TestGetAppConfig_FromEnv(t *testing.T) {
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "7m")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 
 	got := getAppConfig()
 	if got.EnergyRegenTime != "7m" {
@@ -43,6 +50,8 @@ func TestGetAppConfig_FromEnv(t *testing.T) {
 func TestGetAppConfig_OnceBehavior(t *testing.T) {
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "9m")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 	first := getAppConfig()
 
 	t.Setenv("ENERGY_REGEN_TIME", "1m")
@@ -59,6 +68,8 @@ func TestGetAppConfig_OnceBehavior(t *testing.T) {
 func TestGetAppConfig_NumericMinutesAndInvalidFallback(t *testing.T) {
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "5")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 	got := getAppConfig()
 	if got.EnergyRegenTime != "5m" || got.EnergyRegenDuration != 5*time.Minute {
 		t.Fatalf("expected 5m/5m, got %q/%s", got.EnergyRegenTime, got.EnergyRegenDuration)
@@ -66,6 +77,8 @@ func TestGetAppConfig_NumericMinutesAndInvalidFallback(t *testing.T) {
 
 	resetAppConfigForTest()
 	t.Setenv("ENERGY_REGEN_TIME", "invalid")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "")
 	got = getAppConfig()
 	if got.EnergyRegenTime != "10m" || got.EnergyRegenDuration != 10*time.Minute {
 		t.Fatalf("expected fallback 10m/10m, got %q/%s", got.EnergyRegenTime, got.EnergyRegenDuration)
@@ -78,9 +91,14 @@ func TestGetAppConfig_ReadsNumericConfigFromEnv(t *testing.T) {
 	t.Setenv("MAX_PLAYER_LEVEL", "60")
 	t.Setenv("KI_CRYSTALS_VALUE", "3")
 	t.Setenv("KI_CRYSTALS_MULT", "2")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "1.5")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "3")
 
 	got := getAppConfig()
 	if got.LevelMult != 4 || got.MaxPlayerLevel != 60 || got.KiCrystalsValue != 3 || got.KiCrystalsMult != 2 {
 		t.Fatalf("unexpected numeric config: %+v", got)
+	}
+	if got.WeeklyBossDamageMultAbove20Pct != 1.5 || got.WeeklyBossDamageMultAtOrBelow20Pct != 3 {
+		t.Fatalf("unexpected weekly boss multipliers: %+v", got)
 	}
 }

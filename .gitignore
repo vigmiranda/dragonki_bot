@@ -65,3 +65,4 @@ go.work.sum
 /docs/historico/gorm
 /tests/load/k6/results/
 /db/dump/prod.dump
+/db/dump/clone_prod_to_local.sh
