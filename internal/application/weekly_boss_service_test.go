@@ -37,6 +37,7 @@ type weeklyBossRepoMock struct {
 	payoutCreateCnt    int
 	paidPayouts        []domain.WeeklyBossPayout
 	paidItems          [][]domain.WeeklyBossRewardItem
+	lastExecuteDamage  int64
 }
 
 func (m *weeklyBossRepoMock) GetActive(at time.Time) (*domain.WeeklyBoss, error) {
@@ -92,6 +93,7 @@ func (m *weeklyBossRepoMock) ExecuteAttack(bossID uint, playerID int64, damage i
 	if m.executeAttackErr != nil {
 		return nil, 0, m.executeAttackErr
 	}
+	m.lastExecuteDamage = damage
 	updatedBoss := m.activeBoss
 	if m.applyBoss != nil {
 		updatedBoss = m.applyBoss
@@ -335,7 +337,7 @@ func TestWeeklyBossService_Attack_PropagatesCreateAttackError(t *testing.T) {
 	}
 }
 
-func TestWeeklyBossService_Attack_SetsPlayerHPToOne(t *testing.T) {
+func TestWeeklyBossService_Attack_PreservesPlayerHP(t *testing.T) {
 	repo := &weeklyBossRepoMock{
 		activeBoss: &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 100, CurrentHP: 1000, MaxHP: 1000},
 		applyBoss:  &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 100, CurrentHP: 900, MaxHP: 1000},
@@ -515,5 +517,45 @@ func TestWeeklyBossService_Attack_ReturnsResourceMessageFromAtomicExecution(t *t
 	}
 	if !strings.Contains(resp.Text, "Recursos insuficientes") {
 		t.Fatalf("expected insufficient resources message, got %q", resp.Text)
+	}
+}
+
+func TestWeeklyBossService_Attack_AppliesHighHPDamageMultiplier(t *testing.T) {
+	resetAppConfigForTest()
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "2")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "4")
+
+	repo := &weeklyBossRepoMock{
+		activeBoss: &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 1, CurrentHP: 1000, MaxHP: 1000},
+		applyBoss:  &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 1, CurrentHP: 980, MaxHP: 1000},
+	}
+	playerRepo := &weeklyBossPlayerRepoMock{player: &domain.Player{ID: 1, HP: 1, Energy: 50, Gold: 1000, ATK: 10, DEF: 0, Speed: 0}}
+	svc := NewWeeklyBossService(repo, playerRepo, nil, nil)
+
+	if _, err := svc.Attack(10); err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if repo.lastExecuteDamage != 20 {
+		t.Fatalf("expected boosted damage 20 above 20%% hp, got %d", repo.lastExecuteDamage)
+	}
+}
+
+func TestWeeklyBossService_Attack_AppliesFinalPhaseDamageMultiplier(t *testing.T) {
+	resetAppConfigForTest()
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT", "2")
+	t.Setenv("BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT", "4")
+
+	repo := &weeklyBossRepoMock{
+		activeBoss: &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 1, CurrentHP: 200, MaxHP: 1000},
+		applyBoss:  &domain.WeeklyBoss{ID: 1, Name: "Surtr", ATK: 1, CurrentHP: 160, MaxHP: 1000},
+	}
+	playerRepo := &weeklyBossPlayerRepoMock{player: &domain.Player{ID: 1, HP: 1, Energy: 50, Gold: 1000, ATK: 10, DEF: 0, Speed: 0}}
+	svc := NewWeeklyBossService(repo, playerRepo, nil, nil)
+
+	if _, err := svc.Attack(10); err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if repo.lastExecuteDamage != 40 {
+		t.Fatalf("expected boosted damage 40 at or below 20%% hp, got %d", repo.lastExecuteDamage)
 	}
 }

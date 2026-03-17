@@ -57,6 +57,8 @@ Base:
 - `RUN_AUTO_MIGRATE`
 - `MIGRATIONS_DIR`
 - `MAX_PLAYER_LEVEL` (default: `50`)
+- `BIG_BOSS_DAMAGE_MULT_ABOVE_20_PCT` (default: `5`, multiplicador do dano do jogador enquanto o Big Boss estiver acima de 20% do HP)
+- `BIG_BOSS_DAMAGE_MULT_AT_OR_BELOW_20_PCT` (default: `2`, multiplicador do dano do jogador na fase final, com Big Boss em 20% do HP ou menos)
 - `TELEGRAM_SEND_MIN_INTERVAL_MS` (default: `35`, intervalo minimo entre envios ao Telegram)
 - `TELEGRAM_DELIVERY_MODE` (default: `real`, use `noop` para testes de carga locais sem chamadas reais a API do Telegram)
 - `OBSERVABILITY_ENABLED` (default: `true`, habilita `/debug/vars`)

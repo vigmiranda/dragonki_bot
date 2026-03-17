@@ -245,8 +245,7 @@ func (r *WeeklyBossPostgresRepo) ExecuteAttack(bossID uint, playerID int64, dama
 
 		if err := tx.Exec(`
 			UPDATE players
-			   SET hp = 1,
-			       energy = energy - ?,
+			   SET energy = energy - ?,
 			       gold = gold - ?,
 			       last_update = ?
 			 WHERE id = ?`, energyCost, goldCost, attackedAt, playerID).Error; err != nil {

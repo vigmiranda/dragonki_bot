@@ -160,7 +160,7 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 	if err != nil {
 		t.Fatalf("reload first player after execute attack: %v", err)
 	}
-	if reloadedFirstPlayer.Energy != 15 || reloadedFirstPlayer.Gold != 800 || reloadedFirstPlayer.HP != 1 {
+	if reloadedFirstPlayer.Energy != 15 || reloadedFirstPlayer.Gold != 800 || reloadedFirstPlayer.HP != 90 {
 		t.Fatalf("unexpected first player state after execute attack: energy=%d gold=%d hp=%d", reloadedFirstPlayer.Energy, reloadedFirstPlayer.Gold, reloadedFirstPlayer.HP)
 	}
 
