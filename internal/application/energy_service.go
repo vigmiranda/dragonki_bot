@@ -10,12 +10,18 @@ import (
 
 type EnergyService struct {
 	PlayerRepository ports.PlayerRepository
+	vipService       *VIPService
 	cfg              appConfig
 }
 
-func NewEnergyService(repo ports.PlayerRepository) *EnergyService {
+func NewEnergyService(repo ports.PlayerRepository, vipService ...*VIPService) *EnergyService {
+	var v *VIPService
+	if len(vipService) > 0 {
+		v = vipService[0]
+	}
 	return &EnergyService{
 		PlayerRepository: repo,
+		vipService:       v,
 		cfg:              getAppConfig(),
 	}
 }
@@ -33,6 +39,7 @@ func (s *EnergyService) Energy(userID int64) (view.GameResponse, error) {
 		return view.GameResponse{}, err
 	}
 	// --------
+	playerName := displayPlayerName(player, s.vipService)
 
 	msg := fmt.Sprintf(
 		"🛏️ Sir Soneca, Guardião do Descanso 🛏️ \n\n"+
@@ -43,7 +50,7 @@ func (s *EnergyService) Energy(userID int64) (view.GameResponse, error) {
 			"🕯️ Camas macias, silêncio garantido… e roncos inclusos no pacote. \n\n"+
 			"Então, jovem guerreiro(a) … vai apenas descansar um pouco… \n"+
 			"ou dormir como quem teve um dia de grandes batalhas? 😴💤 \n\n",
-		player.Name)
+		playerName)
 	img := &view.Image{
 		Type: view.ImageAsset,
 		Path: fmt.Sprintf("assets/npcs/sir_soneca.png"),

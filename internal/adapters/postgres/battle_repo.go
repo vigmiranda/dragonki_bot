@@ -99,6 +99,7 @@ func (r *BattlePostgresRepo) GetWeeklyLeaderboard(metric string, limit int) ([]d
 
 	query := fmt.Sprintf(`
 SELECT
+    p.id as player_id,
     p.name,
     COUNT(*) as total_battles,
     SUM(CASE WHEN result = 'WIN' THEN 1 ELSE 0 END) as wins,
@@ -107,7 +108,7 @@ SELECT
 FROM battle_logs bl
 JOIN players p on p.id = bl.player_id
 WHERE bl.created_at >= date_trunc('week', NOW())
-GROUP BY p.name
+GROUP BY p.id, p.name
 ORDER BY %s DESC, total_battles DESC, p.name ASC
 LIMIT ?`, orderField)
 

@@ -323,7 +323,7 @@ func (s *WeeklyBossService) Ranking() (view.GameResponse, error) {
 		b.WriteString("Nenhum dano registrado nesta semana.")
 	} else {
 		for i, row := range rows {
-			fmt.Fprintf(&b, "%d. %s - %d", i+1, row.PlayerName, row.TotalDamage)
+			fmt.Fprintf(&b, "%d. %s - %d", i+1, decoratePlayerName(row.PlayerID, row.PlayerName, s.vipService), row.TotalDamage)
 			if i < len(rows)-1 {
 				b.WriteString("\n")
 			}

@@ -105,6 +105,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 	if s.vipService != nil {
 		vipStatus = s.vipService.GetVIPStatusText(int64(player.ID))
 	}
+	playerName := displayPlayerName(player, s.vipService)
 
 	msg := fmt.Sprintf(
 		"%s<b>%s</b> - <b>Classe</b>: %s \n"+
@@ -118,7 +119,7 @@ func (s *PlayerService) Status(userID int64) (view.GameResponse, error) {
 			"%s\n"+
 			"<b>+1 de ⚡️ em </b>: %s\n",
 		genderIcon,
-		player.Name,
+		playerName,
 		player.Class.Name,
 		region.Name,
 		region.MinLevel,

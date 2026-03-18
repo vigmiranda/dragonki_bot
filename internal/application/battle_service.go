@@ -386,6 +386,7 @@ func (s *BattleService) Battle(userID int64, params map[string]string) (view.Gam
 }
 
 func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.Region, player *domain.Player) (view.GameResponse, error) {
+	playerName := displayPlayerName(player, s.vipService)
 	txt := fmt.Sprintf(
 		"\n\n\n\n <b>%s foi mais rapido e escapou!</b>\n\n",
 		monster.Name,
@@ -411,7 +412,7 @@ func (s *BattleService) AurumKarunLuck(monster *domain.Monster, region *domain.R
 		txt = fmt.Sprintf(
 			"Vitoria! %s\n"+
 				"+%d Gold\n",
-			player.Name,
+			playerName,
 			monster.MaxMoney,
 		)
 
@@ -459,6 +460,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 	if err != nil {
 		return view.GameResponse{}, nil, err
 	}
+	playerName := displayPlayerName(player, s.vipService)
 
 	monsterIDStr, ok := params["monsterID"]
 	if !ok || monsterIDStr == "" {
@@ -526,7 +528,7 @@ func (s *BattleService) Escape(userID int64, params map[string]string) (view.Gam
 				int(xpReduction),
 				region.Nerf,
 				int(goldReduction),
-				player.Name,
+				playerName,
 			)
 			img.Path = "assets/npcs/mestre_kalunga.png"
 

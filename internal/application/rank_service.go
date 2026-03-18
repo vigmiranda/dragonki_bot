@@ -18,10 +18,15 @@ const (
 
 type RankService struct {
 	BattleRepository ports.BattleRepository
+	vipService       *VIPService
 }
 
-func NewRankService(battleRepo ports.BattleRepository) *RankService {
-	return &RankService{BattleRepository: battleRepo}
+func NewRankService(battleRepo ports.BattleRepository, vipService ...*VIPService) *RankService {
+	var v *VIPService
+	if len(vipService) > 0 {
+		v = vipService[0]
+	}
+	return &RankService{BattleRepository: battleRepo, vipService: v}
 }
 
 func (s *RankService) OpenWeeklyRank() (view.GameResponse, error) {
@@ -43,12 +48,25 @@ func (s *RankService) WeeklyTop(metric string) (view.GameResponse, error) {
 		return view.GameResponse{}, err
 	}
 
-	text := buildRankText(title, valueLabel, rows, metric)
+	text := buildRankText(title, valueLabel, decorateWeeklyBattleRanks(rows, s.vipService), metric)
 	return view.GameResponse{
 		Text:    text,
 		Image:   &view.Image{Type: view.ImageAsset, Path: "assets/npcs/mestre_kalunga.png"},
 		MenuKey: "RANK_MENU",
 	}, nil
+}
+
+func decorateWeeklyBattleRanks(rows []domain.WeeklyBattleRank, vipService *VIPService) []domain.WeeklyBattleRank {
+	if vipService == nil || len(rows) == 0 {
+		return rows
+	}
+
+	decorated := make([]domain.WeeklyBattleRank, len(rows))
+	copy(decorated, rows)
+	for i := range decorated {
+		decorated[i].Name = vipService.DecoratePlayerName(decorated[i].PlayerID, decorated[i].Name)
+	}
+	return decorated
 }
 
 func rankMetricMeta(metric string) (title string, valueLabel string, err error) {
