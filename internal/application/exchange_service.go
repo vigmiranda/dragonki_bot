@@ -11,10 +11,15 @@ import (
 
 type ExchangeService struct {
 	PlayerRepository ports.PlayerRepository
+	vipService       *VIPService
 }
 
-func NewExchangeService(repo ports.PlayerRepository) *ExchangeService {
-	return &ExchangeService{PlayerRepository: repo}
+func NewExchangeService(repo ports.PlayerRepository, vipService ...*VIPService) *ExchangeService {
+	var v *VIPService
+	if len(vipService) > 0 {
+		v = vipService[0]
+	}
+	return &ExchangeService{PlayerRepository: repo, vipService: v}
 }
 
 func (s ExchangeService) Open() (view.GameResponse, error) {
@@ -74,11 +79,12 @@ func (s ExchangeService) Convert(userID int64, params map[string]string) (view.G
 			return view.GameResponse{}, err
 		}
 
+		playerName := displayPlayerName(player, s.vipService)
 		msg = fmt.Sprintf(
 			"💠 Casa de Câmbio de DragonKi 💠\n\n"+
 				"Feito %s, agora você tem %d gold 💰 e %d de Ki Crystals 💎\n"+
 				"Volte sempre que precisar!!!”\n\n",
-			player.Name,
+			playerName,
 			player.Gold,
 			player.KiCrystals,
 		)

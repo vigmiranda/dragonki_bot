@@ -337,14 +337,14 @@ func buildBotApp(cfg botAppConfig) (*botApp, error) {
 	playerService := application.NewPlayerService(playerRepo, regionRepo, inventoryRepo, vipService)
 	onboardingService := application.NewOnboardingService(playerRepo)
 	transformService := application.NewTransformService(playerRepo)
-	menuService := application.NewMenuService(playerRepo, regionRepo)
+	menuService := application.NewMenuService(playerRepo, regionRepo, vipService)
 	mapService := application.NewMapService(playerRepo, regionRepo)
-	energyService := application.NewEnergyService(playerRepo)
+	energyService := application.NewEnergyService(playerRepo, vipService)
 	shopService := application.NewShopService(playerRepo, itemRepo, inventoryRepo)
 	shopService.SetVIPService(vipService)
-	exchangeService := application.NewExchangeService(playerRepo)
+	exchangeService := application.NewExchangeService(playerRepo, vipService)
 	inventoryService := application.NewInventoryService(inventoryRepo, playerRepo, itemRepo)
-	rankService := application.NewRankService(battleRepo)
+	rankService := application.NewRankService(battleRepo, vipService)
 	chamberService := application.NewAncestralKiChamberService(chamberRepo, playerRepo, monsterRepo, inventoryRepo)
 
 	rewardQueue := cfg.RewardQueue

@@ -11,11 +11,16 @@ import (
 type MenuService struct {
 	PlayerRepository ports.PlayerRepository
 	RegionRepository ports.RegionRepository
+	vipService       *VIPService
 	cfg              appConfig
 }
 
-func NewMenuService(repo ports.PlayerRepository, regionRepo ports.RegionRepository) *MenuService {
-	return &MenuService{PlayerRepository: repo, RegionRepository: regionRepo, cfg: getAppConfig()}
+func NewMenuService(repo ports.PlayerRepository, regionRepo ports.RegionRepository, vipService ...*VIPService) *MenuService {
+	var v *VIPService
+	if len(vipService) > 0 {
+		v = vipService[0]
+	}
+	return &MenuService{PlayerRepository: repo, RegionRepository: regionRepo, vipService: v, cfg: getAppConfig()}
 }
 
 func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
@@ -36,6 +41,7 @@ func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 	}
 	//multiPlayersOnlineDB := os.Getenv("MULT_PLAYERS")
 	//multiPlayersOnline, _ := strconv.Atoi(multiPlayersOnlineDB)
+	playerName := displayPlayerName(player, s.vipService)
 
 	msg := fmt.Sprintf(
 		"<b> %s </b> \n\n"+
@@ -45,7 +51,7 @@ func (s *MenuService) Menu(userID int64) (view.GameResponse, error) {
 			"⚡️ <b>Energia</b>: %d/%d\n"+
 			"💪 <b>Level</b>: %d\n"+
 			"💰 <b>Gold</b>: %d\n",
-		player.Name,
+		playerName,
 		//playersOnline*2,
 		region.Name,
 		region.MinLevel,

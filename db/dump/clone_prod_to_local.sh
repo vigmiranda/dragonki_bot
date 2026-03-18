@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROD_DATABASE_URL=
+PROD_DATABASE_URL="postgresql://postgres:QuGQnAvhEZOEfSfMdjVzbyhTtYpVUxBx@yamanote.proxy.rlwy.net:48247/railway?sslmode=require"
 PG_DOCKER_IMAGE="${PG_DOCKER_IMAGE:-postgres:17}"
 PROD_DUMP_FILE="${PROD_DUMP_FILE:-$SCRIPT_DIR/prod.dump}"
 PROD_DUMP_BASENAME="$(basename "${PROD_DUMP_FILE}")"

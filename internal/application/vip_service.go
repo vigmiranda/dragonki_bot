@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/vigmiranda/dragonki/internal/application/view"
@@ -17,6 +18,8 @@ type VIPService struct {
 	configRepo    ports.VIPConfigRepository
 	playerVIPRepo ports.PlayerVIPRepository
 }
+
+const vipNamePrefix = "👑 "
 
 func NewVIPService(
 	playerRepo ports.PlayerRepository,
@@ -154,30 +157,19 @@ func (s *VIPService) Purchase(userID int64) (view.GameResponse, error) {
 }
 
 func (s *VIPService) GetVIPStatusText(playerID int64) string {
-	if s == nil || s.playerVIPRepo == nil {
-		return "VIP: inativo"
-	}
-	vip, err := s.playerVIPRepo.GetByPlayerID(playerID)
-	if err != nil || vip == nil {
-		return "VIP: inativo"
-	}
 	now := time.Now().UTC()
-	if !vip.ExpiresAt.After(now) {
+	vip := s.activeVIP(playerID, now)
+	if vip == nil {
 		return "VIP: inativo"
 	}
 	return fmt.Sprintf("VIP: ativo (%s restante)", formatVIPRemaining(vip.ExpiresAt.Sub(now)))
 }
 
 func (s *VIPService) ApplyBattleBonuses(playerID int64, xpBase int, goldBase int) (int, int) {
-	if s == nil || s.playerVIPRepo == nil || s.configRepo == nil {
+	if s == nil || s.configRepo == nil {
 		return xpBase, goldBase
 	}
-	vip, err := s.playerVIPRepo.GetByPlayerID(playerID)
-	if err != nil || vip == nil {
-		return xpBase, goldBase
-	}
-	now := time.Now().UTC()
-	if !vip.ExpiresAt.After(now) {
+	if s.activeVIP(playerID, time.Now().UTC()) == nil {
 		return xpBase, goldBase
 	}
 	cfg, err := s.configRepo.GetEnabledConfig()
@@ -200,15 +192,10 @@ func (s *VIPService) GetShopPriceAndSellMultiplier(playerID int64) (priceMultipl
 	priceMultiplier = 1.0
 	sellMultiplier = 1.0
 
-	if s == nil || s.playerVIPRepo == nil || s.configRepo == nil {
+	if s == nil || s.configRepo == nil {
 		return priceMultiplier, sellMultiplier
 	}
-	vip, err := s.playerVIPRepo.GetByPlayerID(playerID)
-	if err != nil || vip == nil {
-		return priceMultiplier, sellMultiplier
-	}
-	now := time.Now().UTC()
-	if !vip.ExpiresAt.After(now) {
+	if s.activeVIP(playerID, time.Now().UTC()) == nil {
 		return priceMultiplier, sellMultiplier
 	}
 	cfg, err := s.configRepo.GetEnabledConfig()
@@ -229,15 +216,10 @@ func (s *VIPService) GetShopPriceAndSellMultiplier(playerID int64) (priceMultipl
 
 func (s *VIPService) GetBigBossDailyAttackLimit(playerID int64) int {
 	baseLimit := 1
-	if s == nil || s.playerVIPRepo == nil || s.configRepo == nil {
+	if s == nil || s.configRepo == nil {
 		return baseLimit
 	}
-	vip, err := s.playerVIPRepo.GetByPlayerID(playerID)
-	if err != nil || vip == nil {
-		return baseLimit
-	}
-	now := time.Now().UTC()
-	if !vip.ExpiresAt.After(now) {
+	if s.activeVIP(playerID, time.Now().UTC()) == nil {
 		return baseLimit
 	}
 	cfg, err := s.configRepo.GetEnabledConfig()
@@ -248,6 +230,38 @@ func (s *VIPService) GetBigBossDailyAttackLimit(playerID int64) int {
 		return baseLimit
 	}
 	return cfg.BigBossDailyAttackLimit
+}
+
+func (s *VIPService) HasActiveVIP(playerID int64) bool {
+	return s.activeVIP(playerID, time.Now().UTC()) != nil
+}
+
+func (s *VIPService) DecoratePlayerName(playerID int64, name string) string {
+	if !s.HasActiveVIP(playerID) {
+		return name
+	}
+
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" || strings.HasPrefix(trimmed, vipNamePrefix) {
+		return name
+	}
+
+	return vipNamePrefix + name
+}
+
+func (s *VIPService) activeVIP(playerID int64, now time.Time) *domain.PlayerVIP {
+	if s == nil || s.playerVIPRepo == nil {
+		return nil
+	}
+
+	vip, err := s.playerVIPRepo.GetByPlayerID(playerID)
+	if err != nil || vip == nil {
+		return nil
+	}
+	if !vip.ExpiresAt.After(now) {
+		return nil
+	}
+	return vip
 }
 
 func formatVIPRemaining(d time.Duration) string {

@@ -122,6 +122,7 @@ func (s *BattleService) resolveWinOutcome(
 	goodNews := ""
 	reachedMaxLevel := false
 	maxLevel := s.maxPlayerLevel()
+	playerName := displayPlayerName(player, s.vipService)
 
 	itemName, qty, dropErr := s.HandleDrops(monster.MonsterID, int64(player.ID))
 	if dropErr != nil {
@@ -193,7 +194,7 @@ func (s *BattleService) resolveWinOutcome(
 			"❤️ HP: %d/%d\n"+
 			"⚡️ Energia: %d/%d\n"+
 			"💪 Level: %d\n",
-		player.Name,
+		playerName,
 		goodNews,
 		state.atkTotalMonster,
 		xpLine,
@@ -228,6 +229,7 @@ func (s *BattleService) resolveLoseOutcome(player *domain.Player, region *domain
 		player.FormBattlesLeft = 0
 		player.Form = formBase
 	}
+	playerName := displayPlayerName(player, s.vipService)
 
 	nerf := float64(region.Nerf) / 100.0
 	xpReduction := math.Round(float64(player.XP) * nerf)
@@ -244,7 +246,7 @@ func (s *BattleService) resolveLoseOutcome(player *domain.Player, region *domain
 			"💰 -%d%% de Gold = %d\n"+
 			"⚡️ Energia: %d/%d\n"+
 			"💪 Level: %d\n",
-		player.Name,
+		playerName,
 		region.Nerf,
 		state.oldXP-player.XP,
 		region.Nerf,

@@ -37,6 +37,7 @@ func (s *ShopService) OpenShop(userID int64) (view.GameResponse, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	playerName := displayPlayerName(player, s.vipService)
 	msg := fmt.Sprintf(
 		"🪙 Kiara, a Mercadora 🪙 \n\n"+
 			"Seja bem-vindo(a) %s à minha lojinha! \n\n"+
@@ -46,7 +47,7 @@ func (s *ShopService) OpenShop(userID int64) (view.GameResponse, error) {
 			"💎 Cada item aqui foi escolhido para quem busca evoluir, não apenas lutar. \n"+
 			"Prepare-se bem… a jornada de um verdadeiro guerreiro(a) começa com as escolhas certas. \n\n"+
 			"O que posso fazer por você hoje? 😄 \n\n",
-		player.Name)
+		playerName)
 
 	return view.GameResponse{
 		Text: msg,
