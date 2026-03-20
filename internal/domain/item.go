@@ -22,7 +22,7 @@ type Item struct {
 	Rarity      string
 	Amount      int
 	Price       int
-	SetID       uint
+	SetID       uint `gorm:"default:null"`
 
 	Slot          string `gorm:"-"`
 	RequiredLevel int    `gorm:"-"`

@@ -158,7 +158,7 @@ func (r *WeeklyBossPostgresRepo) CreateAttack(attack *domain.WeeklyBossAttack) e
 				Model(&domain.WeeklyBossAttack{}).
 				Where("boss_id = ?", attack.BossID).
 				Where("player_id = ?", attack.PlayerID).
-				Where("attack_date = ?", weeklyBossAttackDateValue(attack.AttackAt)).
+				Where("attack_date = ?", attack.AttackAt.Format("2006-01-02")).
 				Count(&count).Error; err != nil {
 				return err
 			}
