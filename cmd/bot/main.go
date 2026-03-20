@@ -257,6 +257,8 @@ func autoMigrateBotModels(db *gorm.DB) error {
 		&domain.Payment{},
 		&domain.PaymentWebhookAudit{},
 		&domain.Item{},
+		&domain.EquipmentSet{},
+		&domain.EquipmentSetBonus{},
 		&domain.Equipment{},
 		&domain.Inventory{},
 		&domain.InventoryItem{},

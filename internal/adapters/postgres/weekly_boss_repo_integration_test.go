@@ -437,3 +437,89 @@ func TestWeeklyBossRepoIntegration_BossLifecycleContributionsAndPayouts(t *testi
 		t.Fatalf("unexpected player gold after payout: got %d want %d", reloadedFirstPlayer.Gold, initialGold+int(reward.Gold))
 	}
 }
+
+func TestWeeklyBossRepoIntegration_ExecuteAttack_UsesSaoPauloCalendarDay(t *testing.T) {
+	testDB := newIntegrationTestDB(t)
+
+	playerRepo := NewPlayerPostgresRepo(testDB.DB)
+	repo := NewWeeklyBossPostgresRepo(testDB.DB)
+
+	player, err := playerRepo.GetOrCreate(730099)
+	if err != nil {
+		t.Fatalf("create player: %v", err)
+	}
+	player.Energy = 50
+	player.Gold = 1000
+	if err := playerRepo.Update(player); err != nil {
+		t.Fatalf("seed player resources: %v", err)
+	}
+
+	firstAttackAt := time.Date(2026, 3, 11, 1, 30, 0, 0, time.UTC)
+	secondAttackAt := time.Date(2026, 3, 11, 2, 10, 0, 0, time.UTC)
+	thirdAttackAt := time.Date(2026, 3, 11, 3, 10, 0, 0, time.UTC)
+
+	boss := &domain.WeeklyBoss{
+		Name:      "Timezone Boss",
+		Tag:       "TZ_BOSS",
+		WeekKey:   "2026-W11-TZ",
+		MaxHP:     1000,
+		CurrentHP: 1000,
+		ATK:       120,
+		Status:    domain.WeeklyBossStatusActive,
+		StartsAt:  firstAttackAt.Add(-1 * time.Hour),
+		EndsAt:    firstAttackAt.Add(24 * time.Hour),
+		CreatedAt: firstAttackAt,
+		UpdatedAt: firstAttackAt,
+	}
+	if err := repo.Create(boss); err != nil {
+		t.Fatalf("create weekly boss: %v", err)
+	}
+
+	for _, attackedAt := range []time.Time{firstAttackAt, secondAttackAt, thirdAttackAt} {
+		if _, _, err := repo.ExecuteAttack(boss.ID, int64(player.ID), 50, 2, 5, 10, attackedAt); err != nil {
+			t.Fatalf("execute attack at %s: %v", attackedAt.Format(time.RFC3339), err)
+		}
+	}
+
+	firstLocalDayCount, err := repo.CountPlayerAttacksOnDate(boss.ID, int64(player.ID), firstAttackAt)
+	if err != nil {
+		t.Fatalf("count first local day attacks: %v", err)
+	}
+	if firstLocalDayCount != 2 {
+		t.Fatalf("unexpected first local day count: got %d want 2", firstLocalDayCount)
+	}
+
+	secondLocalDayCount, err := repo.CountPlayerAttacksOnDate(boss.ID, int64(player.ID), thirdAttackAt)
+	if err != nil {
+		t.Fatalf("count second local day attacks: %v", err)
+	}
+	if secondLocalDayCount != 1 {
+		t.Fatalf("unexpected second local day count: got %d want 1", secondLocalDayCount)
+	}
+
+	var rows []struct {
+		AttackDate string
+		DailySeq   int
+	}
+	if err := testDB.DB.Raw(`
+		SELECT TO_CHAR(attack_date, 'YYYY-MM-DD') AS attack_date, daily_seq
+		  FROM weekly_boss_attacks
+		 WHERE boss_id = ? AND player_id = ?
+		 ORDER BY id ASC`,
+		boss.ID, int64(player.ID),
+	).Scan(&rows).Error; err != nil {
+		t.Fatalf("load persisted attack dates: %v", err)
+	}
+	if len(rows) != 3 {
+		t.Fatalf("unexpected persisted attack count: got %d want 3", len(rows))
+	}
+	if rows[0].AttackDate != "2026-03-10" || rows[0].DailySeq != 1 {
+		t.Fatalf("unexpected first persisted attack row: %+v", rows[0])
+	}
+	if rows[1].AttackDate != "2026-03-10" || rows[1].DailySeq != 2 {
+		t.Fatalf("unexpected second persisted attack row: %+v", rows[1])
+	}
+	if rows[2].AttackDate != "2026-03-11" || rows[2].DailySeq != 1 {
+		t.Fatalf("unexpected third persisted attack row: %+v", rows[2])
+	}
+}

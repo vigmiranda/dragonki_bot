@@ -5,6 +5,10 @@ import (
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
 
+type equipmentSetBonusLoader interface {
+	GetEquipmentSetBonuses(setIDs []uint) ([]domain.EquipmentSetBonus, error)
+}
+
 type equipmentBonus struct {
 	ATK       int
 	DEF       int
@@ -81,6 +85,7 @@ func loadEquippedBonus(inventoryRepo ports.InventoryRepository, playerID int64) 
 	}
 
 	total := equipmentBonus{}
+	setCounts := map[uint]int{}
 	for _, inventoryItemID := range itemIDs {
 		invItem, getErr := inventoryRepo.GetInventoryItemByUser(playerID, inventoryItemID)
 		if getErr != nil {
@@ -96,6 +101,37 @@ func loadEquippedBonus(inventoryRepo ports.InventoryRepository, playerID int64) 
 		total.Speed += item.SpeedBonus
 		total.MaxHP += item.HPBonus
 		total.MaxEnergy += item.EnergyBonus
+		if item.SetID > 0 {
+			setCounts[item.SetID]++
+		}
+	}
+
+	if len(setCounts) == 0 {
+		return total, nil
+	}
+
+	loader, ok := inventoryRepo.(equipmentSetBonusLoader)
+	if !ok {
+		return total, nil
+	}
+
+	setIDs := make([]uint, 0, len(setCounts))
+	for setID := range setCounts {
+		setIDs = append(setIDs, setID)
+	}
+
+	setBonuses, err := loader.GetEquipmentSetBonuses(setIDs)
+	if err != nil {
+		return equipmentBonus{}, err
+	}
+	for _, bonus := range setBonuses {
+		if setCounts[bonus.SetID] < bonus.PiecesRequired {
+			continue
+		}
+		total.ATK += bonus.AtkBonus
+		total.DEF += bonus.DefBonus
+		total.Speed += bonus.SpeedBonus
+		total.MaxHP += bonus.HPBonus
 	}
 
 	return total, nil

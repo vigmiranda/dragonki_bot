@@ -110,7 +110,8 @@ type fakeInventoryRepo struct {
 		player *domain.Player
 		item   *domain.InventoryItem
 	}
-	err error
+	getSetBonusesFn func(setIDs []uint) ([]domain.EquipmentSetBonus, error)
+	err             error
 }
 
 func (f *fakeInventoryRepo) UpdateInventoryItem(item *domain.InventoryItem) error {
@@ -218,6 +219,13 @@ func (f *fakeInventoryRepo) SavePlayerAndInventoryItem(player *domain.Player, it
 		return f.savePlayerItemFn(player, item)
 	}
 	return f.err
+}
+
+func (f *fakeInventoryRepo) GetEquipmentSetBonuses(setIDs []uint) ([]domain.EquipmentSetBonus, error) {
+	if f.getSetBonusesFn != nil {
+		return f.getSetBonusesFn(setIDs)
+	}
+	return nil, nil
 }
 
 type fakePlayerRepo struct {

@@ -164,8 +164,8 @@ func TestShopService_ListEquipmentsByType_Success(t *testing.T) {
 	if resp.MenuKey != "SHOP_ITEMS_MENU" {
 		t.Fatalf("expected SHOP_ITEMS_MENU, got %q", resp.MenuKey)
 	}
-	if len(resp.MenuParams) != 3 { // 2 itens + _backAction
-		t.Fatalf("expected 3 params, got %d", len(resp.MenuParams))
+	if len(resp.MenuParams) != 2 { // 1 item + _backAction
+		t.Fatalf("expected 2 params, got %d", len(resp.MenuParams))
 	}
 	foundCatalogPrice := false
 	for label := range resp.MenuParams {
@@ -176,14 +176,56 @@ func TestShopService_ListEquipmentsByType_Success(t *testing.T) {
 	if !foundCatalogPrice {
 		t.Fatalf("expected catalog equipment price in label, params=%+v", resp.MenuParams)
 	}
-	if !strings.Contains(resp.Text, "Espada A") || !strings.Contains(resp.Text, "Espada B") {
-		t.Fatalf("expected listed item names in text, got %q", resp.Text)
+	if !strings.Contains(resp.Text, "Espada A") {
+		t.Fatalf("expected listed item name in text, got %q", resp.Text)
+	}
+	if strings.Contains(resp.Text, "Espada B") {
+		t.Fatalf("did not expect item above shop level cap in text, got %q", resp.Text)
 	}
 	if !strings.Contains(resp.Text, "Requisitos: Nivel 15+ | Classes: Wind Striker,Earth Sentinel") {
 		t.Fatalf("expected requirements for first item in text, got %q", resp.Text)
 	}
 	if !strings.Contains(resp.Text, "Bonus: ATK +9") {
 		t.Fatalf("expected bonus line for first item in text, got %q", resp.Text)
+	}
+}
+
+func TestShopService_BuyItem_BlocksEquipmentAboveShopLevelCap(t *testing.T) {
+	player := basePlayer()
+	player.ID = 70
+
+	invRepo := &fakeInventoryRepo{}
+	playerRepo := &fakePlayerRepo{
+		getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+	}
+	itemRepo := &fakeItemsRepo{
+		getItemByIDFn: func(id int) (*domain.Item, error) {
+			return &domain.Item{
+				ID:             71,
+				Name:           "Espada Elite",
+				Type:           domain.ItemEquipment,
+				Price:          5000,
+				Amount:         1,
+				RequiredLevel:  35,
+				AllowedClasses: "Ki Vanguard",
+			}, nil
+		},
+	}
+	svc := &ShopService{
+		PlayerRepository:    playerRepo,
+		ItemRepository:      itemRepo,
+		InventoryRepository: invRepo,
+	}
+
+	resp, err := svc.BuyItem(1, map[string]string{"itemID": "71"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(resp.Text, "ate o nivel 15") {
+		t.Fatalf("expected level cap message, got %q", resp.Text)
+	}
+	if len(invRepo.purchaseCalls) != 0 {
+		t.Fatalf("expected no purchase attempt, got %d", len(invRepo.purchaseCalls))
 	}
 }
 

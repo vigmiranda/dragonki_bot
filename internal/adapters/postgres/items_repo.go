@@ -5,6 +5,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const shopMaxEquipmentRequiredLevel = 14
+
 type ItemsPostgresRepo struct {
 	db *gorm.DB
 }
@@ -50,6 +52,7 @@ func (r *ItemsPostgresRepo) GetRandomEquipmentsBySlot(slot domain.EquipmentSlot,
 		Joins("JOIN equipments ON equipments.item_id = items.id").
 		Where("type = ?", domain.ItemEquipment).
 		Where("equipments.slot = ?", slot).
+		Where("equipments.required_level <= ?", shopMaxEquipmentRequiredLevel).
 		Order("RANDOM()").
 		Limit(limit).
 		Find(&items).

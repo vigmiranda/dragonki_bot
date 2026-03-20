@@ -19,6 +19,8 @@ const (
 	weeklyBossAttackGoldCost   = 200
 )
 
+var weeklyBossCalendarLocation = loadWeeklyBossCalendarLocation()
+
 type WeeklyBossService struct {
 	bossRepo      ports.WeeklyBossRepository
 	playerRepo    ports.PlayerRepository
@@ -47,6 +49,14 @@ func (s *WeeklyBossService) SetVIPService(vipService *VIPService) {
 	s.vipService = vipService
 }
 
+func loadWeeklyBossCalendarLocation() *time.Location {
+	loc, err := time.LoadLocation("America/Sao_Paulo")
+	if err != nil {
+		return time.FixedZone("BRT", -3*60*60)
+	}
+	return loc
+}
+
 func (s *WeeklyBossService) EnsureCurrentWeeklyBoss(at time.Time) error {
 	now := at.UTC()
 
@@ -68,8 +78,8 @@ func (s *WeeklyBossService) EnsureCurrentWeeklyBoss(at time.Time) error {
 		return err
 	}
 
-	startsAt := startOfISOWeekUTC(now)
-	endsAt := startsAt.Add(7 * 24 * time.Hour).Add(-time.Nanosecond)
+	startsAt := startOfWeeklyBossISOWeekUTC(now)
+	endsAt := endOfWeeklyBossISOWeekUTC(now)
 
 	boss := &domain.WeeklyBoss{
 		Name:      template.Name,
@@ -207,7 +217,7 @@ func (s *WeeklyBossService) Attack(userID int64) (view.GameResponse, error) {
 		case errors.Is(err, domain.ErrWeeklyBossInsufficientResource):
 			return view.GameResponse{
 				Text: fmt.Sprintf(
-					"Recursos insuficientes para atacar o Big Boss.\nPrecisa de %dâš¡ e %dðŸ’°.",
+					"Recursos insuficientes para atacar o Big Boss.\nPrecisa de %d⚡️ e %d💰",
 					weeklyBossAttackEnergyCost,
 					weeklyBossAttackGoldCost,
 				),
@@ -409,19 +419,27 @@ func (s *WeeklyBossService) dailyAttackLimit(playerID int64) int {
 }
 
 func isoWeekKey(at time.Time) string {
-	year, week := at.UTC().ISOWeek()
+	year, week := at.In(weeklyBossCalendarLocation).ISOWeek()
 	return fmt.Sprintf("%04d-W%02d", year, week)
 }
 
-func startOfISOWeekUTC(at time.Time) time.Time {
-	t := at.UTC()
+func startOfWeeklyBossISOWeekLocal(at time.Time) time.Time {
+	t := at.In(weeklyBossCalendarLocation)
 	weekday := int(t.Weekday())
 	if weekday == 0 {
 		weekday = 7
 	}
 	daysBack := weekday - 1
-	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, weeklyBossCalendarLocation)
 	return start.AddDate(0, 0, -daysBack)
+}
+
+func startOfWeeklyBossISOWeekUTC(at time.Time) time.Time {
+	return startOfWeeklyBossISOWeekLocal(at).UTC()
+}
+
+func endOfWeeklyBossISOWeekUTC(at time.Time) time.Time {
+	return startOfWeeklyBossISOWeekLocal(at).AddDate(0, 0, 7).Add(-time.Nanosecond).UTC()
 }
 
 func weeklyBossImagePath(tag string) string {

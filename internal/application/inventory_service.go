@@ -141,13 +141,14 @@ func (s InventoryService) OpenEquipmentTypes(playerID int64) (view.GameResponse,
 		Image:   img,
 		MenuKey: "INVENTORY_EQUIPMENT_TYPES_MENU",
 		MenuParams: map[string]any{
-			"weaponCount": counts[domain.SlotWeapon],
-			"armorCount":  counts[domain.SlotArmor],
-			"glovesCount": counts[domain.SlotGloves],
-			"helmetCount": counts[domain.SlotHelmet],
-			"bootsCount":  counts[domain.SlotBoots],
-			"ringCount":   counts[domain.SlotRing] + counts[domain.SlotAccessory],
-			"amuletCount": counts[domain.SlotAmulet],
+			"weaponCount":    counts[domain.SlotWeapon],
+			"armorCount":     counts[domain.SlotArmor],
+			"glovesCount":    counts[domain.SlotGloves],
+			"helmetCount":    counts[domain.SlotHelmet],
+			"bootsCount":     counts[domain.SlotBoots],
+			"ringCount":      counts[domain.SlotRing],
+			"accessoryCount": counts[domain.SlotAccessory],
+			"amuletCount":    counts[domain.SlotAmulet],
 		},
 	}, nil
 }
@@ -191,10 +192,6 @@ func (s InventoryService) ViewEquippedItems(playerID int64) (view.GameResponse, 
 		return fmt.Sprintf("%s | %s", item.Name, equipmentBonusOnly(&item))
 	}
 
-	ringID := pe.RingInventoryItemID
-	if (ringID == nil || *ringID == 0) && pe.AccessoryInventoryItemID != nil && *pe.AccessoryInventoryItemID > 0 {
-		ringID = pe.AccessoryInventoryItemID
-	}
 	slotAction := func(slot string) string {
 		return fmt.Sprintf("unequip_item?slot=%s", slot)
 	}
@@ -207,8 +204,9 @@ func (s InventoryService) ViewEquippedItems(playerID int64) (view.GameResponse, 
 		"Armadura:",
 		fmt.Sprintf("  Armadura: %s", describeSlot(pe.ArmorInventoryItemID)),
 		fmt.Sprintf("  Luva: %s", describeSlot(pe.GlovesInventoryItemID)),
-		"Acessorio:",
-		fmt.Sprintf("  Anel: %s", describeSlot(ringID)),
+		"Acessorios:",
+		fmt.Sprintf("  Anel: %s", describeSlot(pe.RingInventoryItemID)),
+		fmt.Sprintf("  Cinto: %s", describeSlot(pe.AccessoryInventoryItemID)),
 		fmt.Sprintf("  Amuleto: %s", describeSlot(pe.AmuletInventoryItemID)),
 	}, "\n")
 
@@ -226,6 +224,7 @@ func (s InventoryService) ViewEquippedItems(playerID int64) (view.GameResponse, 
 			"armorAction":      slotAction("ARMOR"),
 			"glovesAction":     slotAction("GLOVES"),
 			"ringAction":       slotAction("RING"),
+			"accessoryAction":  slotAction("ACCESSORY"),
 			"amuletAction":     slotAction("AMULET"),
 			"unequipAllAction": "unequip_all",
 		},
@@ -287,14 +286,8 @@ func (s *InventoryService) UnequipItem(playerID int64, rawSlot string) (view.Gam
 
 	player.RemoveEquipmentBonus(&item)
 
-	switch slot {
-	case domain.SlotRing, domain.SlotAccessory:
-		playerEquipment.RingInventoryItemID = nil
-		playerEquipment.AccessoryInventoryItemID = nil
-	default:
-		if !playerEquipment.SetSlotInventoryItemID(slot, nil) {
-			return view.GameResponse{}, fmt.Errorf("nao foi possivel desequipar no slot %s", slot)
-		}
+	if !playerEquipment.SetSlotInventoryItemID(slot, nil) {
+		return view.GameResponse{}, fmt.Errorf("nao foi possivel desequipar no slot %s", slot)
 	}
 
 	if err := s.InventoryRepository.SavePlayerAndEquipment(player, playerEquipment); err != nil {
@@ -561,8 +554,10 @@ func normalizeEquipmentSlot(raw string) (domain.EquipmentSlot, bool) {
 		return domain.SlotHelmet, true
 	case "BOOTS":
 		return domain.SlotBoots, true
-	case "RING", "ACCESSORY":
+	case "RING":
 		return domain.SlotRing, true
+	case "ACCESSORY":
+		return domain.SlotAccessory, true
 	case "AMULET":
 		return domain.SlotAmulet, true
 	default:
@@ -596,10 +591,10 @@ func equipmentSlotLabel(slot domain.EquipmentSlot) string {
 		return "Botas"
 	case domain.SlotRing:
 		return "Aneis"
+	case domain.SlotAccessory:
+		return "Cintos"
 	case domain.SlotAmulet:
 		return "Amuletos"
-	case domain.SlotAccessory:
-		return "Acessorios"
 	default:
 		return string(slot)
 	}

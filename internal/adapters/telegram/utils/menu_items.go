@@ -58,6 +58,9 @@ func ShopEquipmentTypesMenu() *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("Aneis", "list_equipments_type?slot=RING"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Cintos", "list_equipments_type?slot=ACCESSORY"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Amuletos", "list_equipments_type?slot=AMULET"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -256,6 +259,7 @@ func EquipmentTypesMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	helmetCount := toInt(params["helmetCount"])
 	bootsCount := toInt(params["bootsCount"])
 	ringCount := toInt(params["ringCount"])
+	accessoryCount := toInt(params["accessoryCount"])
 	amuletCount := toInt(params["amuletCount"])
 
 	menu := tgbotapi.NewInlineKeyboardMarkup(
@@ -278,6 +282,9 @@ func EquipmentTypesMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("Aneis (%d)", ringCount), "open_inventory_equipaments_type?slot=RING&page=1"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("Cintos (%d)", accessoryCount), "open_inventory_equipaments_type?slot=ACCESSORY&page=1"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("Amuletos (%d)", amuletCount), "open_inventory_equipaments_type?slot=AMULET&page=1"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -297,6 +304,7 @@ func EquippedItemsMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	armorAction := paramString(params, "armorAction")
 	glovesAction := paramString(params, "glovesAction")
 	ringAction := paramString(params, "ringAction")
+	accessoryAction := paramString(params, "accessoryAction")
 	amuletAction := paramString(params, "amuletAction")
 	unequipAllAction := paramString(params, "unequipAllAction")
 
@@ -316,6 +324,7 @@ func EquippedItemsMenu(params map[string]any) *tgbotapi.InlineKeyboardMarkup {
 	addRow("Desequipar Armadura", armorAction)
 	addRow("Desequipar Luva", glovesAction)
 	addRow("Desequipar Anel", ringAction)
+	addRow("Desequipar Cinto", accessoryAction)
 	addRow("Desequipar Amuleto", amuletAction)
 	addRow("Desequipar Tudo", unequipAllAction)
 

@@ -143,13 +143,14 @@ func TestInventoryService_OpenEquipmentTypes(t *testing.T) {
 	invRepo := &fakeInventoryRepo{
 		countEquipmentBySlotFn: func(playerID int64) (map[domain.EquipmentSlot]int64, error) {
 			return map[domain.EquipmentSlot]int64{
-				domain.SlotWeapon: 2,
-				domain.SlotArmor:  1,
-				domain.SlotGloves: 5,
-				domain.SlotHelmet: 0,
-				domain.SlotBoots:  3,
-				domain.SlotRing:   4,
-				domain.SlotAmulet: 6,
+				domain.SlotWeapon:    2,
+				domain.SlotArmor:     1,
+				domain.SlotGloves:    5,
+				domain.SlotHelmet:    0,
+				domain.SlotBoots:     3,
+				domain.SlotRing:      4,
+				domain.SlotAccessory: 3,
+				domain.SlotAmulet:    6,
 			}, nil
 		},
 	}
@@ -167,7 +168,7 @@ func TestInventoryService_OpenEquipmentTypes(t *testing.T) {
 	if resp.MenuKey != "INVENTORY_EQUIPMENT_TYPES_MENU" {
 		t.Fatalf("expected INVENTORY_EQUIPMENT_TYPES_MENU, got %q", resp.MenuKey)
 	}
-	if resp.MenuParams["weaponCount"] != int64(2) || resp.MenuParams["ringCount"] != int64(4) || resp.MenuParams["amuletCount"] != int64(6) {
+	if resp.MenuParams["weaponCount"] != int64(2) || resp.MenuParams["ringCount"] != int64(4) || resp.MenuParams["accessoryCount"] != int64(3) || resp.MenuParams["amuletCount"] != int64(6) {
 		t.Fatalf("unexpected counts: %+v", resp.MenuParams)
 	}
 }
@@ -480,7 +481,7 @@ func TestInventoryService_EquipItem_ClassRestriction(t *testing.T) {
 			Name:           "Lâmina dos Ventos",
 			Type:           domain.ItemEquipment,
 			Slot:           "WEAPON",
-			RequiredLevel:  5,
+			RequiredLevel:  15,
 			AllowedClasses: "Wind Striker,Ki Vanguard",
 		},
 	}
@@ -503,6 +504,108 @@ func TestInventoryService_EquipItem_ClassRestriction(t *testing.T) {
 	}
 	if resp.Image == nil || resp.Image.Path != "assets/npcs/arkanis_inventario.png" {
 		t.Fatalf("expected inventory guide image, got %+v", resp.Image)
+	}
+}
+
+func TestInventoryService_EquipItem_IgnoresClassRestrictionBelowLevel15(t *testing.T) {
+	player := basePlayer()
+	player.ID = 77
+	player.Level = 20
+	player.Class.Name = "Earth Sentinel"
+	player.ATK = 100
+	player.DEF = 50
+	player.Speed = 20
+	player.MaxHP = 200
+	player.MaxEnergy = 25
+
+	inv := &domain.InventoryItem{
+		ID:       1,
+		ItemID:   202,
+		Quantity: 1,
+		Item: domain.Item{
+			ID:             202,
+			Name:           "Lamina de Treino",
+			Type:           domain.ItemEquipment,
+			Slot:           "WEAPON",
+			RequiredLevel:  14,
+			AllowedClasses: "Wind Striker,Ki Vanguard",
+			AtkBonus:       5,
+		},
+	}
+
+	invRepo := &fakeInventoryRepo{
+		getByUserFn: func(playerID int64, inventoryItemID uint) (*domain.InventoryItem, error) { return inv, nil },
+	}
+	svc := InventoryService{
+		PlayerRepository: &fakePlayerRepo{
+			getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+		},
+		InventoryRepository: invRepo,
+	}
+
+	resp, err := svc.UseItem(1, 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(resp.Text, "equipada") {
+		t.Fatalf("expected equip success message, got %q", resp.Text)
+	}
+	if len(invRepo.savePlayerEquipCalls) != 1 {
+		t.Fatalf("expected one atomic player+equipment save")
+	}
+	if player.ATK != 105 {
+		t.Fatalf("expected atk bonus applied, got %d", player.ATK)
+	}
+}
+
+func TestInventoryService_EquipItem_AccessoryUsesAccessorySlot(t *testing.T) {
+	player := basePlayer()
+	player.ID = 78
+	player.Level = 20
+	player.Class.Name = "Earth Sentinel"
+	player.ATK = 100
+	player.DEF = 50
+	player.Speed = 20
+	player.MaxHP = 200
+	player.MaxEnergy = 25
+
+	inv := &domain.InventoryItem{
+		ID:       2,
+		ItemID:   203,
+		Quantity: 1,
+		Item: domain.Item{
+			ID:            203,
+			Name:          "Cinto de Treino",
+			Type:          domain.ItemEquipment,
+			Slot:          "ACCESSORY",
+			RequiredLevel: 14,
+			DefBonus:      3,
+		},
+	}
+
+	invRepo := &fakeInventoryRepo{
+		getByUserFn: func(playerID int64, inventoryItemID uint) (*domain.InventoryItem, error) { return inv, nil },
+	}
+	svc := InventoryService{
+		PlayerRepository: &fakePlayerRepo{
+			getOrCreateFn: func(userID int64) (*domain.Player, error) { return player, nil },
+		},
+		InventoryRepository: invRepo,
+	}
+
+	_, err := svc.UseItem(1, 2)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(invRepo.savePlayerEquipCalls) != 1 {
+		t.Fatalf("expected one atomic player+equipment save")
+	}
+	saved := invRepo.savePlayerEquipCalls[0].equipment
+	if saved.AccessoryInventoryItemID == nil || *saved.AccessoryInventoryItemID != inv.ID {
+		t.Fatalf("expected accessory slot updated to inventory item id")
+	}
+	if saved.RingInventoryItemID != nil {
+		t.Fatalf("expected ring slot to stay empty, got %+v", saved.RingInventoryItemID)
 	}
 }
 
@@ -694,6 +797,7 @@ func TestInventoryService_ViewEquippedItems(t *testing.T) {
 	armorID := uint(11)
 	gloveID := uint(12)
 	ringID := uint(13)
+	accessoryID := uint(15)
 	amuletID := uint(14)
 
 	svc := InventoryService{
@@ -738,18 +842,26 @@ func TestInventoryService_ViewEquippedItems(t *testing.T) {
 						Quantity: 1,
 						Item:     domain.Item{ID: 304, Name: "Amuleto Lunar", DefBonus: 5, HPBonus: 10},
 					}, nil
+				case 15:
+					return &domain.InventoryItem{
+						ID:       15,
+						ItemID:   305,
+						Quantity: 1,
+						Item:     domain.Item{ID: 305, Name: "Cinto de Guerra", DefBonus: 2, HPBonus: 6},
+					}, nil
 				default:
 					return nil, nil
 				}
 			},
 			getOrCreateEquipFn: func(playerID int64) (*domain.PlayerEquipment, error) {
 				return &domain.PlayerEquipment{
-					PlayerID:              playerID,
-					WeaponInventoryItemID: &weaponID,
-					ArmorInventoryItemID:  &armorID,
-					GlovesInventoryItemID: &gloveID,
-					RingInventoryItemID:   &ringID,
-					AmuletInventoryItemID: &amuletID,
+					PlayerID:                 playerID,
+					WeaponInventoryItemID:    &weaponID,
+					ArmorInventoryItemID:     &armorID,
+					GlovesInventoryItemID:    &gloveID,
+					RingInventoryItemID:      &ringID,
+					AccessoryInventoryItemID: &accessoryID,
+					AmuletInventoryItemID:    &amuletID,
 				}, nil
 			},
 		},
@@ -769,7 +881,7 @@ func TestInventoryService_ViewEquippedItems(t *testing.T) {
 	if !strings.Contains(resp.Text, "Armadura:\n  Armadura: Armadura de Couro | DEF +8 | MaxHP +20\n  Luva: Luva de Aco | ATK +2 | DEF +1") {
 		t.Fatalf("expected armor group in text, got %q", resp.Text)
 	}
-	if !strings.Contains(resp.Text, "Acessorio:\n  Anel: Anel de Ki | ATK +3 | Energy +2\n  Amuleto: Amuleto Lunar | DEF +5 | MaxHP +10") {
+	if !strings.Contains(resp.Text, "Acessorios:\n  Anel: Anel de Ki | ATK +3 | Energy +2\n  Cinto: Cinto de Guerra | DEF +2 | MaxHP +6\n  Amuleto: Amuleto Lunar | DEF +5 | MaxHP +10") {
 		t.Fatalf("expected accessory group in text, got %q", resp.Text)
 	}
 }
@@ -800,7 +912,7 @@ func TestInventoryService_ViewEquippedItems_AllSlotsFree(t *testing.T) {
 	if !strings.Contains(resp.Text, "Armadura:\n  Armadura: vazio\n  Luva: vazio") {
 		t.Fatalf("expected empty armor group text, got %q", resp.Text)
 	}
-	if !strings.Contains(resp.Text, "Acessorio:\n  Anel: vazio\n  Amuleto: vazio") {
+	if !strings.Contains(resp.Text, "Acessorios:\n  Anel: vazio\n  Cinto: vazio\n  Amuleto: vazio") {
 		t.Fatalf("expected empty accessory group text, got %q", resp.Text)
 	}
 }
