@@ -10,6 +10,8 @@ const (
 	ItemKey        ItemType = "KEY"
 )
 
+const classRestrictionMinLevel = 15
+
 type Item struct {
 	ID uint `gorm:"primaryKey"`
 
@@ -20,6 +22,7 @@ type Item struct {
 	Rarity      string
 	Amount      int
 	Price       int
+	SetID       uint `gorm:"default:null"`
 
 	Slot          string `gorm:"-"`
 	RequiredLevel int    `gorm:"-"`
@@ -56,6 +59,10 @@ func (i Item) AllowsClass(className string) bool {
 }
 
 func (i Item) AllowsClassByIDAndName(classID uint, className string) bool {
+	if i.RequiredLevel < classRestrictionMinLevel {
+		return true
+	}
+
 	raw := strings.TrimSpace(i.AllowedClasses)
 	if raw == "" {
 		return true

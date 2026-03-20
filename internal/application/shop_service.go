@@ -13,6 +13,8 @@ import (
 	"github.com/vigmiranda/dragonki/internal/ports"
 )
 
+const shopMaxEquipmentRequiredLevel = 15
+
 type ShopService struct {
 	PlayerRepository    ports.PlayerRepository
 	ItemRepository      ports.ItemsRepository
@@ -119,6 +121,7 @@ func (s *ShopService) ListEquipmentsByType(rawSlot string) (view.GameResponse, e
 	if err != nil {
 		log.Fatal(err)
 	}
+	equipments = filterShopEquipments(equipments)
 
 	menuParams := make(map[string]any)
 	for _, equipment := range equipments {
@@ -159,6 +162,13 @@ func (s *ShopService) BuyItem(userID int64, params map[string]string) (view.Game
 	item, err := s.ItemRepository.GetItemById(int(itemID))
 	if err != nil {
 		log.Fatal(err)
+	}
+	if item != nil && item.Type == domain.ItemEquipment && item.RequiredLevel > shopMaxEquipmentRequiredLevel {
+		return view.GameResponse{
+			Text:    fmt.Sprintf("Kiara, a Mercadora\n\nEste item ainda nao esta disponivel na loja.\nA loja vende apenas equipamentos ate o nivel %d.\n\n", shopMaxEquipmentRequiredLevel),
+			Image:   &view.Image{Type: view.ImageAsset, Path: "assets/npcs/kiara_mercadora.png"},
+			MenuKey: "SHOP_MENU",
+		}, nil
 	}
 
 	priceMultiplier, _ := s.vipMultipliers(int64(player.ID))
@@ -356,8 +366,10 @@ func normalizeShopEquipmentSlot(raw string) (domain.EquipmentSlot, bool) {
 		return domain.SlotHelmet, true
 	case "BOOTS":
 		return domain.SlotBoots, true
-	case "RING", "ACCESSORY":
+	case "RING":
 		return domain.SlotRing, true
+	case "ACCESSORY":
+		return domain.SlotAccessory, true
 	case "AMULET":
 		return domain.SlotAmulet, true
 	default:
@@ -379,10 +391,10 @@ func shopEquipmentTypeLabel(slot domain.EquipmentSlot) string {
 		return "botas"
 	case domain.SlotRing:
 		return "aneis"
+	case domain.SlotAccessory:
+		return "cintos"
 	case domain.SlotAmulet:
 		return "amuletos"
-	case domain.SlotAccessory:
-		return "acessorios"
 	default:
 		return string(slot)
 	}
@@ -427,4 +439,19 @@ func itemRequirementText(item *domain.Item) string {
 	}
 
 	return fmt.Sprintf("%s | Classes: %s", levelText, classText)
+}
+
+func filterShopEquipments(items []domain.Item) []domain.Item {
+	if len(items) == 0 {
+		return items
+	}
+
+	filtered := make([]domain.Item, 0, len(items))
+	for _, item := range items {
+		if item.RequiredLevel > 0 && item.RequiredLevel > shopMaxEquipmentRequiredLevel {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return filtered
 }

@@ -38,6 +38,7 @@ type weeklyBossRepoMock struct {
 	paidPayouts        []domain.WeeklyBossPayout
 	paidItems          [][]domain.WeeklyBossRewardItem
 	lastExecuteDamage  int64
+	createdBoss        *domain.WeeklyBoss
 }
 
 func (m *weeklyBossRepoMock) GetActive(at time.Time) (*domain.WeeklyBoss, error) {
@@ -53,7 +54,10 @@ func (m *weeklyBossRepoMock) GetByWeekKey(weekKey string) (*domain.WeeklyBoss, e
 	}
 	return m.weekBoss, nil
 }
-func (m *weeklyBossRepoMock) Create(boss *domain.WeeklyBoss) error { return m.createBossErr }
+func (m *weeklyBossRepoMock) Create(boss *domain.WeeklyBoss) error {
+	m.createdBoss = boss
+	return m.createBossErr
+}
 func (m *weeklyBossRepoMock) ExpireActiveBefore(at time.Time) error {
 	return m.expireErr
 }
@@ -320,6 +324,36 @@ func TestWeeklyBossService_EnsureCurrentWeeklyBoss_CreatesWhenMissing(t *testing
 	err := svc.EnsureCurrentWeeklyBoss(time.Date(2026, 3, 7, 10, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestWeeklyBossService_EnsureCurrentWeeklyBoss_UsesSaoPauloWeekBoundary(t *testing.T) {
+	repo := &weeklyBossRepoMock{
+		weekErr: gorm.ErrRecordNotFound,
+	}
+	playerRepo := &weeklyBossPlayerRepoMock{player: &domain.Player{ID: 1}}
+	svc := NewWeeklyBossService(repo, playerRepo, nil, nil)
+
+	at := time.Date(2026, 3, 9, 1, 30, 0, 0, time.UTC)
+	if err := svc.EnsureCurrentWeeklyBoss(at); err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+
+	if repo.createdBoss == nil {
+		t.Fatal("expected boss to be created")
+	}
+	if repo.createdBoss.WeekKey != "2026-W10" {
+		t.Fatalf("unexpected week key: got %s want 2026-W10", repo.createdBoss.WeekKey)
+	}
+
+	expectedStartsAt := time.Date(2026, 3, 2, 3, 0, 0, 0, time.UTC)
+	expectedEndsAt := time.Date(2026, 3, 9, 2, 59, 59, int(time.Second-time.Nanosecond), time.UTC)
+
+	if !repo.createdBoss.StartsAt.Equal(expectedStartsAt) {
+		t.Fatalf("unexpected starts_at: got %s want %s", repo.createdBoss.StartsAt.Format(time.RFC3339Nano), expectedStartsAt.Format(time.RFC3339Nano))
+	}
+	if !repo.createdBoss.EndsAt.Equal(expectedEndsAt) {
+		t.Fatalf("unexpected ends_at: got %s want %s", repo.createdBoss.EndsAt.Format(time.RFC3339Nano), expectedEndsAt.Format(time.RFC3339Nano))
 	}
 }
 

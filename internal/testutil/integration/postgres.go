@@ -172,6 +172,8 @@ func defaultAutoMigrateModels() []any {
 		&domain.Region{},
 		&domain.Payment{},
 		&domain.Item{},
+		&domain.EquipmentSet{},
+		&domain.EquipmentSetBonus{},
 		&domain.Equipment{},
 		&domain.Inventory{},
 		&domain.InventoryItem{},

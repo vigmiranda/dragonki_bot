@@ -13,8 +13,27 @@ type WeeklyBossPostgresRepo struct {
 	db *gorm.DB
 }
 
+var weeklyBossAttackDateLocation = loadWeeklyBossAttackDateLocation()
+
 func NewWeeklyBossPostgresRepo(db *gorm.DB) *WeeklyBossPostgresRepo {
 	return &WeeklyBossPostgresRepo{db: db}
+}
+
+func loadWeeklyBossAttackDateLocation() *time.Location {
+	loc, err := time.LoadLocation("America/Sao_Paulo")
+	if err != nil {
+		return time.FixedZone("BRT", -3*60*60)
+	}
+	return loc
+}
+
+func normalizeWeeklyBossAttackDate(at time.Time) time.Time {
+	localDate := at.In(weeklyBossAttackDateLocation)
+	return time.Date(localDate.Year(), localDate.Month(), localDate.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+func weeklyBossAttackDateValue(at time.Time) string {
+	return normalizeWeeklyBossAttackDate(at).Format("2006-01-02")
 }
 
 func (r *WeeklyBossPostgresRepo) GetActive(at time.Time) (*domain.WeeklyBoss, error) {
@@ -119,7 +138,7 @@ func (r *WeeklyBossPostgresRepo) CountPlayerAttacksOnDate(bossID uint, playerID 
 		Model(&domain.WeeklyBossAttack{}).
 		Where("boss_id = ?", bossID).
 		Where("player_id = ?", playerID).
-		Where("attack_date = ?", attackDate.UTC().Format("2006-01-02")).
+		Where("attack_date = ?", weeklyBossAttackDateValue(attackDate)).
 		Count(&count).Error
 	if err != nil {
 		return 0, err
@@ -131,6 +150,7 @@ func (r *WeeklyBossPostgresRepo) CreateAttack(attack *domain.WeeklyBossAttack) e
 	if attack == nil {
 		return gorm.ErrInvalidData
 	}
+	attack.AttackAt = normalizeWeeklyBossAttackDate(attack.AttackAt)
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if attack.DailySeq <= 0 {
 			var count int64
@@ -138,7 +158,7 @@ func (r *WeeklyBossPostgresRepo) CreateAttack(attack *domain.WeeklyBossAttack) e
 				Model(&domain.WeeklyBossAttack{}).
 				Where("boss_id = ?", attack.BossID).
 				Where("player_id = ?", attack.PlayerID).
-				Where("attack_date = ?", attack.AttackAt.UTC().Format("2006-01-02")).
+				Where("attack_date = ?", attack.AttackAt.Format("2006-01-02")).
 				Count(&count).Error; err != nil {
 				return err
 			}
@@ -159,7 +179,7 @@ func (r *WeeklyBossPostgresRepo) ExecuteAttack(bossID uint, playerID int64, dama
 		damage = 0
 	}
 
-	attackDate := time.Date(attackedAt.UTC().Year(), attackedAt.UTC().Month(), attackedAt.UTC().Day(), 0, 0, 0, 0, time.UTC)
+	attackDate := normalizeWeeklyBossAttackDate(attackedAt)
 	var updatedBoss domain.WeeklyBoss
 	var totalDamage int64
 

@@ -38,16 +38,10 @@ func (pe *PlayerEquipment) GetSlotInventoryItemID(slot EquipmentSlot) *uint {
 	case SlotBoots:
 		return pe.BootsInventoryItemID
 	case SlotRing:
-		if pe.RingInventoryItemID != nil && *pe.RingInventoryItemID > 0 {
-			return pe.RingInventoryItemID
-		}
-		return pe.AccessoryInventoryItemID
+		return pe.RingInventoryItemID
 	case SlotAmulet:
 		return pe.AmuletInventoryItemID
 	case SlotAccessory:
-		if pe.RingInventoryItemID != nil && *pe.RingInventoryItemID > 0 {
-			return pe.RingInventoryItemID
-		}
 		return pe.AccessoryInventoryItemID
 	default:
 		return nil
@@ -69,7 +63,7 @@ func (pe *PlayerEquipment) SetSlotInventoryItemID(slot EquipmentSlot, id *uint) 
 	case SlotRing:
 		pe.RingInventoryItemID = id
 	case SlotAccessory:
-		pe.RingInventoryItemID = id
+		pe.AccessoryInventoryItemID = id
 	case SlotAmulet:
 		pe.AmuletInventoryItemID = id
 	default:

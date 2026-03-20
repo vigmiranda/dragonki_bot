@@ -546,6 +546,22 @@ func (r *InventoryPostgres) attachEquipmentByInventoryItem(invItem *domain.Inven
 	return nil
 }
 
+func (r *InventoryPostgres) GetEquipmentSetBonuses(setIDs []uint) ([]domain.EquipmentSetBonus, error) {
+	if len(setIDs) == 0 {
+		return nil, nil
+	}
+
+	var bonuses []domain.EquipmentSetBonus
+	if err := r.db.
+		Model(&domain.EquipmentSetBonus{}).
+		Where("set_id IN ?", setIDs).
+		Order("set_id ASC, pieces_required ASC").
+		Find(&bonuses).Error; err != nil {
+		return nil, err
+	}
+	return bonuses, nil
+}
+
 func equipmentUsesInventoryItem(equipment *domain.PlayerEquipment, inventoryItemID uint) bool {
 	if equipment == nil || inventoryItemID == 0 {
 		return false
